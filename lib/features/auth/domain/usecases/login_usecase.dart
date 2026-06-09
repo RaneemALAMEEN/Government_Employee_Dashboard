@@ -1,17 +1,18 @@
-import 'package:government_employee_dashboard/features/auth/data/repositories/auth_repository.dart';
+import 'package:dartz/dartz.dart';
+
+import '../../../../core/errors/failures.dart';
+import '../entities/login_response.dart';
+import '../repositories/auth_repository.dart';
 
 class LoginUseCase {
   final AuthRepository repository;
 
   LoginUseCase(this.repository);
 
-  Future<String> call({
-    required String username,
+  Future<Either<Failure, LoginResponse>> call({
+    required String userName,
     required String password,
   }) {
-    return repository.login(
-      username: username,
-      password: password,
-    );
+    return repository.login(userName: userName, password: password);
   }
 }

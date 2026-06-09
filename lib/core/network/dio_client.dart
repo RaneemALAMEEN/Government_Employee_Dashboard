@@ -1,13 +1,46 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+
+import '../storage/secure_storage_service.dart';
+import 'auth_interceptor.dart';
 
 class DioClient {
-  static final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: dotenv.env['BASE_URL']!,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    ),
-  );
+  DioClient._();
+
+  static Dio create(SecureStorageService storage) {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: dotenv.env['BASE_URL'] ?? '',
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    dio.interceptors.add(
+      AuthInterceptor(dio: dio, storage: storage),
+    );
+
+    if (kDebugMode) {
+      dio.interceptors.add(
+        PrettyDioLogger(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+          compact: false,
+          maxWidth: 120,
+        ),
+      );
+    }
+
+    return dio;
+  }
 }

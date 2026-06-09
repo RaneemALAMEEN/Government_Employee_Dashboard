@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
 class StatCard extends StatelessWidget {
@@ -39,7 +39,7 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 135,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
@@ -54,64 +54,73 @@ class StatCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          children: [
-            Text(
-              stat.value,
-              style: const TextStyle(
-                fontSize: 34,
-                height: 1,
-                fontWeight: FontWeight.w400,
-                color: AppColors.forest,
-              ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _iconBg,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const Spacer(),
-            Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    stat.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.25,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.charcoal,
-                    ),
+            child: Icon(
+              _icon,
+              size: 21,
+              color: _iconColor,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  stat.title,
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.25,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.charcoal,
                   ),
-                  const SizedBox(height: 7),
-                  Text(
-                    stat.subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 1.2,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.goldDark,
-                    ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  stat.subtitle,
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.2,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.goldDark,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            flex: 0,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                stat.value,
+                style: const TextStyle(
+                  fontSize: 34,
+                  height: 1,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.forest,
+                ),
               ),
             ),
-            const SizedBox(width: 14),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _iconBg,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                _icon,
-                size: 21,
-                color: _iconColor,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
