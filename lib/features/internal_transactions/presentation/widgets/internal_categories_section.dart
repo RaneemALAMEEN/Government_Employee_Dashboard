@@ -1,0 +1,161 @@
+import 'package:flutter/material.dart';
+
+import '../../../../shared/theme/app_colors.dart';
+import '../../domain/entities/internal_category_entity.dart';
+
+class InternalCategoriesSection extends StatelessWidget {
+  final List<InternalCategoryEntity> categories;
+  final int selectedCategoryId;
+  final ValueChanged<int> onSelected;
+
+  const InternalCategoriesSection({
+    super.key,
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = categories.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          const Text(
+            'تصنيفات المعاملات',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: AppColors.goldDark,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.end,
+            runAlignment: WrapAlignment.end,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _CategoryChip(
+                title: 'الكل',
+                count: total,
+                icon: Icons.apps_outlined,
+                isSelected: selectedCategoryId == -1,
+                onTap: () => onSelected(-1),
+              ),
+              ...categories.map(
+                (category) => _CategoryChip(
+                  title: category.name,
+                  count: 1,
+                  icon: _iconForCategory(category.name),
+                  isSelected: selectedCategoryId == category.id,
+                  onTap: () => onSelected(category.id),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconForCategory(String name) {
+    if (name.contains('طالب')) return Icons.school_outlined;
+    if (name.contains('البشرية')) return Icons.groups_outlined;
+    if (name.contains('مدرس')) return Icons.menu_book_outlined;
+    if (name.contains('مراسلات')) return Icons.send_outlined;
+    if (name.contains('إحصائيات')) return Icons.bar_chart_outlined;
+    if (name.contains('صيانة')) return Icons.apartment_outlined;
+    if (name.contains('تقني')) return Icons.computer_outlined;
+    return Icons.category_outlined;
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String title;
+  final int count;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.title,
+    required this.count,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.forest : AppColors.goldLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          textDirection: TextDirection.rtl,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? AppColors.white : AppColors.charcoalDark,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? AppColors.white : AppColors.charcoalDark,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.white.withOpacity(0.18)
+                    : AppColors.charcoal.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                count.toString(),
+                style: TextStyle(
+                  color: isSelected ? AppColors.white : AppColors.goldDark,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

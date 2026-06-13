@@ -1,10 +1,11 @@
 import 'package:go_router/go_router.dart';
-
+import '../../features/transactions/presentation/pages/transactions_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
+import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -48,6 +49,18 @@ class AppRouter {
             path: '/dashboard',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: DashboardPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/transactions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: TransactionsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/internal-transactions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: InternalTransactionsPage(),
             ),
           ),
         ],

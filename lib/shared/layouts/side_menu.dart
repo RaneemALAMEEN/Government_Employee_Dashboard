@@ -1,144 +1,250 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import '../theme/app_colors.dart';
 
 class SideMenu extends StatelessWidget {
-  const SideMenu({super.key});
+  final double width;
+
+  const SideMenu({
+    super.key,
+    this.width = 270,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      _MenuItem(Icons.home_outlined, 'الرئيسية', true),
-      _MenuItem(Icons.description_outlined, 'المعاملات', false),
-      _MenuItem(Icons.people_outline, 'الموظفين', false),
-      _MenuItem(Icons.chat_bubble_outline, 'الشكاوى', false),
-      _MenuItem(Icons.account_tree_outlined, 'إعداد سير العمل', false),
-    ];
-
     return Container(
-      color: AppColors.white,
+      width: width,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          left: BorderSide(
+            color: AppColors.charcoal.withOpacity(0.10),
+            width: 1.2,
+          ),
+        ),
+      ),
       child: Column(
         children: [
-          const SizedBox(height: 27),
-          const Text(
-            'مديرية التربية',
-            style: TextStyle(
-              fontSize: 20,
-              height: 1.15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.forest,
-            ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'ريف دمشق',
-            style: TextStyle(
-              fontSize: 13,
-              height: 1,
-              fontWeight: FontWeight.w400,
-              color: AppColors.goldDark,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.forestLight.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              'رئيس الدائرة',
-              style: TextStyle(
-                fontSize: 10,
-                height: 1,
-                color: AppColors.forest,
-                fontWeight: FontWeight.w500,
+          const SizedBox(
+            height: 130,
+            width: double.infinity,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(18, 30, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'مديرية التربية',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(
+                        color: AppColors.forest,
+                        fontSize: 22,
+                        height: 1.15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'ريف دمشق',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(
+                        color: AppColors.goldDark,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _RoleBadge(),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 39),
-          ...items.map((item) => _SideMenuTile(item: item)),
-          const Spacer(),
-          Container(height: 1, color: AppColors.charcoal.withOpacity(0.18)),
-          Container(
-            height: 72,
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            child: const Row(
-              textDirection: TextDirection.rtl,
-              children: [
-                Icon(Icons.logout, color: AppColors.umber, size: 22),
-                SizedBox(width: 12),
-                Text(
-                  'تغيير الدور',
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1,
-                    color: AppColors.umber,
-                    fontWeight: FontWeight.w500,
-                  ),
+          Divider(
+            height: 1,
+            thickness: 1.2,
+            color: AppColors.charcoal.withOpacity(0.10),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+              children: const [
+                _SidebarItem(
+                  icon: Icons.home_outlined,
+                  title: 'الرئيسية',
+                  route: '/dashboard',
+                ),
+                _SidebarItem(
+                  icon: Icons.description_outlined,
+                  title: 'معاملاتي',
+                  route: '/transactions',
+                ),
+                _SidebarItem(
+                  icon: Icons.description_outlined,
+                  title: 'معاملات داخلية',
+                  route: '/internal-transactions',
+                ),
+                _SidebarItem(
+                  icon: Icons.people_outline,
+                  title: 'الموظفين',
+                  route: '/employees',
+                ),
+                _SidebarItem(
+                  icon: Icons.chat_bubble_outline,
+                  title: 'الشكاوى',
+                  route: '/complaints',
+                ),
+                _SidebarItem(
+                  icon: Icons.account_tree_outlined,
+                  title: 'إعداد سير العمل',
+                  route: '/workflow',
                 ),
               ],
             ),
           ),
+          Divider(
+            height: 1,
+            thickness: 1.2,
+            color: AppColors.charcoal.withOpacity(0.10),
+          ),
+          InkWell(
+            onTap: () {},
+            child: SizedBox(
+              height: 72,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  textDirection: TextDirection.rtl,
+                  children: const [
+                    Icon(Icons.logout, color: AppColors.umber, size: 22),
+                    SizedBox(width: 12),
+                    Text(
+                      'تغيير الدور',
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1,
+                        color: AppColors.umber,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SideMenuTile extends StatelessWidget {
-  final _MenuItem item;
-
-  const _SideMenuTile({required this.item});
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 49,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: item.isSelected ? AppColors.goldLight : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+        color: AppColors.forestLight.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          Icon(
-            item.icon,
-            size: 22,
-            color: item.isSelected ? AppColors.forest : AppColors.charcoal,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              item.title,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1,
-                fontWeight: item.isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: item.isSelected ? AppColors.forest : AppColors.charcoalDark,
-              ),
-            ),
-          ),
-          if (item.isSelected)
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: AppColors.forest,
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
+      child: const Text(
+        'رئيس الدائرة',
+        style: TextStyle(
+          fontSize: 10,
+          height: 1,
+          color: AppColors.forest,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 }
 
-class _MenuItem {
+class _SidebarItem extends StatelessWidget {
   final IconData icon;
   final String title;
-  final bool isSelected;
+  final String route;
 
-  const _MenuItem(this.icon, this.title, this.isSelected);
+  const _SidebarItem({
+    required this.icon,
+    required this.title,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    final selected = location == route;
+
+    return InkWell(
+      onTap: () {
+        final router = GoRouter.maybeOf(context);
+        if (router != null && !selected) {
+          router.go(route);
+        }
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        height: 54,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.goldLight : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: selected ? AppColors.forest : AppColors.charcoalDark,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? AppColors.forest : AppColors.charcoalDark,
+                ),
+              ),
+            ),
+            if (selected) ...[
+              const SizedBox(width: 10),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppColors.forest,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
