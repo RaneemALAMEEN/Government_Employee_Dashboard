@@ -34,44 +34,48 @@ class InternalCategoriesSection extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          const Text(
-            'تصنيفات المعاملات',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: AppColors.goldDark,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+      child: Directionality(
+        textDirection: TextDirection.rtl, // توحيد التوجيه للمكون بالكامل
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start, // يبدأ من اليمين بسبب RTL
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'تصنيفات المعاملات',
+              style: TextStyle(
+                color: AppColors.goldDark,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.end,
-            runAlignment: WrapAlignment.end,
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _CategoryChip(
-                title: 'الكل',
-                count: total,
-                icon: Icons.apps_outlined,
-                isSelected: selectedCategoryId == -1,
-                onTap: () => onSelected(-1),
-              ),
-              ...categories.map(
-                (category) => _CategoryChip(
-                  title: category.name,
-                  count: 1,
-                  icon: _iconForCategory(category.name),
-                  isSelected: selectedCategoryId == category.id,
-                  onTap: () => onSelected(category.id),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.start,
+              children: [
+                _CategoryChip(
+                  title: 'الكل',
+                  count: total,
+                  icon: Icons.apps_outlined,
+                  isSelected: selectedCategoryId == -1,
+                  onTap: () => onSelected(-1),
                 ),
-              ),
-            ],
-          ),
-        ],
+                ...categories.map(
+                  (category) => _CategoryChip(
+                    title: category.name,
+                    count:
+                        1, // يمكنك استبدالها بعدد المعاملات الفعلي لكل قسم مستقبلاً
+                    icon: _iconForCategory(category.name),
+                    isSelected: selectedCategoryId == category.id,
+                    onTap: () => onSelected(category.id),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -110,14 +114,19 @@ class _CategoryChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        // تم استخدام حيازة مرنة (Constraints) ليعطي حرية تمدد وانكماش للشريحة
+        constraints: const BoxConstraints(
+          minWidth: 80,
+          maxWidth:
+              220, // يمنع الشريحة الواحدة من تشويه المظهر إذا كان النص طويلاً جداً
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.forest : AppColors.goldLight,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          textDirection: TextDirection.rtl,
           children: [
             Icon(
               icon,
@@ -125,18 +134,24 @@ class _CategoryChip extends StatelessWidget {
               color: isSelected ? AppColors.white : AppColors.charcoalDark,
             ),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: isSelected ? AppColors.white : AppColors.charcoalDark,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            // تغليف النص بـ Flexible لمنع الـ Overflow وتفعيل التقرير النقاطي عند الضيق
+            Flexible(
+              child: Text(
+                title,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  color: isSelected ? AppColors.white : AppColors.charcoalDark,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Container(
               width: 24,
               height: 24,
+              // لمنع الدائرة من الانكماش وتشويه شكل الرقم
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: isSelected

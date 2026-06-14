@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:government_employee_dashboard/core/di/injection.dart';
+import 'package:government_employee_dashboard/core/storage/secure_storage_service.dart';
 
 import '../theme/app_colors.dart';
 
@@ -123,7 +125,13 @@ class SideMenu extends StatelessWidget {
             color: AppColors.charcoal.withOpacity(0.10),
           ),
           InkWell(
-            onTap: () {},
+            onTap: () async {
+              await getIt<SecureStorageService>().clear();
+
+              if (context.mounted) {
+                context.go('/login');
+              }
+            },
             child: SizedBox(
               height: 72,
               child: Padding(
@@ -134,7 +142,7 @@ class SideMenu extends StatelessWidget {
                     Icon(Icons.logout, color: AppColors.umber, size: 22),
                     SizedBox(width: 12),
                     Text(
-                      'تغيير الدور',
+                      'تسجيل خروج',
                       style: TextStyle(
                         fontSize: 15,
                         height: 1,

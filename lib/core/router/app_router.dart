@@ -6,6 +6,7 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
+import '../../features/internal_transactions/presentation/pages/create_internal_transaction_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -61,6 +62,12 @@ class AppRouter {
             path: '/internal-transactions',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: InternalTransactionsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/create-internal-transaction',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CreateInternalTransactionPage(),
             ),
           ),
         ],

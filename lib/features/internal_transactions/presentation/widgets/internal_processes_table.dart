@@ -1,65 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:government_employee_dashboard/core/di/injection.dart';
+import 'package:government_employee_dashboard/core/services/api_service.dart';
 
 import '../../../../shared/theme/app_colors.dart';
-import '../../data/datasources/internal_transactions_local_data_source.dart';
-import '../../domain/entities/internal_process_entity.dart';
+import '../../data/datasources/internal_transactions_remote_data_source.dart';
+import '../../domain/entities/internal_transaction_entity.dart';
 
 class InternalProcessesTable extends StatefulWidget {
-  final int categoryId;
-
-  const InternalProcessesTable({
-    super.key,
-    required this.categoryId,
-  });
+  const InternalProcessesTable({super.key});
 
   @override
   State<InternalProcessesTable> createState() => _InternalProcessesTableState();
 }
 
 class _InternalProcessesTableState extends State<InternalProcessesTable> {
-  final _dataSource = InternalTransactionsLocalDataSource();
+  final _dataSource = InternalTransactionsRemoteDataSource(
+    getIt<ApiService>(),
+  );
 
-  InternalProcessesPageData? _pageData;
+  InternalTransactionsPageData? _pageData;
+
   bool _loading = true;
+  String? _errorMessage;
+
   int _page = 1;
-  static const int _limit = 6;
+  static const int _limit = 10;
+  static const double _minTableWidth = 1100;
 
   @override
   void initState() {
     super.initState();
-    _loadProcesses();
+    _loadTransactions();
   }
 
-  @override
-  void didUpdateWidget(covariant InternalProcessesTable oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.categoryId != widget.categoryId) {
-      _page = 1;
-      _loadProcesses();
-    }
-  }
-
-  Future<void> _loadProcesses() async {
-    setState(() => _loading = true);
-
-    final data = await _dataSource.getProcessesByCategory(
-      categoryId: widget.categoryId == -1 ? 1 : widget.categoryId,
-      page: _page,
-      limit: _limit,
-    );
-
-    if (!mounted) return;
-
+  Future<void> _loadTransactions() async {
     setState(() {
-      _pageData = data;
-      _loading = false;
+      _loading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final data = await _dataSource.getMyTransactions(
+        page: _page,
+        limit: _limit,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _pageData = data;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   void _goToPage(int page) {
     setState(() => _page = page);
-    _loadProcesses();
+    _loadTransactions();
   }
 
   @override
@@ -73,124 +77,86 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
       );
     }
 
+    if (_errorMessage != null) {
+      return _ErrorBox(message: _errorMessage!);
+    }
+
     final data = _pageData!;
 
-    return Column(
-      children: [
-        _Toolbar(),
-        const SizedBox(height: 20),
-        _Table(items: data.items),
-        const SizedBox(height: 16),
-        _Pagination(
-          page: data.page,
-          totalPages: data.totalPages,
-          total: data.total,
-          limit: data.limit,
-          hasNext: data.hasNext,
-          hasPrev: data.hasPrev,
-          onPageChanged: _goToPage,
-        ),
-      ],
-    );
-  }
-}
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withOpacity(0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tableWidth = constraints.maxWidth < _minTableWidth
+              ? _minTableWidth
+              : constraints.maxWidth;
 
-class _Toolbar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      textDirection: TextDirection.rtl,
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 50,
-            child: TextField(
-              textAlign: TextAlign.right,
-              decoration: InputDecoration(
-                hintText: 'بحث في المعاملات برقم المعاملة أو النوع...',
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: AppColors.goldDark,
-                ),
-                filled: true,
-                fillColor: AppColors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
-                ),
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: tableWidth,
+              child: Column(
+                children: [
+                  _Table(items: data.items),
+                  _Pagination(
+                    page: data.page,
+                    totalPages: data.totalPages,
+                    total: data.total,
+                    limit: data.limit,
+                    hasNext: data.hasNext,
+                    hasPrev: data.hasPrev,
+                    onPageChanged: _goToPage,
+                  ),
+                ],
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        SizedBox(
-          height: 50,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.filter_alt_outlined),
-            label: const Text('فلتر متقدم'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.charcoalDark,
-              backgroundColor: AppColors.white,
-              side: BorderSide(color: AppColors.gold.withOpacity(0.25)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-            ),
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 }
 
 class _Table extends StatelessWidget {
-  final List<InternalProcessEntity> items;
+  final List<InternalTransactionEntity> items;
 
-  const _Table({
-    required this.items,
-  });
+  const _Table({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final useHorizontalScroll = constraints.maxWidth < 900;
-        final tableWidth = useHorizontalScroll ? 900.0 : constraints.maxWidth;
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.gold.withOpacity(0.25)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.charcoal.withOpacity(0.08),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  const _TableHeader(),
-                  ...items.map((item) => _ProcessRow(item: item)),
-                ],
+    return Column(
+      children: [
+        const _TableHeader(),
+        if (items.isEmpty)
+          const SizedBox(
+            height: 72,
+            child: Center(
+              child: Text(
+                'لا توجد معاملات حالياً',
+                style: TextStyle(
+                  color: AppColors.goldDark,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-        );
-      },
+          )
+        else
+          ...items.map((item) => _TransactionRow(item: item)),
+      ],
     );
   }
 }
@@ -201,35 +167,34 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
-      color: AppColors.goldLight,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      height: 54,
+      color: AppColors.goldLight.withOpacity(0.4),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderCell('رقم المعاملة', flex: 18),
-          _HeaderCell('نوع المعاملة', flex: 30),
-          _HeaderCell('الأولوية', flex: 14),
-          _HeaderCell('الكود', flex: 20),
-          _HeaderCell('إجراء', flex: 18),
+          _HeaderCell('رقم المعاملة', flex: 18, shiftRight: 10),
+          _HeaderCell('نوع المعاملة', flex: 25, shiftRight: 10),
+          _HeaderCell('المرحلة الحالية', flex: 20, shiftRight: 10),
+          _HeaderCell('نسبة الإنجاز', flex: 15, shiftRight: 10),
+          _HeaderCell('الحالة', flex: 12, shiftRight: 10),
+          _HeaderCell('إجراء', flex: 10, shiftRight: 10),
         ],
       ),
     );
   }
 }
 
-class _ProcessRow extends StatelessWidget {
-  final InternalProcessEntity item;
+class _TransactionRow extends StatelessWidget {
+  final InternalTransactionEntity item;
 
-  const _ProcessRow({
-    required this.item,
-  });
+  const _TransactionRow({required this.item});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      height: 72,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(
@@ -240,46 +205,48 @@ class _ProcessRow extends StatelessWidget {
         textDirection: TextDirection.rtl,
         children: [
           _BodyCell(
-            'TXN-${item.processId}',
+            item.idProcess,
             flex: 18,
             color: AppColors.forest,
             fontWeight: FontWeight.w700,
+            shiftRight: 10,
+          ),
+          _BodyCell(
+            item.processDefinitionName,
+            flex: 25,
+            color: AppColors.charcoalDark,
+            fontWeight: FontWeight.w600,
+            shiftRight: 10,
+          ),
+          _BodyCell(
+            item.stageName,
+            flex: 20,
+            color: AppColors.charcoal,
+            shiftRight: 10,
           ),
           Expanded(
-            flex: 30,
-            child: Row(
-              textDirection: TextDirection.rtl,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _TypeIcon(priority: item.priority),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    item.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.charcoalDark,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+            flex: 15,
+            child: Transform.translate(
+              offset: const Offset(10, 0),
+              child: _ProgressBadge(percent: item.progressPercent),
             ),
           ),
           Expanded(
-            flex: 14,
-            child: Center(
-              child: _PriorityBadge(priority: item.priority),
+            flex: 12,
+            child: Transform.translate(
+              offset: const Offset(10, 0),
+              child: Center(
+                child: _StatusBadge(status: item.status),
+              ),
             ),
           ),
-          _BodyCell(item.code, flex: 20, color: AppColors.goldDark),
           Expanded(
-            flex: 18,
-            child: Center(
-              child: _DetailsButton(onTap: () {}),
+            flex: 10,
+            child: Transform.translate(
+              offset: const Offset(10, 0),
+              child: Center(
+                child: _DetailsButton(onTap: () {}),
+              ),
             ),
           ),
         ],
@@ -291,23 +258,30 @@ class _ProcessRow extends StatelessWidget {
 class _HeaderCell extends StatelessWidget {
   final String text;
   final int flex;
+  final double shiftRight;
 
   const _HeaderCell(
     this.text, {
     required this.flex,
+    this.shiftRight = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: AppColors.charcoal,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
+      child: Transform.translate(
+        offset: Offset(shiftRight, 0),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.charcoal,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -319,140 +293,197 @@ class _BodyCell extends StatelessWidget {
   final int flex;
   final Color? color;
   final FontWeight fontWeight;
+  final double shiftRight;
 
   const _BodyCell(
     this.text, {
     required this.flex,
     this.color,
-    this.fontWeight = FontWeight.w500,
+    this.fontWeight = FontWeight.w400,
+    this.shiftRight = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color ?? AppColors.charcoal,
-          fontSize: 13,
-          fontWeight: fontWeight,
+      child: Transform.translate(
+        offset: Offset(shiftRight, 0),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: color ?? AppColors.charcoal,
+            fontSize: 14,
+            fontWeight: fontWeight,
+          ),
         ),
       ),
     );
   }
 }
 
-class _TypeIcon extends StatelessWidget {
-  final int priority;
+class _ProgressBadge extends StatelessWidget {
+  final int percent;
 
-  const _TypeIcon({
-    required this.priority,
-  });
+  const _ProgressBadge({required this.percent});
 
   @override
   Widget build(BuildContext context) {
-    final color = priority >= 3
-        ? AppColors.umber
-        : priority == 2
-            ? AppColors.goldDark
-            : AppColors.forest;
+    final safePercent = percent.clamp(0, 100);
 
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Icon(
-        Icons.account_tree_outlined,
-        color: color,
-        size: 18,
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 92, maxWidth: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.forestLight.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          '$safePercent%',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppColors.forest,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
 }
 
-class _PriorityBadge extends StatelessWidget {
-  final int priority;
+class _StatusBadge extends StatelessWidget {
+  final String status;
 
-  const _PriorityBadge({
-    required this.priority,
-  });
+  const _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final text = priority >= 3
-        ? 'عالية'
-        : priority == 2
-            ? 'متوسطة'
-            : 'عادية';
-
-    final color = priority >= 3
-        ? AppColors.umber
-        : priority == 2
-            ? AppColors.goldDark
-            : AppColors.forest;
+    final data = _statusData(status);
 
     return Container(
-      height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      alignment: Alignment.center,
+      constraints: const BoxConstraints(minWidth: 82, maxWidth: 130),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(18),
+        color: data.background,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        text,
+        data.text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
         style: TextStyle(
-          color: color,
-          fontSize: 12,
+          color: data.textColor,
+          fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
+
+  _StatusViewData _statusData(String status) {
+    switch (status) {
+      case 'draft':
+        return const _StatusViewData(
+          text: 'مسودة',
+          textColor: Color(0xFF5A738E),
+          background: Color(0xFFEDF2F7),
+        );
+      case 'submitted':
+        return const _StatusViewData(
+          text: 'مقدمة',
+          textColor: AppColors.forest,
+          background: Color(0xFFEAF3F0),
+        );
+      case 'in_progress':
+        return _StatusViewData(
+          text: 'قيد المعالجة',
+          textColor: AppColors.goldDark,
+          background: AppColors.goldLight.withOpacity(0.45),
+        );
+      case 'completed':
+        return const _StatusViewData(
+          text: 'منجزة',
+          textColor: Color(0xFF2E7D32),
+          background: Color(0xFFE8F5E9),
+        );
+      case 'rejected':
+        return const _StatusViewData(
+          text: 'مرفوضة',
+          textColor: Color(0xFFC62828),
+          background: Color(0xFFFFEBEE),
+        );
+      case 'cancelled':
+        return const _StatusViewData(
+          text: 'ملغاة',
+          textColor: AppColors.umber,
+          background: Color(0xFFF8EDEF),
+        );
+      default:
+        return const _StatusViewData(
+          text: 'غير معروف',
+          textColor: Color(0xFF5A738E),
+          background: Color(0xFFEDF2F7),
+        );
+    }
+  }
+}
+
+class _StatusViewData {
+  final String text;
+  final Color textColor;
+  final Color background;
+
+  const _StatusViewData({
+    required this.text,
+    required this.textColor,
+    required this.background,
+  });
 }
 
 class _DetailsButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _DetailsButton({
-    required this.onTap,
-  });
+  const _DetailsButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        constraints: const BoxConstraints(minWidth: 104, maxWidth: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.goldLight,
+          color: AppColors.goldLight.withOpacity(0.3),
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'عرض التفاصيل',
-              style: TextStyle(
-                color: AppColors.forest,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(width: 6),
             Icon(
               Icons.visibility_outlined,
-              size: 16,
-              color: AppColors.forest,
+              size: 15,
+              color: AppColors.charcoal,
+            ),
+            SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'عرض التفاصيل',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.charcoalDark,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
@@ -479,51 +510,72 @@ class _Pagination extends StatelessWidget {
     required this.hasPrev,
     required this.onPageChanged,
   });
-
   @override
   Widget build(BuildContext context) {
-    final start = total == 0 ? 0 : ((page - 1) * limit) + 1;
-    final end = (page * limit).clamp(0, total);
-
-    return Row(
-      textDirection: TextDirection.rtl,
-      children: [
-        Text(
-          'عرض $start–$end من $total معاملة',
-          style: const TextStyle(
-            color: AppColors.goldDark,
+    if (total == 0) {
+      return Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        color: AppColors.white,
+        alignment: Alignment.centerRight,
+        child: Text(
+          'عرض 0–0 من 0 معاملة',
+          style: TextStyle(
+            color: AppColors.charcoal.withOpacity(0.6),
             fontSize: 13,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w400,
           ),
         ),
-        const Spacer(),
-        _PageButton(
-          icon: Icons.chevron_right,
-          enabled: hasPrev,
-          onTap: () => onPageChanged(page - 1),
-        ),
-        const SizedBox(width: 8),
-        ...List.generate(
-          totalPages,
-          (index) {
-            final pageNumber = index + 1;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: _NumberButton(
-                number: pageNumber,
-                selected: pageNumber == page,
-                onTap: () => onPageChanged(pageNumber),
-              ),
-            );
-          },
-        ),
-        const SizedBox(width: 8),
-        _PageButton(
-          icon: Icons.chevron_left,
-          enabled: hasNext,
-          onTap: () => onPageChanged(page + 1),
-        ),
-      ],
+      );
+    }
+
+    final start = ((page - 1) * limit) + 1;
+    final end = (page * limit).clamp(0, total);
+
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      color: AppColors.white,
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Text(
+            'عرض $start–$end من $total معاملة',
+            style: TextStyle(
+              color: AppColors.charcoal.withOpacity(0.6),
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          const Spacer(),
+          _PageButton(
+            icon: Icons.chevron_right,
+            enabled: hasPrev,
+            onTap: () => onPageChanged(page - 1),
+          ),
+          const SizedBox(width: 8),
+          ...List.generate(
+            totalPages,
+            (index) {
+              final pageNumber = index + 1;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _NumberButton(
+                  number: pageNumber,
+                  selected: pageNumber == page,
+                  onTap: () => onPageChanged(pageNumber),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          _PageButton(
+            icon: Icons.chevron_left,
+            enabled: hasNext,
+            onTap: () => onPageChanged(page + 1),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -543,19 +595,19 @@ class _PageButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: Container(
-        width: 36,
-        height: 36,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.gold.withOpacity(0.15)),
         ),
         child: Icon(
           icon,
-          color: enabled ? AppColors.charcoalDark : AppColors.goldDark,
-          size: 20,
+          color: enabled ? AppColors.charcoal : AppColors.gold,
+          size: 18,
         ),
       ),
     );
@@ -577,22 +629,49 @@ class _NumberButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: selected ? null : onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: Container(
-        width: 36,
-        height: 36,
+        width: 32,
+        height: 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.forest : AppColors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           number.toString(),
           style: TextStyle(
-            color: selected ? AppColors.white : AppColors.charcoalDark,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            color: selected ? AppColors.white : AppColors.charcoal,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorBox extends StatelessWidget {
+  final String message;
+
+  const _ErrorBox({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.umber.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.umber.withOpacity(0.18)),
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          color: AppColors.umber,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

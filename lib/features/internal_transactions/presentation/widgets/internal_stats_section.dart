@@ -3,70 +3,69 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
 
 class InternalStatsSection extends StatelessWidget {
-  final int categoriesCount;
+  final int total;
+  final int inProgress;
+  final int completed;
 
   const InternalStatsSection({
     super.key,
-    required this.categoriesCount,
+    required this.total,
+    required this.inProgress,
+    required this.completed,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isSmall = MediaQuery.sizeOf(context).width < 1000;
+    final isSmall = MediaQuery.sizeOf(context).width < 1100;
 
     final cards = [
       _StatCard(
-        value: '12',
+        value: total.toString(),
         title: 'إجمالي المعاملات',
         icon: Icons.description_outlined,
         iconColor: AppColors.forest,
       ),
       _StatCard(
-        value: '5',
-        title: 'قيد الانتظار',
-        icon: Icons.article_outlined,
-        iconColor: AppColors.forest,
-      ),
-      _StatCard(
-        value: '4',
+        value: inProgress.toString(),
         title: 'قيد المعالجة',
         icon: Icons.assignment_outlined,
         iconColor: AppColors.goldDark,
       ),
       _StatCard(
-        value: '3',
+        value: completed.toString(),
         title: 'منجزة',
         icon: Icons.task_outlined,
         iconColor: AppColors.forest,
       ),
     ];
 
-    if (isSmall) {
-      return Wrap(
-        spacing: 16,
-        runSpacing: 16,
-        children: cards
-            .map(
-              (card) => SizedBox(
-                width: 260,
-                child: card,
-              ),
-            )
-            .toList(),
-      );
-    }
-
-    return Row(
+    return Directionality(
       textDirection: TextDirection.rtl,
-      children: [
-        Expanded(child: cards[0]),
-        const SizedBox(width: 20),
-        Expanded(child: cards[1]),
-        const SizedBox(width: 20),
-        Expanded(child: cards[2]),
-        const SizedBox(width: 20),
-        Expanded(child: cards[3]),
-      ],
+      child: isSmall
+          ? Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              alignment: WrapAlignment.start,
+              children: cards
+                  .map(
+                    (card) => SizedBox(
+                      width: MediaQuery.sizeOf(context).width < 600
+                          ? double.infinity
+                          : (MediaQuery.sizeOf(context).width - 80) / 2,
+                      child: card,
+                    ),
+                  )
+                  .toList(),
+            )
+          : Row(
+              children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: 20),
+                Expanded(child: cards[1]),
+                const SizedBox(width: 20),
+                Expanded(child: cards[2]),
+              ],
+            ),
     );
   }
 }
@@ -88,7 +87,7 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 116,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
@@ -102,7 +101,6 @@ class _StatCard extends StatelessWidget {
         ],
       ),
       child: Row(
-        textDirection: TextDirection.rtl,
         children: [
           Container(
             width: 40,
@@ -113,7 +111,7 @@ class _StatCard extends StatelessWidget {
             ),
             child: Icon(icon, color: iconColor, size: 21),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
@@ -122,16 +120,18 @@ class _StatCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: AppColors.charcoal,
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
+                height: 1.3,
               ),
             ),
           ),
+          const SizedBox(width: 10),
           Text(
             value,
             style: const TextStyle(
               color: AppColors.forest,
-              fontSize: 36,
+              fontSize: 32,
               height: 1,
               fontWeight: FontWeight.w700,
             ),
