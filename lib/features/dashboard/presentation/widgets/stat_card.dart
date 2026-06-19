@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
@@ -13,13 +14,13 @@ class StatCard extends StatelessWidget {
   IconData get _icon {
     switch (stat.type) {
       case 'done':
-        return Icons.check_circle_outline;
+        return LucideIcons.checkCircle;
       case 'urgent':
-        return Icons.bolt_outlined;
+        return LucideIcons.zap;
       case 'sign':
-        return Icons.edit_square;
+        return LucideIcons.edit;
       default:
-        return Icons.inbox_outlined;
+        return LucideIcons.inbox;
     }
   }
 
@@ -74,7 +75,7 @@ class StatCard extends StatelessWidget {
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   stat.title,

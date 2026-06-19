@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
@@ -37,7 +38,7 @@ class BottleneckCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8),
-              Icon(Icons.warning_amber, size: 21, color: AppColors.umber),
+              Icon(LucideIcons.alertTriangle, size: 21, color: AppColors.umber),
             ],
           ),
           const SizedBox(height: 9),

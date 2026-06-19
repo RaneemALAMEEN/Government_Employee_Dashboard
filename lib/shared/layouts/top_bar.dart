@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../core/di/injection.dart';
+import '../../core/services/session_service.dart';
 import '../theme/app_colors.dart';
 
 class TopBar extends StatelessWidget {
@@ -10,15 +13,21 @@ class TopBar extends StatelessWidget {
       height: 64,
       color: AppColors.white,
       padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Row(
-        textDirection: TextDirection.ltr,
-        children: const [
-          _UserInfo(),
-          Spacer(),
-          _NotificationButton(),
-          SizedBox(width: 14),
-          _SearchBox(),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showSearch = constraints.maxWidth > 500;
+          return Row(
+            children: [
+              if (showSearch) ...[
+                const _SearchBox(),
+                const SizedBox(width: 14),
+              ],
+              const _NotificationButton(),
+              const Spacer(),
+              const _UserInfo(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -31,18 +40,16 @@ class _UserInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.keyboard_arrow_down, size: 22),
-        const SizedBox(width: 14),
         const CircleAvatar(
           radius: 20,
           backgroundColor: AppColors.forest,
-          child: Icon(Icons.person_outline, color: AppColors.white, size: 22),
+          child: Icon(LucideIcons.user, color: AppColors.white, size: 20),
         ),
         const SizedBox(width: 12),
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'محمد العمر',
               style: TextStyle(
@@ -53,17 +60,24 @@ class _UserInfo extends StatelessWidget {
               ),
             ),
             SizedBox(height: 4),
-            Text(
-              'رئيس الدائرة',
-              style: TextStyle(
-                fontSize: 11,
-                height: 1,
-                fontWeight: FontWeight.w400,
-                color: AppColors.charcoal,
-              ),
+            ValueListenableBuilder<String>(
+              valueListenable: getIt<SessionService>().activeRoleNotifier,
+              builder: (context, activeRole, _) {
+                return Text(
+                  activeRole,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    height: 1,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.charcoal,
+                  ),
+                );
+              },
             ),
           ],
         ),
+        const SizedBox(width: 14),
+        const Icon(LucideIcons.chevronDown, size: 20),
       ],
     );
   }
@@ -83,7 +97,7 @@ class _SearchBox extends StatelessWidget {
           textAlign: TextAlign.right,
           decoration: InputDecoration(
             hintText: 'بحث في المعاملات...',
-            prefixIcon: const Icon(Icons.search, size: 20),
+            prefixIcon: const Icon(LucideIcons.search, size: 18),
             filled: true,
             fillColor: AppColors.goldLight,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14),
@@ -114,7 +128,7 @@ class _NotificationButton extends StatelessWidget {
         color: AppColors.forestLight.withOpacity(0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Icon(Icons.notifications_none, color: AppColors.forest),
+      child: const Icon(LucideIcons.bell, color: AppColors.forest, size: 20),
     );
   }
 }

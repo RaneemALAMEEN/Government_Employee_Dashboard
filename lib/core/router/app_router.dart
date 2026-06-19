@@ -3,8 +3,14 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
+import '../../features/employees/presentation/pages/employee_detail_page.dart';
+import '../../features/employees/presentation/pages/employees_page.dart';
+import '../../features/my_transactions/presentation/pages/my_transactions_page.dart';
+import '../../features/my_transactions/presentation/pages/transaction_details_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
+import '../../shared/pages/coming_soon_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -50,8 +56,63 @@ class AppRouter {
               child: DashboardPage(),
             ),
           ),
+          GoRoute(
+            path: '/my-transactions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: MyTransactionsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/my-transactions/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return NoTransitionPage(
+                child: TransactionDetailsPage(transactionId: id),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/internal-transactions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ComingSoonPage(title: 'المعاملات الداخلية'),
+            ),
+          ),
+          GoRoute(
+            path: '/department-transactions',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DepartmentTransactionsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/drafts',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ComingSoonPage(title: 'مسوداتي'),
+            ),
+          ),
+          GoRoute(
+            path: '/employees',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: EmployeesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/employees/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return NoTransitionPage(
+                child: EmployeeDetailPage(employeeId: id),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/complaints',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ComingSoonPage(title: 'الشكاوى'),
+            ),
+          ),
         ],
       ),
     ],
   );
 }
+

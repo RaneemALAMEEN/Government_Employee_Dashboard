@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 
 class AlertsCard extends StatelessWidget {
@@ -41,7 +42,7 @@ class AlertsCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8),
-              Icon(Icons.notifications_none, size: 18, color: AppColors.umber),
+              Icon(LucideIcons.bell, size: 18, color: AppColors.umber),
             ],
           ),
           const SizedBox(height: 17),
@@ -79,8 +80,9 @@ class _AlertItem extends StatelessWidget {
         ),
       ),
       child: Row(
-        textDirection: TextDirection.rtl,
         children: [
+          const Icon(LucideIcons.alertTriangle, color: AppColors.umber, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
@@ -95,10 +97,8 @@ class _AlertItem extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          const Icon(Icons.warning_amber, color: AppColors.umber, size: 18),
         ],
       ),
     );
   }
-} 
+}

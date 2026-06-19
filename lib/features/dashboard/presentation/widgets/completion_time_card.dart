@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
@@ -42,7 +43,7 @@ class CompletionTimeCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8),
-              Icon(Icons.timer_outlined, color: AppColors.forest, size: 20),
+              Icon(LucideIcons.timer, color: AppColors.forest, size: 20),
             ],
           ),
           const SizedBox(height: 28),

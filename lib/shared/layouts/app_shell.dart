@@ -4,7 +4,7 @@ import '../theme/app_colors.dart';
 import 'side_menu.dart';
 import 'top_bar.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   final Widget child;
 
   const AppShell({
@@ -12,8 +12,15 @@ class AppShell extends StatelessWidget {
     required this.child,
   });
 
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  bool? _userCollapsedOverride;
+  bool _wasSmallScreen = false;
+
   static const double sidebarWidth = 255;
-  static const double gap = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -21,37 +28,42 @@ class AppShell extends StatelessWidget {
       backgroundColor: AppColors.goldLight,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final showSideBelow = constraints.maxWidth < 900;
+          final isSmallScreen = constraints.maxWidth < 900;
+
+          // Reset user override if we cross the small screen threshold
+          if (_wasSmallScreen != isSmallScreen) {
+            _wasSmallScreen = isSmallScreen;
+            _userCollapsedOverride = null;
+          }
+
+          final isCollapsed = _userCollapsedOverride ?? isSmallScreen;
 
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const TopBar(),
-              Expanded(child: child),
+              Expanded(child: widget.child),
             ],
           );
 
-          return showSideBelow
-              ? Column(
-                  children: [
-                    Expanded(child: content),
-                    const SizedBox(height: gap),
-                    const SizedBox(
-                      width: double.infinity,
-                      child: SideMenu(),
-                    ),
-                  ],
-                )
-              : Row(
-                  textDirection: TextDirection.ltr,
-                  children: [
-                    Expanded(child: content),
-                    const SizedBox(
-                      width: sidebarWidth,
-                      child: SideMenu(),
-                    ),
-                  ],
-                );
+          return Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                width: isCollapsed ? 72 : sidebarWidth,
+                child: SideMenu(
+                  isCollapsed: isCollapsed,
+                  onToggleCollapse: () {
+                    setState(() {
+                      _userCollapsedOverride = !isCollapsed;
+                    });
+                  },
+                ),
+              ),
+              Expanded(child: content),
+            ],
+          );
         },
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 
 class QuickActionsCard extends StatelessWidget {
@@ -7,10 +8,10 @@ class QuickActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = const [
-      _QuickAction(Icons.swap_horiz, 'تحويل معاملة'),
-      _QuickAction(Icons.edit_square, 'توقيع معاملة'),
-      _QuickAction(Icons.send_outlined, 'تصعيد معاملة'),
-      _QuickAction(Icons.visibility_outlined, 'عرض سريع'),
+      _QuickAction(LucideIcons.repeat, 'تحويل معاملة'),
+      _QuickAction(LucideIcons.edit, 'توقيع معاملة'),
+      _QuickAction(LucideIcons.send, 'تصعيد معاملة'),
+      _QuickAction(LucideIcons.eye, 'عرض سريع'),
     ];
 
     return Container(

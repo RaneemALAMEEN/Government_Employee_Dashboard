@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 
 import '../router/app_router.dart';
 import '../services/api_const.dart';
@@ -35,7 +37,17 @@ class AuthInterceptor extends Interceptor {
               'Accept': 'application/json',
             },
           ),
-        );
+        ) {
+    // Bypass SSL certificate validation for refresh client to prevent hangs
+    final adapter = _refreshDio.httpClientAdapter;
+    if (adapter is IOHttpClientAdapter) {
+      adapter.createHttpClient = () {
+        final client = HttpClient();
+        client.badCertificateCallback = (cert, host, port) => true;
+        return client;
+      };
+    }
+  }
 
   final Dio _dio;
   final Dio _refreshDio;

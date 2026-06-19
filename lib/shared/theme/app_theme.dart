@@ -21,7 +21,7 @@ class AppTheme {
       titleTextStyle: TextStyle(
         color: AppColors.charcoal,
         fontSize: 20,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w600,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -61,11 +61,11 @@ class AppTheme {
         ),
         textStyle: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
         ),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -75,7 +75,7 @@ class AppTheme {
     textTheme: const TextTheme(
       headlineLarge: TextStyle(
         color: AppColors.charcoal,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w600,
       ),
       bodyLarge: TextStyle(
         color: AppColors.charcoal,
