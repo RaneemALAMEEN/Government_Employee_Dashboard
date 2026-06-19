@@ -27,6 +27,12 @@ class EndPoints {
 
   String processDefinitionsAuth(int typeProcessId) =>
       'api/process_definitions/auth/$typeProcessId';
+  String get uploadTransactionFile => '/api/transaction/files/upload';
+  String stageConfig(int processId) => 'api/stage_config/config/$processId';
+  String signingChallenge(int processId) =>
+      'api/transaction/process/$processId/submit-documents/signing-challenge';
+  String completeSignedTransaction(int transactionId) =>
+      'api/transaction/$transactionId/submit-documents/complete';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

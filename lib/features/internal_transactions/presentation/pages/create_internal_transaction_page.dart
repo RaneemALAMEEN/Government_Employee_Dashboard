@@ -460,7 +460,10 @@ class _ProcessCardState extends State<_ProcessCard> {
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () {
-            // هون لاحقاً منفتح فورم إنشاء المعاملة
+            context.go(
+              '/internal-transaction-form',
+              extra: widget.process.processId,
+            );
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

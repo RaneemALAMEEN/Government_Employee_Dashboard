@@ -7,7 +7,7 @@ import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
 import '../../features/internal_transactions/presentation/pages/create_internal_transaction_page.dart';
-
+import '../../features/internal_transactions/presentation/pages/internal_transaction_form_page.dart';
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/splash',
@@ -69,6 +69,18 @@ class AppRouter {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: CreateInternalTransactionPage(),
             ),
+          ),
+          GoRoute(
+            path: '/internal-transaction-form',
+            pageBuilder: (context, state) {
+              final processId = state.extra as int?;
+
+              return NoTransitionPage(
+                child: InternalTransactionFormPage(
+                  processId: processId ?? 0,
+                ),
+              );
+            },
           ),
         ],
       ),
