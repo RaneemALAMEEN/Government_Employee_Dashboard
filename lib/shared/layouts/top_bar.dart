@@ -1,3 +1,4 @@
+import '../theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/di/injection.dart';
@@ -52,12 +53,7 @@ class _UserInfo extends StatelessWidget {
           children: [
             Text(
               'محمد العمر',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.1,
-                fontWeight: FontWeight.w600,
-                color: AppColors.charcoalDark,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark, height: 1.1),
             ),
             SizedBox(height: 4),
             ValueListenableBuilder<String>(
@@ -65,12 +61,7 @@ class _UserInfo extends StatelessWidget {
               builder: (context, activeRole, _) {
                 return Text(
                   activeRole,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    height: 1,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.charcoal,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(height: 1),
                 );
               },
             ),

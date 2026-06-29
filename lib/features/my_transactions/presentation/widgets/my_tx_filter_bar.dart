@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -61,11 +62,7 @@ class _MyTxFilterBarState extends State<MyTxFilterBar> {
               child: ChoiceChip(
                 label: Text(
                   filter,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected ? Colors.white : AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, color: isSelected ? Colors.white : AppColors.charcoalDark),
                 ),
                 selected: isSelected,
                 selectedColor: AppColors.forest,
@@ -99,7 +96,7 @@ class _MyTxFilterBarState extends State<MyTxFilterBar> {
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: 'بحث برقم المعاملة أو الاسم أو النوع...',
-                hintStyle: TextStyle(color: AppColors.charcoal.withOpacity(0.6), fontSize: 13),
+                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
                 prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.charcoal),
                 filled: true,
                 fillColor: AppColors.white,
@@ -136,14 +133,17 @@ class _MyTxFilterBarState extends State<MyTxFilterBar> {
             : Row(
                 textDirection: TextDirection.rtl,
                 children: [
+                  searchBox,
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: filterChips,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: filterChips,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  searchBox,
                 ],
               );
       },

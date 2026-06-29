@@ -2,6 +2,7 @@ import '../../domain/entities/my_transaction_entity.dart';
 
 class MyTransactionModel extends MyTransactionEntity {
   const MyTransactionModel({
+    required super.idTask,
     required super.number,
     required super.type,
     required super.applicant,
@@ -41,8 +42,10 @@ class MyTransactionModel extends MyTransactionEntity {
 
     // canSign is true if status is pending_pickup or in_progress
     final canSign = rawStatus == 'pending_pickup' || rawStatus == 'in_progress';
+    final idTask = json['task_id']?.toString() ?? json['id_task']?.toString() ?? json['transaction_number']?.toString() ?? '';
 
     return MyTransactionModel(
+      idTask: idTask,
       number: json['transaction_number'] as String? ?? '',
       type: json['type'] as String? ?? '',
       applicant: json['applicant_name'] as String? ?? '',

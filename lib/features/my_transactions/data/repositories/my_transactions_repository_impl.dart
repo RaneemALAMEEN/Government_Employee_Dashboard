@@ -1,3 +1,6 @@
+import 'package:dartz/dartz.dart';
+import 'package:government_employee_dashboard/core/errors/failures.dart';
+
 import '../../domain/entities/my_transaction_entity.dart';
 import '../../domain/repositories/my_transactions_repository.dart';
 import '../datasources/my_transactions_remote_data_source.dart';
@@ -45,5 +48,68 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
     }
 
     return mergedList;
+  }
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getTaskDetails({required String taskId}) async {
+    final result = await remoteDataSource.getTaskDetails(taskId: taskId);
+    return result.map((r) => r as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Either<Failure, dynamic>> pickupTask({required String taskId}) async {
+    return await remoteDataSource.pickupTask(taskId: taskId);
+  }
+
+  @override
+  Future<Either<Failure, dynamic>> releaseTask({required String taskId}) async {
+    return await remoteDataSource.releaseTask(taskId: taskId);
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> createSigningChallenge({
+    required String taskId,
+    required String pin,
+    required String decision,
+    bool isSubmitDocuments = false,
+  }) async {
+    final result = await remoteDataSource.createSigningChallenge(
+      taskId: taskId,
+      pin: pin,
+      decision: decision,
+      isSubmitDocuments: isSubmitDocuments,
+    );
+    return result.map((r) => r as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Either<Failure, dynamic>> completeTask({
+    required String taskId,
+    required Map<String, dynamic> payload,
+    bool isSubmitDocuments = false,
+  }) async {
+    return await remoteDataSource.completeTask(
+      taskId: taskId,
+      payload: payload,
+      isSubmitDocuments: isSubmitDocuments,
+    );
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> uploadTransactionFile({
+    required String filePath,
+    required int typeDocId,
+    required String key,
+  }) async {
+    final result = await remoteDataSource.uploadTransactionFile(
+      filePath: filePath,
+      typeDocId: typeDocId,
+      key: key,
+    );
+    return result.map((r) {
+      if (r is Map) {
+         return r['data'] as Map<String, dynamic>? ?? Map<String, dynamic>.from(r);
+      }
+      return <String, dynamic>{};
+    });
   }
 }

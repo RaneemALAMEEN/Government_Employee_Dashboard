@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -55,25 +56,15 @@ class _LatestTransactionsTableState extends State<LatestTransactionsTable> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 textDirection: TextDirection.rtl,
-                children: const [
+                children: [
                   Text(
                     'آخر المعاملات',
-                    style: TextStyle(
-                      fontSize: 18,
-                      height: 1,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.titleLarge.copyWith(height: 1),
                   ),
                   Spacer(),
                   Text(
                     'عرض الكل ‹',
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.forest, height: 1),
                   ),
                 ],
               ),
@@ -222,12 +213,7 @@ class _HeaderText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: AppColors.charcoal,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
       ),
     );
   }
@@ -255,12 +241,7 @@ class _CellText extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          height: 1.25,
-          fontWeight: fontWeight,
-          color: color ?? AppColors.charcoalDark,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoalDark, height: 1.25),
       ),
     );
   }
@@ -284,12 +265,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w500,
-          color: fg,
-        ),
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: fg, height: 1),
       ),
     );
   }

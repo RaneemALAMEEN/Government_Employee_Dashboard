@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -30,17 +31,12 @@ class CompletionTimeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Row(
+          Row(
             textDirection: TextDirection.rtl,
             children: [
               Text(
                 'تحليل وقت الإنجاز',
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1.1,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleLarge.copyWith(height: 1.1),
               ),
               SizedBox(width: 8),
               Icon(LucideIcons.timer, color: AppColors.forest, size: 20),
@@ -50,24 +46,14 @@ class CompletionTimeCard extends StatelessWidget {
           Center(
             child: Text(
               completionTime.averageDays,
-              style: const TextStyle(
-                fontSize: 46,
-                height: 0.95,
-                fontWeight: FontWeight.w500,
-                color: AppColors.forest,
-              ),
+              style: AppTextStyles.displayLarge.copyWith(fontSize: 46, fontWeight: AppTextStyles.medium, height: 0.95),
             ),
           ),
           const SizedBox(height: 8),
-          const Center(
+          Center(
             child: Text(
               'يوم — متوسط إنجاز المعاملة',
-              style: TextStyle(
-                fontSize: 12,
-                height: 1,
-                fontWeight: FontWeight.w400,
-                color: AppColors.goldDark,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark, height: 1),
             ),
           ),
           const SizedBox(height: 14),
@@ -80,12 +66,7 @@ class CompletionTimeCard extends StatelessWidget {
               ),
               child: Text(
                 completionTime.comparison,
-                style: const TextStyle(
-                  fontSize: 13,
-                  height: 1,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.forest, height: 1),
               ),
             ),
           ),
@@ -117,12 +98,7 @@ class _StageProgress extends StatelessWidget {
           child: Text(
             stage.title,
             textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontSize: 11,
-              height: 1,
-              fontWeight: FontWeight.w400,
-              color: AppColors.charcoal,
-            ),
+            style: AppTextStyles.labelMedium.copyWith(height: 1),
           ),
         ),
         const SizedBox(width: 8),
@@ -143,12 +119,7 @@ class _StageProgress extends StatelessWidget {
           child: Text(
             '${stage.days} يوم',
             textAlign: TextAlign.left,
-            style: const TextStyle(
-              fontSize: 11,
-              height: 1,
-              fontWeight: FontWeight.w400,
-              color: AppColors.goldDark,
-            ),
+            style: AppTextStyles.labelMedium.copyWith(color: AppColors.goldDark, height: 1),
           ),
         ),
       ],

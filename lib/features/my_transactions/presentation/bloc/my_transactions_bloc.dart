@@ -249,11 +249,13 @@ class MyTransactionsBloc extends Bloc<MyTransactionsEvent, MyTransactionsState> 
     for (var tx in list) {
       if (tx.status == 'بانتظار الاستلام') {
         awaiting++;
-        if (tx.priority == 'عالية') {
-          urgent++;
-        }
       } else if (tx.status == 'منجزة') {
         completed++;
+      }
+
+      if (tx.priority == 'عالية' &&
+          (tx.status == 'بانتظار الاستلام' || tx.status == 'قيد التنفيذ')) {
+        urgent++;
       }
     }
 

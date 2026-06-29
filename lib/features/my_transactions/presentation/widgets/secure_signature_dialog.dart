@@ -1,16 +1,17 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:pinput/pinput.dart';
 import '../../../../shared/theme/app_colors.dart';
 
 class SecureSignatureDialog extends StatefulWidget {
   final String transactionNumber;
-  final VoidCallback onSuccess;
 
   const SecureSignatureDialog({
     super.key,
     required this.transactionNumber,
-    required this.onSuccess,
   });
 
   @override
@@ -21,9 +22,10 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
   bool _isSearching = true;
   bool _hasError = false;
   bool _isSigning = false;
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  String? _keysDirectoryPath;
+
+  final TextEditingController _pinController = TextEditingController();
+  final FocusNode _pinFocusNode = FocusNode();
   Timer? _searchTimer;
 
   @override
@@ -34,14 +36,14 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
 
   void _startSearchTimer() {
     _searchTimer = Timer(const Duration(milliseconds: 1500), () {
-      if (mounted) {
+      if (mounted && _searchTimer != null) {
         setState(() {
           _isSearching = false;
         });
-        // Focus on the first text field after detecting
+        // Focus on pin input after detecting
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _focusNodes[0].requestFocus();
+          if (mounted && _searchTimer != null) {
+            _pinFocusNode.requestFocus();
           }
         });
       }
@@ -51,47 +53,76 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
   @override
   void dispose() {
     _searchTimer?.cancel();
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
+    _searchTimer = null;
+    _pinController.dispose();
+    _pinFocusNode.dispose();
     super.dispose();
   }
 
-  void _checkPin() {
-    final pin = _controllers.map((c) => c.text).join();
+  Future<void> _pickKeysDirectory() async {
+    // Cancel the search timer immediately to prevent background focus requests while FilePicker is open
+    _searchTimer?.cancel();
+    _searchTimer = null;
+    
+    if (_isSearching) {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+
+    // Unfocus the PIN field before opening file picker to avoid native window focus conflicts
+    _pinFocusNode.unfocus();
+    
+    // Give the focus system a tiny moment to clear
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    final path = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'اختاري مجلد مفاتيح الموظف من الفلاشة',
+    );
+    
+    if (path != null) {
+      if (mounted) {
+        setState(() {
+          _keysDirectoryPath = path;
+        });
+      }
+    }
+
+    // Refocus the PIN field after the file picker is closed, delayed to avoid Win32 window focus collision
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _pinFocusNode.requestFocus();
+      }
+    });
+  }
+
+  String _getFolderName(String path) {
+    if (path.isEmpty) return '';
+    final parts = path.split(RegExp(r'[/\\]'));
+    return parts.lastWhere((part) => part.isNotEmpty, orElse: () => path);
+  }
+
+  void _checkPin(String pin) {
     if (pin.length < 6) return;
 
-    setState(() {
-      _isSigning = true;
-    });
+    if (_keysDirectoryPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('الرجاء اختيار مجلد مفاتيح الأمان من الفلاشة أولاً'),
+        ),
+      );
+      _pinController.clear();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _pinFocusNode.requestFocus();
+        }
+      });
+      return;
+    }
 
-    // Simulate cryptographic processing
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-
-      // Mock behavior: first attempt fails to show error state, second attempt succeeds
-      if (!_hasError && pin != "123456") {
-        setState(() {
-          _hasError = true;
-          _isSigning = false;
-          // Clear all pin entries
-          for (var controller in _controllers) {
-            controller.clear();
-          }
-          // Refocus first field
-          _focusNodes[0].requestFocus();
-        });
-      } else {
-        // Correct pin or second try
-        setState(() {
-          _isSigning = false;
-        });
-        Navigator.of(context).pop();
-        widget.onSuccess();
-      }
+    Navigator.of(context).pop<Map<String, String>>({
+      'pin': pin,
+      'keysDirectoryPath': _keysDirectoryPath!,
     });
   }
 
@@ -127,21 +158,14 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       textDirection: TextDirection.rtl,
                       children: [
-                        const Text(
+                        Text(
                           'التوقيع الإلكتروني الآمن',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'توقيع المعاملة رقم ${widget.transactionNumber}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.85),
-                            fontSize: 11,
-                          ),
+                          'توقيع المعاملة: ${widget.transactionNumber}',
+                          style: AppTextStyles.labelMedium.copyWith(color: Colors.white.withOpacity(0.85)),
                         ),
                       ],
                     ),
@@ -185,24 +209,20 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
                     const SizedBox(height: 24),
 
                     // PIN Code Inputs Label
-                    const Text(
+                    Text(
                       'رمز PIN للموظف (6 أرقام)',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.charcoalDark,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
                     ),
                     const SizedBox(height: 12),
 
-                    // 6 digits PIN row
+                    // 6 digits PIN row using Pinput
                     _buildPinInputRow(),
 
                     // Error text
                     if (_hasError) ...[
                       const SizedBox(height: 10),
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(LucideIcons.xCircle,
@@ -210,11 +230,7 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
                           SizedBox(width: 6),
                           Text(
                             'رمز PIN غير صحيح، يرجى كتابة الرمز الصحيح الخاص بك.',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: Colors.red),
                           ),
                         ],
                       ),
@@ -242,10 +258,9 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text(
+                            child: Text(
                               'إلغاء',
-                              style: TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.w500),
+                              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium),
                             ),
                           ),
                   ],
@@ -269,7 +284,7 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
           style: BorderStyle.solid,
         ),
       ),
-      child: const Row(
+      child: Row(
         textDirection: TextDirection.rtl,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -281,21 +296,13 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
               textDirection: TextDirection.rtl,
               children: [
                 Text(
-                  'الرجاء إدخال الفلاشة:',
-                  style: TextStyle(
-                    color: AppColors.goldDark,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  'الرجاء اختيار مجلد التوقيع من الفلاشة:',
+                  style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'يرجى توصيل الفلاشة الخاصة بك التي تحتوي على مفتاح الأمان والتوقيع الإلكتروني الخاص بالموظف للبدء.',
-                  style: TextStyle(
-                    color: AppColors.charcoal,
-                    fontSize: 11,
-                    height: 1.4,
-                  ),
+                  'يرجى تحديد المجلد الذي يحتوي على مفتاح الأمان والتوقيع الإلكتروني الخاص بالموظف من الفلاشة للبدء.',
+                  style: AppTextStyles.labelMedium.copyWith(height: 1.4),
                 ),
               ],
             ),
@@ -313,17 +320,13 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.gold.withOpacity(0.18)),
       ),
-      child: const Row(
+      child: Row(
         textDirection: TextDirection.rtl,
         children: [
           Expanded(
             child: Text(
               'جاري البحث عن مفتاح الأمان (الفلاشة)... يرجى الانتظار...',
-              style: TextStyle(
-                color: AppColors.charcoal,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium),
             ),
           ),
           SizedBox(
@@ -351,26 +354,22 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFFD4EFEB)),
           ),
-          child: const Row(
+          child: Row(
             textDirection: TextDirection.rtl,
             children: [
               Icon(LucideIcons.checkCircle, color: Color(0xFF2E7D32), size: 16),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'تم التحقق من الفلاشة: تم الكشف عن مفتاح الأمان والتوقيع الإلكتروني بنجاح، يرجى إدخال رمز PIN للموظف المكون من 6 أرقام لتوقيع المعاملة.',
-                  style: TextStyle(
-                    color: Color(0xFF2E7D32),
-                    fontSize: 11,
-                    height: 1.45,
-                  ),
+                  'تم الكشف عن منفذ التوقيع. يرجى اختيار مجلد مفاتيح الأمان من الفلاشة وإدخال رمز PIN المكون من 6 أرقام لتوقيع المعاملة.',
+                  style: AppTextStyles.labelMedium.copyWith(color: Color(0xFF2E7D32), height: 1.45),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        // Device info
+        // Folder Selector Card
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -378,36 +377,40 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.gold.withOpacity(0.2)),
           ),
-          child: const Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Icon(LucideIcons.usb, color: AppColors.forestLight, size: 20),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  textDirection: TextDirection.rtl,
-                  children: [
-                    Text(
-                      'تم اكتشاف مفتاح الأمان (USB Key) بنجاح',
-                      style: TextStyle(
-                        color: AppColors.forest,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+          child: InkWell(
+            onTap: _pickKeysDirectory,
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                const Icon(LucideIcons.folderOpen,
+                    color: AppColors.goldDark, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      Text(
+                        _keysDirectoryPath == null
+                            ? 'اضغط هنا لتحديد مجلد مفاتيح الأمان'
+                            : 'تم تحديد مجلد المفاتيح بنجاح',
+                        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
                       ),
-                    ),
-                    SizedBox(height: 1),
-                    Text(
-                      'Secure eToken — Serial: AE3F9D2C',
-                      style: TextStyle(
-                        color: AppColors.charcoal,
-                        fontSize: 10,
+                      const SizedBox(height: 2),
+                      Text(
+                        _keysDirectoryPath == null
+                            ? 'لم يتم اختيار مجلد الفلاشة'
+                            : _getFolderName(_keysDirectoryPath!),
+                        style: AppTextStyles.labelMedium,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                if (_keysDirectoryPath != null)
+                  const Icon(LucideIcons.checkCircle2,
+                      color: Colors.green, size: 18),
+              ],
+            ),
           ),
         ),
       ],
@@ -415,73 +418,52 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
   }
 
   Widget _buildPinInputRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      textDirection: TextDirection.ltr, // Input digits show from left to right
-      children: List.generate(6, (index) {
-        return SizedBox(
-          width: 50,
-          height: 50,
-          child: TextField(
-            controller: _controllers[index],
-            focusNode: _focusNodes[index],
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 1,
-            enabled: !_isSearching && !_isSigning,
-            obscureText: true,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppColors.charcoalDark,
-            ),
-            decoration: InputDecoration(
-              counterText: "",
-              filled: true,
-              fillColor: const Color(0xFFF9F8F4),
-              contentPadding: EdgeInsets.zero,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color:
-                      _hasError ? Colors.red : AppColors.gold.withOpacity(0.25),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color:
-                      _hasError ? Colors.red : AppColors.gold.withOpacity(0.25),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: _hasError ? Colors.red : AppColors.forest,
-                  width: 1.5,
-                ),
+    return Center(
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Pinput(
+          controller: _pinController,
+          focusNode: _pinFocusNode,
+          length: 6,
+          obscureText: true,
+          enabled: !_isSearching && !_isSigning,
+          pinAnimationType: PinAnimationType.scale,
+          defaultPinTheme: PinTheme(
+            width: 50,
+            height: 50,
+            textStyle: AppTextStyles.headlineMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9F8F4),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _hasError ? Colors.red : AppColors.gold.withOpacity(0.25),
+                width: 1.0,
               ),
             ),
-            onChanged: (value) {
-              if (value.isNotEmpty) {
-                // Move to next cell
-                if (index < 5) {
-                  _focusNodes[index + 1].requestFocus();
-                } else {
-                  // Submit PIN on 6th digit
-                  _focusNodes[index].unfocus();
-                  _checkPin();
-                }
-              } else {
-                // Move to previous cell on delete
-                if (index > 0) {
-                  _focusNodes[index - 1].requestFocus();
-                }
-              }
-            },
           ),
-        );
-      }),
+          focusedPinTheme: PinTheme(
+            width: 52,
+            height: 52,
+            textStyle: AppTextStyles.headlineMedium.copyWith(fontWeight: AppTextStyles.semiBold),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _hasError ? Colors.red : AppColors.forest,
+                width: 1.5,
+              ),
+            ),
+          ),
+          onCompleted: (pin) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                _pinFocusNode.unfocus();
+                _checkPin(pin);
+              }
+            });
+          },
+        ),
+      ),
     );
   }
 
@@ -502,10 +484,7 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
           Expanded(
             child: Text(
               'عملية التوقيع تتم بشكل آمن ومشفر وفق معايير PKI الحكومية، لا تشارك رمز PIN مع أي شخص.',
-              style: TextStyle(
-                color: AppColors.charcoal.withOpacity(0.7),
-                fontSize: 10.5,
-              ),
+              style: AppTextStyles.labelSmall.copyWith(fontSize: 10.5, color: AppColors.charcoal.withOpacity(0.7)),
             ),
           ),
         ],
@@ -513,3 +492,4 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
     );
   }
 }
+

@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -64,16 +65,12 @@ class DeptWorkloadCard extends StatelessWidget {
         children: [
           Row(
             textDirection: TextDirection.rtl,
-            children: const [
+            children: [
               Icon(LucideIcons.barChart2, color: AppColors.forest, size: 20),
               SizedBox(width: 8),
               Text(
                 'توزيع الأحمال بالدوائر',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
               ),
             ],
           ),
@@ -94,19 +91,11 @@ class DeptWorkloadCard extends StatelessWidget {
                     children: [
                       Text(
                         item.name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.charcoalDark,
-                        ),
+                        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                       ),
                       Text(
                         item.ratio,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.charcoal.withOpacity(0.6),
-                        ),
+                        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.6)),
                       ),
                     ],
                   ),
@@ -128,11 +117,7 @@ class DeptWorkloadCard extends StatelessWidget {
                       children: [
                         Text(
                           item.status,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: item.color,
-                          ),
+                          style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: item.color),
                         ),
                         const SizedBox(width: 4),
                         Icon(

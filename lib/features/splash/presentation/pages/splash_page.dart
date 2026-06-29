@@ -180,7 +180,7 @@ class _SplashPageState extends State<SplashPage>
                     FadeInDown(
                       duration: const Duration(milliseconds: 600),
                       child: Text(
-                        'الجمهورية العربية السورية',
+                        'مديرية تربية ريف دمشق',
                         style: GoogleFonts.cairo(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,

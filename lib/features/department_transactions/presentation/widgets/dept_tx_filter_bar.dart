@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -75,7 +76,7 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: 'بحث برقم المعاملة، النوع، أو اسم المسؤول...',
-                hintStyle: TextStyle(color: AppColors.charcoal.withOpacity(0.6), fontSize: 13),
+                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
                 prefixIcon: const Icon(LucideIcons.search, size: 20, color: AppColors.charcoal),
                 filled: true,
                 fillColor: AppColors.white,
@@ -109,12 +110,7 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
             child: DropdownButton<String>(
               value: widget.activeClassificationFilter,
               icon: const Icon(LucideIcons.chevronDown, color: AppColors.forest, size: 20),
-              style: const TextStyle(
-                color: AppColors.charcoalDark,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Cairo',
-              ),
+              style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
               onChanged: (val) {
                 if (val != null) {
                   widget.onClassificationFilterChanged(val);
@@ -139,11 +135,7 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
               child: ChoiceChip(
                 label: Text(
                   status,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected ? Colors.white : AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, color: isSelected ? Colors.white : AppColors.charcoalDark),
                 ),
                 selected: isSelected,
                 selectedColor: AppColors.forest,

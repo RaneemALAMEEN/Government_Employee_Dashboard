@@ -16,14 +16,23 @@ class EndPoints {
   String get login => 'api/auth/login'; // step 1 → session_id + sends OTP
   String get verifyLoginOtp =>
       'api/auth/verify-otp/login'; // step 2 → token + refreshToken + user + roles
-
+  String get myTransactionCounts => 'api/transaction/my/counts';
   // ===== auth — token lifecycle =====
   String get refresh =>
       'api/auth/refresh'; // { refreshToken } → { token, refreshToken }
   String get logout =>
       'api/auth/logout'; // { refreshToken } → revokes refresh token
+  String get myTransactions => 'api/transaction/my';
+  String get typeProcess => 'api/typeProcess';
 
-
+  String processDefinitionsAuth(int typeProcessId) =>
+      'api/process_definitions/auth/$typeProcessId';
+  String get uploadTransactionFile => '/api/transaction/files/upload';
+  String stageConfig(int processId) => 'api/stage_config/config/$processId';
+  String signingChallenge(int processId) =>
+      'api/transaction/process/$processId/submit-documents/signing-challenge';
+  String completeSignedTransaction(int transactionId) =>
+      'api/transaction/$transactionId/submit-documents/complete';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

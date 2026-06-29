@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_text_styles.dart';
 
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.goldLight,
-    fontFamily: 'Cairo',
+    fontFamily: AppTextStyles.fontFamily,
     colorScheme: const ColorScheme.light(
       primary: AppColors.forest,
       secondary: AppColors.gold,
@@ -19,9 +20,10 @@ class AppTheme {
         color: AppColors.charcoal,
       ),
       titleTextStyle: TextStyle(
+        fontFamily: AppTextStyles.fontFamily,
         color: AppColors.charcoal,
         fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontWeight: AppTextStyles.semiBold,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -32,7 +34,9 @@ class AppTheme {
         vertical: 18,
       ),
       hintStyle: const TextStyle(
+        fontFamily: AppTextStyles.fontFamily,
         color: Colors.grey,
+        fontSize: 14,
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -60,8 +64,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(18),
         ),
         textStyle: const TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: AppTextStyles.semiBold,
         ),
       ),
     ),
@@ -73,13 +78,19 @@ class AppTheme {
       ),
     ),
     textTheme: const TextTheme(
-      headlineLarge: TextStyle(
-        color: AppColors.charcoal,
-        fontWeight: FontWeight.w600,
-      ),
-      bodyLarge: TextStyle(
-        color: AppColors.charcoal,
-      ),
+      displayLarge: AppTextStyles.displayLarge,
+      displayMedium: AppTextStyles.displayMedium,
+      headlineLarge: AppTextStyles.headlineLarge,
+      headlineMedium: AppTextStyles.headlineMedium,
+      headlineSmall: AppTextStyles.headlineSmall,
+      titleLarge: AppTextStyles.titleLarge,
+      titleMedium: AppTextStyles.titleMedium,
+      titleSmall: AppTextStyles.titleSmall,
+      bodyLarge: AppTextStyles.bodyLarge,
+      bodyMedium: AppTextStyles.bodyMedium,
+      bodySmall: AppTextStyles.bodySmall,
+      labelLarge: AppTextStyles.labelLarge,
+      labelSmall: AppTextStyles.labelSmall,
     ),
   );
 }

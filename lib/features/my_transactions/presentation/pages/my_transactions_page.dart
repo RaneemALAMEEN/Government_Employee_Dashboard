@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animate_do/animate_do.dart';
@@ -10,8 +11,19 @@ import '../widgets/my_tx_alert_banner.dart';
 import '../widgets/my_tx_filter_bar.dart';
 import '../widgets/my_tx_table.dart';
 
-class MyTransactionsPage extends StatelessWidget {
+class MyTransactionsPage extends StatefulWidget {
   const MyTransactionsPage({super.key});
+
+  @override
+  State<MyTransactionsPage> createState() => _MyTransactionsPageState();
+}
+
+class _MyTransactionsPageState extends State<MyTransactionsPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<MyTransactionsBloc>().add(LoadMyTransactions());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +44,7 @@ class MyTransactionsPage extends StatelessWidget {
               children: [
                 Text(
                   state.message,
-                  style: const TextStyle(
-                      color: AppColors.charcoalDark, fontSize: 16),
+                  style: AppTextStyles.titleMedium,
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
@@ -101,23 +112,13 @@ class MyTransactionsContent extends StatelessWidget {
                       const Text(
                         'معاملاتي',
                         textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 30,
-                          height: 1.15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.forest,
-                        ),
+                        style: AppTextStyles.displayMedium,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'المعاملات الموجهة إليك — ${state.awaitingSignatureCount} بانتظار الاستلام',
                         textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          height: 1.2,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.goldDark,
-                        ),
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.goldDark),
                       ),
                     ],
                   ),

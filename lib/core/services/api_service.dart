@@ -28,6 +28,11 @@ class ApiService {
     Map<String, dynamic>? headers,
   }) async {
     try {
+      final fullUrl = endPoint.startsWith('http')
+          ? endPoint
+          : '${_dio.options.baseUrl}$endPoint';
+      print('Executing API: [${method.value}] $fullUrl');
+
       // Per-request options only — never mutate the shared Dio's global
       // options/headers, since every feature reuses the same instance.
       final response = await _dio.request(

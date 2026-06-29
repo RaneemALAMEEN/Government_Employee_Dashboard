@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
 
@@ -58,21 +59,12 @@ class MyTxStatsCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.charcoalDark,
-                  height: 1,
-                ),
+                style: AppTextStyles.displayMedium.copyWith(fontSize: 32, color: AppColors.charcoalDark, height: 1),
               ),
               const SizedBox(height: 6),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.charcoal,
-                ),
+                style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium),
               ),
             ],
           ),

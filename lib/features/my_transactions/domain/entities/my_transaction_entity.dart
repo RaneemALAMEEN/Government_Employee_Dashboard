@@ -1,4 +1,5 @@
 class MyTransactionEntity {
+  final String idTask;
   final String number;
   final String type;
   final String applicant;
@@ -9,6 +10,7 @@ class MyTransactionEntity {
   final bool canSign;
 
   const MyTransactionEntity({
+    required this.idTask,
     required this.number,
     required this.type,
     required this.applicant,
@@ -20,6 +22,7 @@ class MyTransactionEntity {
   });
 
   MyTransactionEntity copyWith({
+    String? idTask,
     String? number,
     String? type,
     String? applicant,
@@ -30,6 +33,7 @@ class MyTransactionEntity {
     bool? canSign,
   }) {
     return MyTransactionEntity(
+      idTask: idTask ?? this.idTask,
       number: number ?? this.number,
       type: type ?? this.type,
       applicant: applicant ?? this.applicant,

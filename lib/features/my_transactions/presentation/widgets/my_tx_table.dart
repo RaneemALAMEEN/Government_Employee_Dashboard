@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animate_do/animate_do.dart';
@@ -173,11 +174,7 @@ class _MyTxTableState extends State<MyTxTable> {
               const SizedBox(height: 24),
               Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.charcoalDark,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.titleMedium,
               ),
               const SizedBox(height: 8),
               Padding(
@@ -185,11 +182,8 @@ class _MyTxTableState extends State<MyTxTable> {
                 child: Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.charcoal.withOpacity(0.60),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.charcoal.withOpacity(0.60), height: 1.4),
                 ),
               ),
             ],
@@ -268,13 +262,11 @@ class _TransactionRow extends StatelessWidget {
                     child: Text(
                       tx.number,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isUrgentPending
-                            ? AppColors.umber
-                            : AppColors.forest,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(
+                          fontWeight: AppTextStyles.semiBold,
+                          color: isUrgentPending
+                              ? AppColors.umber
+                              : AppColors.charcoalDark),
                     ),
                   ),
                 ],
@@ -310,7 +302,7 @@ class _TransactionRow extends StatelessWidget {
                     icon: LucideIcons.eye,
                     tooltip: 'عرض التفاصيل',
                     onTap: () {
-                      context.go('/my-transactions/${tx.number}');
+                      context.go('/my-transactions/${tx.idTask}');
                     },
                   ),
                 ],
@@ -336,12 +328,8 @@ class _HeaderText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: AppColors.charcoal,
-        ),
+        style: AppTextStyles.labelLarge
+            .copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
       ),
     );
   }
@@ -369,12 +357,10 @@ class _CellText extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          height: 1.25,
-          fontWeight: fontWeight,
-          color: color ?? AppColors.charcoalDark,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(
+            fontWeight: fontWeight,
+            color: color ?? AppColors.charcoalDark,
+            height: 1.25),
       ),
     );
   }
@@ -412,12 +398,8 @@ class _PriorityBadge extends StatelessWidget {
       ),
       child: Text(
         priority,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
+        style: AppTextStyles.labelMedium
+            .copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
       ),
     );
   }
@@ -459,12 +441,8 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
+        style: AppTextStyles.labelMedium
+            .copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
       ),
     );
   }

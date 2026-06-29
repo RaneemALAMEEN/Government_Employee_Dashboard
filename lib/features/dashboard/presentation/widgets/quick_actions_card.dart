@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -31,14 +32,9 @@ class QuickActionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Text(
+          Text(
             'إجراءات سريعة',
-            style: TextStyle(
-              fontSize: 18,
-              height: 1.1,
-              fontWeight: FontWeight.w600,
-              color: AppColors.forest,
-            ),
+            style: AppTextStyles.titleLarge.copyWith(height: 1.1),
           ),
           const SizedBox(height: 18),
           ...actions.map(
@@ -82,12 +78,7 @@ class _QuickActionButton extends StatelessWidget {
                   child: Text(
                     action.title,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.charcoalDark,
-                    ),
+                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark, height: 1),
                   ),
                 ),
                 const SizedBox(width: 12),

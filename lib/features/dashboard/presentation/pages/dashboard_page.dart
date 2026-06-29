@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animate_do/animate_do.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
@@ -261,7 +262,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Directionality(
+    return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,23 +270,13 @@ class _Header extends StatelessWidget {
           Text(
             'لوحة رئيس الدائرة',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 30,
-              height: 1.15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.forest,
-            ),
+            style: AppTextStyles.displayMedium,
           ),
           SizedBox(height: 6),
           Text(
             'الأحد، 31 يناير 2024 — نظرة شاملة على معاملات الدائرة',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.2,
-              fontWeight: FontWeight.w400,
-              color: AppColors.goldDark,
-            ),
+            style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
-// import 'package:flutter/material.dart';
+// import '../theme/app_text_styles.dart';
+import 'package:flutter/material.dart';
 
 // import '../theme/app_colors.dart';
 
@@ -55,12 +56,7 @@
 //               Expanded(
 //                 child: Text(
 //                   message,
-//                   style: const TextStyle(
-//                     color: Colors.white,
-//                     fontSize: 15,
-//                     fontWeight: FontWeight.w600,
-//                     height: 1.4,
-//                   ),
+//                   style: AppTextStyles.titleSmall.copyWith(fontWeight: AppTextStyles.semiBold, color: Colors.white, height: 1.4),
 //                 ),
 //               ),
 //             ],

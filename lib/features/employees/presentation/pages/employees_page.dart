@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -49,7 +50,7 @@ class _EmployeesView extends StatelessWidget {
               children: [
                 Text(
                   state.message,
-                  style: const TextStyle(color: AppColors.charcoalDark, fontSize: 16),
+                  style: AppTextStyles.titleMedium,
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
@@ -79,22 +80,14 @@ class _EmployeesView extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'الموظفين',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.forest,
-                        ),
+                        style: AppTextStyles.headlineLarge.copyWith(fontSize: 28, color: AppColors.forest),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${state.allEmployees.length} موظف في الدائرة',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.goldDark.withOpacity(0.85),
-                        ),
+                        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.goldDark.withOpacity(0.85)),
                       ),
                     ],
                   ),

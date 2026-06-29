@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -40,22 +41,12 @@ class MyTxAlertBanner extends StatelessWidget {
               children: [
                 Text(
                   'لديك $urgentCount معاملات مستعجلة تحتاج توقيعك في أقرب وقت',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.3,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.umber,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.umber),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'المعاملات المستعجلة مشارة بأيقونة التحذير',
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.1,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.umber,
-                  ),
+                  style: AppTextStyles.labelLarge.copyWith(color: AppColors.umber, height: 1.1),
                 ),
               ],
             ),

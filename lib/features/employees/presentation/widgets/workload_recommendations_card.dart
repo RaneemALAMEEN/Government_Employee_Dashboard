@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -44,16 +45,13 @@ class WorkloadRecommendationsCard extends StatelessWidget {
         children: [
           Row(
             textDirection: TextDirection.rtl,
-            children: const [
+            children: [
               Icon(LucideIcons.lightbulb, color: AppColors.forest, size: 20),
               SizedBox(width: 8),
               Text(
                 'توصيات توزيع العمل',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: AppTextStyles.bold, color: AppColors.forest),
               ),
             ],
           ),
@@ -66,7 +64,8 @@ class WorkloadRecommendationsCard extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = items[index];
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: item.bgColor,
                   borderRadius: const BorderRadius.only(
@@ -86,16 +85,10 @@ class WorkloadRecommendationsCard extends StatelessWidget {
                   item.text,
                   textAlign: TextAlign.right,
                   textDirection: TextDirection.rtl,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.4,
-                    fontWeight: FontWeight.w600,
-                    color: item.borderColor == AppColors.umber
-                        ? AppColors.umberLight
-                        : item.borderColor == AppColors.goldDark
-                            ? AppColors.goldDark
-                            : AppColors.forest,
-                  ),
+                  style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: AppTextStyles.semiBold,
+                      color: item.borderColor,
+                      height: 1.4),
                 ),
               );
             },

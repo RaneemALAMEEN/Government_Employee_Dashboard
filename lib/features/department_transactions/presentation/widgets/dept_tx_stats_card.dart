@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
 
@@ -35,21 +36,12 @@ class DeptTxStatsCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
-              height: 1,
-            ),
+            style: AppTextStyles.displayMedium.copyWith(fontSize: 32, color: valueColor, height: 1),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.charcoal,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium),
           ),
         ],
       ),

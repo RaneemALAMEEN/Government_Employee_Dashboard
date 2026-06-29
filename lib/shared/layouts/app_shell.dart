@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'responsive_layout.dart';
 import 'side_menu.dart';
 import 'top_bar.dart';
 

@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -59,11 +60,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
               children: [
                 Text(
                   '${widget.transactions.length} معاملة',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                 ),
                 const Spacer(),
                 Row(
@@ -77,11 +74,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
                     const SizedBox(width: 6),
                     Text(
                       'للعرض والمتابعة فقط',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.charcoal.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.8)),
                     ),
                   ],
                 ),
@@ -116,13 +109,9 @@ class _DeptTxTableState extends State<DeptTxTable> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            const Text(
+                            Text(
                               'لا توجد معاملات تطابق الفلترة',
-                              style: TextStyle(
-                                color: AppColors.charcoal,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium),
                             ),
                           ],
                         ),
@@ -222,11 +211,7 @@ class _TransactionRow extends StatelessWidget {
               child: Center(
                 child: Text(
                   tx.number,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.forest,
-                  ),
+                  style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
                 ),
               ),
             ),
@@ -249,12 +234,7 @@ class _TransactionRow extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.2,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.charcoalDark,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
                     ),
                   ),
                 ],
@@ -273,12 +253,7 @@ class _TransactionRow extends StatelessWidget {
                   ),
                   child: Text(
                     tx.classification,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      height: 1,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.forest, height: 1),
                   ),
                 ),
               ),
@@ -297,11 +272,7 @@ class _TransactionRow extends StatelessWidget {
                     backgroundColor: avatarBgColor,
                     child: Text(
                       firstLetter,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: Colors.white),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -309,11 +280,7 @@ class _TransactionRow extends StatelessWidget {
                     child: Text(
                       tx.assignedTo,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.charcoalDark,
-                      ),
+                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
                     ),
                   ),
                   if (tx.isAssignedToMe) ...[
@@ -324,14 +291,9 @@ class _TransactionRow extends StatelessWidget {
                         color: AppColors.gold.withOpacity(0.25),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
+                      child: Text(
                         'أنت',
-                        style: TextStyle(
-                          fontSize: 9,
-                          height: 1,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.goldDark,
-                        ),
+                        style: AppTextStyles.labelSmall.copyWith(fontSize: 9, fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
                       ),
                     ),
                   ],
@@ -357,7 +319,7 @@ class _TransactionRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
@@ -368,12 +330,7 @@ class _TransactionRow extends StatelessWidget {
                           SizedBox(width: 6),
                           Text(
                             'عرض التفاصيل',
-                            style: TextStyle(
-                              color: AppColors.forest,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              height: 1,
-                            ),
+                            style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest, height: 1),
                           ),
                         ],
                       ),
@@ -419,12 +376,7 @@ class _HeaderText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: AppColors.charcoal,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
       ),
     );
   }
@@ -450,12 +402,7 @@ class _CellText extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          height: 1.25,
-          fontWeight: FontWeight.w400,
-          color: color ?? AppColors.charcoalDark,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(color: color ?? AppColors.charcoalDark, height: 1.25),
       ),
     );
   }
@@ -497,12 +444,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
       ),
     );
   }

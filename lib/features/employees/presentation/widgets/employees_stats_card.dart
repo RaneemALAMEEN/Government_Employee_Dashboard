@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
 
@@ -56,12 +57,7 @@ class EmployeesStatsCard extends StatelessWidget {
               ),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.forest,
-                  height: 1.1,
-                ),
+                style: AppTextStyles.headlineLarge.copyWith(fontSize: 28, color: AppColors.forest, height: 1.1),
               ),
             ],
           ),
@@ -70,11 +66,7 @@ class EmployeesStatsCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppColors.charcoal.withOpacity(0.8),
-              ),
+              style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.8)),
             ),
           ),
         ],

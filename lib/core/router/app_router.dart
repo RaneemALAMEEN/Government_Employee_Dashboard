@@ -9,6 +9,9 @@ import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/my_transactions/presentation/pages/my_transactions_page.dart';
 import '../../features/my_transactions/presentation/pages/transaction_details_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
+import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
+import '../../features/internal_transactions/presentation/pages/create_internal_transaction_page.dart';
+import '../../features/internal_transactions/presentation/pages/internal_transaction_form_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
 
@@ -74,8 +77,23 @@ class AppRouter {
           GoRoute(
             path: '/internal-transactions',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ComingSoonPage(title: 'المعاملات الداخلية'),
+              child: InternalTransactionsPage(),
             ),
+          ),
+          GoRoute(
+            path: '/create-internal-transaction',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CreateInternalTransactionPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/internal-transaction-form',
+            pageBuilder: (context, state) {
+              final processId = state.extra as int? ?? 0;
+              return NoTransitionPage(
+                child: InternalTransactionFormPage(processId: processId),
+              );
+            },
           ),
           GoRoute(
             path: '/department-transactions',

@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +51,7 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
               children: [
                 Text(
                   state.message,
-                  style: const TextStyle(color: AppColors.charcoalDark, fontSize: 16),
+                  style: AppTextStyles.titleMedium,
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
@@ -98,7 +99,7 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                 cursor: SystemMouseCursors.click,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(
                       LucideIcons.arrowRight, // mirrors in RTL to face right for back
                       color: AppColors.forest,
@@ -107,11 +108,7 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                     SizedBox(width: 8),
                     Text(
                       'العودة إلى قائمة الموظفين',
-                      style: TextStyle(
-                        color: AppColors.forest,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
                     ),
                   ],
                 ),
@@ -229,11 +226,7 @@ class _HeroProfileCard extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     employee.avatarLetter,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.white,
-                    ),
+                    style: AppTextStyles.headlineLarge.copyWith(fontSize: 28, color: AppColors.white),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -246,11 +239,7 @@ class _HeroProfileCard extends StatelessWidget {
                         children: [
                           Text(
                             employee.name,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.white,
-                            ),
+                            style: AppTextStyles.headlineLarge.copyWith(color: AppColors.white),
                           ),
                           const SizedBox(width: 14),
                           // Badges
@@ -277,11 +266,7 @@ class _HeroProfileCard extends StatelessWidget {
                         children: [
                           Text(
                             employee.role,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.white.withOpacity(0.8),
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.white.withOpacity(0.8)),
                           ),
                           const SizedBox(width: 16),
                           Container(
@@ -298,11 +283,7 @@ class _HeroProfileCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             employee.department,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.white.withOpacity(0.8),
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.white.withOpacity(0.8)),
                           ),
                         ],
                       ),
@@ -379,11 +360,7 @@ class _HeroBadge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: color),
       ),
     );
   }
@@ -404,20 +381,12 @@ class _MetaRowItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.white.withOpacity(0.5),
-            fontWeight: FontWeight.w500,
-          ),
+          style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.white.withOpacity(0.5)),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.white),
         ),
       ],
     );
@@ -515,11 +484,7 @@ class _StatsCardsGrid extends StatelessWidget {
                       Icon(item.icon, color: item.color, size: 18),
                       Text(
                         item.value,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: item.color,
-                        ),
+                        style: AppTextStyles.headlineMedium.copyWith(color: item.color),
                       ),
                     ],
                   ),
@@ -528,11 +493,7 @@ class _StatsCardsGrid extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: Text(
                       item.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal.withOpacity(0.7),
-                      ),
+                      style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoal.withOpacity(0.7)),
                     ),
                   ),
                 ],
@@ -713,13 +674,9 @@ class _InfoTabsCard extends StatelessWidget {
         const SizedBox(height: 24),
         Container(height: 1, color: AppColors.gold.withOpacity(0.15)),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'الصلاحيات الممنوحة',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppColors.forest,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -741,11 +698,7 @@ class _InfoTabsCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     perm,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
                   ),
                 ],
               ),
@@ -769,20 +722,12 @@ class _InfoTabsCard extends StatelessWidget {
         children: [
           Text(
             key,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: AppColors.charcoal.withOpacity(0.5),
-            ),
+            style: AppTextStyles.labelSmall.copyWith(color: AppColors.charcoal.withOpacity(0.5)),
           ),
           const SizedBox(height: 3),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.charcoalDark,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
           ),
         ],
       ),
@@ -823,11 +768,7 @@ class _TabButton extends StatelessWidget {
         ),
         child: Text(
           title,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-            color: isActive ? AppColors.forest : AppColors.charcoal.withOpacity(0.8),
-          ),
+          style: AppTextStyles.bodySmall.copyWith(fontWeight: isActive ? FontWeight.w700 : FontWeight.w500, color: isActive ? AppColors.forest : AppColors.charcoal.withOpacity(0.8)),
         ),
       ),
     );
@@ -865,13 +806,9 @@ class _AssignedTransactionsTable extends StatelessWidget {
             child: Row(
               textDirection: TextDirection.rtl,
               children: [
-                const Text(
+                Text(
                   'المعاملات المسندة حالياً',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.forest,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -882,11 +819,7 @@ class _AssignedTransactionsTable extends StatelessWidget {
                   ),
                   child: Text(
                     '${transactions.length} معاملة',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.goldDark,
-                    ),
+                    style: AppTextStyles.labelSmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
                   ),
                 ),
               ],
@@ -922,13 +855,9 @@ class _AssignedTransactionsTable extends StatelessWidget {
                     Container(
                       height: 100,
                       alignment: Alignment.center,
-                      child: const Text(
+                      child: Text(
                         'لا توجد معاملات مسندة حالياً للموظف',
-                        style: TextStyle(
-                          color: AppColors.charcoal,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium),
                       ),
                     )
                   else
@@ -956,11 +885,7 @@ class _AssignedTransactionsTable extends StatelessWidget {
                                   alignment: Alignment.centerRight,
                                   child: Text(
                                     tx.number,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.forest,
-                                    ),
+                                    style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
                                   ),
                                 ),
                               ),
@@ -973,11 +898,7 @@ class _AssignedTransactionsTable extends StatelessWidget {
                                     tx.type,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.charcoalDark,
-                                    ),
+                                    style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
                                   ),
                                 ),
                               ),
@@ -987,11 +908,7 @@ class _AssignedTransactionsTable extends StatelessWidget {
                                 child: Center(
                                   child: Text(
                                     tx.receiveDate,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.charcoal.withOpacity(0.7),
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                    style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.7)),
                                   ),
                                 ),
                               ),
@@ -1015,11 +932,7 @@ class _AssignedTransactionsTable extends StatelessWidget {
                                 child: Center(
                                   child: Text(
                                     '${tx.durationDays} يوم',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.charcoalDark,
-                                    ),
+                                    style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                                   ),
                                 ),
                               ),
@@ -1061,11 +974,7 @@ class _SubTableHeaderText extends StatelessWidget {
     return Text(
       text,
       textAlign: text == 'رقم المعاملة' || text == 'النوع' ? TextAlign.right : TextAlign.center,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: AppColors.charcoal,
-      ),
+      style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.bold),
     );
   }
 }
@@ -1085,11 +994,7 @@ class _PriorityBadge extends StatelessWidget {
       ),
       child: Text(
         priority,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: isHigh ? AppColors.umberLight : AppColors.goldDark,
-        ),
+        style: AppTextStyles.labelSmall.copyWith(fontWeight: AppTextStyles.bold, color: isHigh ? AppColors.umberLight : AppColors.goldDark),
       ),
     );
   }
@@ -1110,11 +1015,7 @@ class _TxStatusBadge extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: isReview ? Colors.blue.shade700 : AppColors.goldDark,
-        ),
+        style: AppTextStyles.labelSmall.copyWith(fontWeight: AppTextStyles.bold, color: isReview ? Colors.blue.shade700 : AppColors.goldDark),
       ),
     );
   }
@@ -1146,16 +1047,12 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
         children: [
           Row(
             textDirection: TextDirection.rtl,
-            children: const [
+            children: [
               Icon(LucideIcons.star, color: AppColors.forest, size: 20),
               SizedBox(width: 8),
               Text(
                 'مؤشرات الأداء',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
               ),
             ],
           ),
@@ -1169,21 +1066,13 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
                 textDirection: TextDirection.rtl,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'معدل الإنجاز',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.charcoalDark,
-                    ),
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                   ),
                   Text(
                     '${employee.completionRate}%',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
                   ),
                 ],
               ),
@@ -1202,11 +1091,7 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'متوسط القسم: 78%',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.charcoal.withOpacity(0.5),
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.5)),
                 ),
               ),
             ],
@@ -1225,11 +1110,7 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
               children: [
                 Text(
                   'متوسط زمن المعالجة',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.charcoal.withOpacity(0.6),
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoal.withOpacity(0.6)),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -1238,23 +1119,15 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
                   children: [
                     Text(
                       '${employee.avgProcessingTimeDays} يوم',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.forest,
-                      ),
+                      style: AppTextStyles.headlineMedium,
                     ),
                     Row(
-                      children: const [
+                      children: [
                         Icon(LucideIcons.trendingDown, size: 14, color: AppColors.forest),
                         SizedBox(width: 4),
                         Text(
                           'أفضل من المتوسط',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.forest,
-                          ),
+                          style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
                         ),
                       ],
                     ),
@@ -1263,11 +1136,7 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'متوسط القسم 2.4 يوم',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.charcoal.withOpacity(0.45),
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.45)),
                 ),
               ],
             ),
@@ -1275,13 +1144,9 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Custom Monthly Bar Chart
-          const Text(
+          Text(
             'المعاملات الشهرية (آخر 6 أشهر)',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.charcoalDark,
-            ),
+            style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.charcoalDark),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -1307,11 +1172,7 @@ class _PerformanceIndicatorsCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '$count',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoal,
-                      ),
+                      style: AppTextStyles.labelSmall.copyWith(fontWeight: AppTextStyles.semiBold),
                     ),
                   ],
                 );
@@ -1352,13 +1213,9 @@ class _CurrentWorkloadCard extends StatelessWidget {
             textDirection: TextDirection.rtl,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'حجم العمل الحالي',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
               ),
               if (employee.workloadPercentage >= 80)
                 Container(
@@ -1367,13 +1224,9 @@ class _CurrentWorkloadCard extends StatelessWidget {
                     color: AppColors.umber.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
+                  child: Text(
                     'ضغط مرتفع',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.umberLight,
-                    ),
+                    style: AppTextStyles.labelSmall.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.umberLight),
                   ),
                 ),
             ],
@@ -1385,21 +1238,13 @@ class _CurrentWorkloadCard extends StatelessWidget {
             textDirection: TextDirection.rtl,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'نسبة الحمل',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.charcoal,
-                ),
+                style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold),
               ),
               Text(
                 '${employee.workloadPercentage}%',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
               ),
             ],
           ),
@@ -1437,19 +1282,11 @@ class _CurrentWorkloadCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.charcoal.withOpacity(0.7),
-            fontWeight: FontWeight.w500,
-          ),
+          style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.7)),
         ),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: isWarning ? AppColors.umberLight : AppColors.charcoalDark,
-          ),
+          style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: isWarning ? AppColors.umberLight : AppColors.charcoalDark),
         ),
       ],
     );

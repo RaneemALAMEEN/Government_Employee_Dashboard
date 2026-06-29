@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -82,12 +83,7 @@ class StatCard extends StatelessWidget {
                   textAlign: TextAlign.right,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.25,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.charcoal,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(height: 1.25),
                 ),
                 const SizedBox(height: 7),
                 Text(
@@ -95,12 +91,7 @@ class StatCard extends StatelessWidget {
                   textAlign: TextAlign.right,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.2,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.goldDark,
-                  ),
+                  style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
                 ),
               ],
             ),
@@ -112,12 +103,7 @@ class StatCard extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 stat.value,
-                style: const TextStyle(
-                  fontSize: 34,
-                  height: 1,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.displayLarge,
               ),
             ),
           ),

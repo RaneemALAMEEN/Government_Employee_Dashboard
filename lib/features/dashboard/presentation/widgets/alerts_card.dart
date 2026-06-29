@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -29,17 +30,12 @@ class AlertsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Row(
+          Row(
             textDirection: TextDirection.rtl,
             children: [
               Text(
                 'التنبيهات التشغيلية',
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1.1,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleLarge.copyWith(height: 1.1),
               ),
               SizedBox(width: 8),
               Icon(LucideIcons.bell, size: 18, color: AppColors.umber),
@@ -89,12 +85,7 @@ class _AlertItem extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.25,
-                fontWeight: FontWeight.w400,
-                color: AppColors.umber,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.umber, height: 1.25),
             ),
           ),
         ],

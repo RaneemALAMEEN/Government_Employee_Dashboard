@@ -1,3 +1,4 @@
+import '../theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -25,7 +26,6 @@ class SideMenu extends StatelessWidget {
       const _MenuItem(LucideIcons.fileText, 'معاملاتي', '/my-transactions'),
       const _MenuItem(LucideIcons.inbox, 'المعاملات الداخلية', '/internal-transactions', badge: 12),
       const _MenuItem(LucideIcons.building, 'معاملات الدائرة', '/department-transactions'),
-      const _MenuItem(LucideIcons.edit3, 'مسوداتي', '/drafts', badge: 4),
       const _MenuItem(LucideIcons.users, 'الموظفين', '/employees'),
       const _MenuItem(LucideIcons.messageSquare, 'الشكاوى', '/complaints'),
     ];
@@ -62,24 +62,14 @@ class SideMenu extends StatelessWidget {
                     ),
                     if (!isCollapsed) ...[
                       const SizedBox(height: 11),
-                      const Text(
+                      Text(
                         'مديرية التربية',
-                        style: TextStyle(
-                          fontSize: 20,
-                          height: 1.15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.forest,
-                        ),
+                        style: AppTextStyles.headlineMedium,
                       ),
                       const SizedBox(height: 7),
-                      const Text(
+                      Text(
                         'ريف دمشق',
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.goldDark,
-                        ),
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.goldDark, height: 1),
                       ),
                       const SizedBox(height: 8),
                       ValueListenableBuilder<String>(
@@ -93,12 +83,7 @@ class SideMenu extends StatelessWidget {
                             ),
                             child: Text(
                               activeRole,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                height: 1,
-                                color: AppColors.forest,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.forest),
                             ),
                           );
                         },
@@ -126,10 +111,7 @@ class SideMenu extends StatelessWidget {
                               'تم تغيير الدور إلى: $newRole',
                               textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold),
                             ),
                             duration: const Duration(seconds: 2),
                           ),
@@ -144,19 +126,14 @@ class SideMenu extends StatelessWidget {
                             final showFullLogout = logoutConstraints.maxWidth > 150;
 
                             return showFullLogout
-                                ? const Row(
+                                ? Row(
                                     textDirection: TextDirection.rtl,
                                     children: [
-                                      Icon(LucideIcons.refreshCw, color: AppColors.umber, size: 20),
-                                      SizedBox(width: 12),
+                                      const Icon(LucideIcons.refreshCw, color: AppColors.umber, size: 20),
+                                      const SizedBox(width: 12),
                                       Text(
                                         'تغيير الدور',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          height: 1,
-                                          color: AppColors.umber,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                        style: AppTextStyles.bodyLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.umber, height: 1),
                                       ),
                                     ],
                                   )
@@ -187,19 +164,14 @@ class SideMenu extends StatelessWidget {
                             final showFullLogout = logoutConstraints.maxWidth > 150;
 
                             return showFullLogout
-                                ? const Row(
+                                ? Row(
                                     textDirection: TextDirection.rtl,
                                     children: [
-                                      Icon(LucideIcons.logOut, color: AppColors.umber, size: 20),
-                                      SizedBox(width: 12),
+                                      const Icon(LucideIcons.logOut, color: AppColors.umber, size: 20),
+                                      const SizedBox(width: 12),
                                       Text(
                                         'تسجيل الخروج',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          height: 1,
-                                          color: AppColors.umber,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                        style: AppTextStyles.bodyLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.umber, height: 1),
                                       ),
                                     ],
                                   )
@@ -272,12 +244,7 @@ class _SideMenuTile extends StatelessWidget {
                           item.title,
                           maxLines: 1,
                           overflow: TextOverflow.clip,
-                          style: TextStyle(
-                            fontSize: 15,
-                            height: 1,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color: isSelected ? AppColors.forest : AppColors.charcoalDark,
-                          ),
+                          style: AppTextStyles.bodyLarge.copyWith(fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, color: isSelected ? AppColors.forest : AppColors.charcoalDark, height: 1),
                         ),
                       ),
                       if (item.badge != null) ...[
@@ -289,12 +256,7 @@ class _SideMenuTile extends StatelessWidget {
                           ),
                           child: Text(
                             '${item.badge}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              height: 1,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.forest,
-                            ),
+                            style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest, height: 1),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -332,3 +294,4 @@ class _MenuItem {
 
   const _MenuItem(this.icon, this.title, this.route, {this.badge});
 }
+

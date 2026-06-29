@@ -389,7 +389,7 @@ class _OtpPageState extends State<OtpPage>
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'الجمهورية العربية السورية',
+                    'مديرية تربية ريف دمشق',
                     style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -666,7 +666,7 @@ class _LoginIllustration extends StatelessWidget {
             ),
             const SizedBox(height: 36),
             Text(
-              'الجمهورية العربية السورية',
+              'مديرية تربية ريف دمشق',
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 22,

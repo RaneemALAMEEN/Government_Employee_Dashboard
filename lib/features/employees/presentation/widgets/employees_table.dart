@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -58,13 +59,9 @@ class _EmployeesTableState extends State<EmployeesTable> {
                 Container(
                   height: 120,
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     'لا يوجد موظفون يطابقون البحث',
-                    style: TextStyle(
-                      color: AppColors.charcoal,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium),
                   ),
                 )
               else
@@ -160,11 +157,7 @@ class _EmployeeRow extends StatelessWidget {
                     backgroundColor: avatarColor.withOpacity(0.12),
                     child: Text(
                       employee.avatarLetter,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: avatarColor,
-                      ),
+                      style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: avatarColor),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -174,20 +167,12 @@ class _EmployeeRow extends StatelessWidget {
                     children: [
                       Text(
                         employee.name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.forest,
-                        ),
+                        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         employee.department,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.charcoal.withOpacity(0.6),
-                        ),
+                        style: AppTextStyles.labelMedium.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
                       ),
                     ],
                   ),
@@ -201,11 +186,7 @@ class _EmployeeRow extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: Text(
                   employee.role,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
                 ),
               ),
             ),
@@ -215,11 +196,7 @@ class _EmployeeRow extends StatelessWidget {
               child: Center(
                 child: Text(
                   '${employee.activeTxCount}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                 ),
               ),
             ),
@@ -229,11 +206,7 @@ class _EmployeeRow extends StatelessWidget {
               child: Center(
                 child: Text(
                   '${employee.doneTxCount}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                 ),
               ),
             ),
@@ -246,11 +219,7 @@ class _EmployeeRow extends StatelessWidget {
                 children: [
                   Text(
                     '${employee.workloadPercentage}%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.charcoalDark,
-                    ),
+                    style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -327,11 +296,7 @@ class _HeaderText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.charcoal,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold),
       ),
     );
   }
@@ -370,12 +335,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.bold, color: fg, height: 1),
       ),
     );
   }

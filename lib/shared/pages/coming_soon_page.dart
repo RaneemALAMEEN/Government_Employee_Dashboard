@@ -1,3 +1,4 @@
+import '../theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -54,31 +55,18 @@ class ComingSoonPage extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.forest,
-                      height: 1.2,
-                    ),
+                    style: AppTextStyles.headlineMedium.copyWith(fontSize: 22, height: 1.2),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'قريباً جداً',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.goldDark,
-                    ),
+                    style: AppTextStyles.titleMedium.copyWith(color: AppColors.goldDark),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'هذه الصفحة قيد التطوير حالياً، ونعمل بجد لإتاحتها لكم في أقرب وقت لتوفير تجربة مستخدم متكاملة ورائعة.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: AppColors.charcoal.withOpacity(0.65),
-                    ),
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.65), height: 1.5),
                   ),
                 ],
               ),
