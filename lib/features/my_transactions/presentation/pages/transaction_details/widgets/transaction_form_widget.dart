@@ -4,7 +4,8 @@ import 'package:animate_do/animate_do.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/presentation/widgets/dynamic_form_widget_renderer.dart';
 import 'package:government_employee_dashboard/shared/theme/app_colors.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+
 
 class TransactionFormWidget extends StatelessWidget {
   final List<DynamicWidgetEntity> widgets;

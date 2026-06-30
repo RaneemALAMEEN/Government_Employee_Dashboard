@@ -1,17 +1,19 @@
-import 'package:government_employee_dashboard/features/internal_transactions/data/models/internal_transaction_counts_model.dart';
-import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/internal_transaction_counts_entity.dart';
-import '../../domain/entities/dynamic_form_entity.dart';
 import 'package:dio/dio.dart' as dio;
-import '../models/dynamic_form_model.dart';
+
 import '../../../../core/enums/api_method.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
+import '../../domain/entities/dynamic_form_entity.dart';
 import '../../domain/entities/internal_category_entity.dart';
-import '../../domain/entities/internal_process_entity.dart';
+import '../../domain/entities/internal_processes_page_entity.dart';
+import '../../domain/entities/internal_transaction_counts_entity.dart';
+import '../../domain/entities/internal_transactions_page_entity.dart';
+import '../models/dynamic_form_model.dart';
 import '../models/internal_category_model.dart';
 import '../models/internal_processes_page_model.dart';
-import '../../domain/entities/internal_transaction_entity.dart';
-import '../models/internal_transaction_model.dart';
+import '../models/internal_transaction_counts_model.dart';
+import '../models/internal_transactions_page_model.dart';
 
 class InternalTransactionsRemoteDataSource {
   final ApiService apiService;
@@ -27,7 +29,7 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as List? ?? [];
 
@@ -47,7 +49,7 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? response;
         return DynamicFormModel.fromJson(data);
@@ -73,7 +75,7 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         return data;
@@ -81,7 +83,7 @@ class InternalTransactionsRemoteDataSource {
     );
   }
 
-  Future<InternalProcessesPageData> getProcessesByCategory({
+  Future<InternalProcessesPageEntity> getProcessesByCategory({
     required int categoryId,
     required int page,
     required int limit,
@@ -96,7 +98,7 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         return InternalProcessesPageModel.fromJson(data);
@@ -111,7 +113,7 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         return InternalTransactionCountsModel.fromJson(data);
@@ -119,7 +121,7 @@ class InternalTransactionsRemoteDataSource {
     );
   }
 
-  Future<InternalTransactionsPageData> getMyTransactions({
+  Future<InternalTransactionsPageEntity> getMyTransactions({
     required int page,
     required int limit,
     String? status,
@@ -135,27 +137,10 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
-        final itemsJson = data['items'] as List? ?? [];
-        final pagination = data['pagination'] as Map<String, dynamic>? ?? {};
-
-        return InternalTransactionsPageData(
-          items: itemsJson
-              .map(
-                (item) => InternalTransactionModel.fromJson(
-                  item as Map<String, dynamic>,
-                ),
-              )
-              .toList(),
-          page: pagination['page'] ?? 1,
-          limit: pagination['limit'] ?? limit,
-          total: pagination['total'] ?? 0,
-          totalPages: pagination['total_pages'] ?? 1,
-          hasNext: pagination['has_next'] ?? false,
-          hasPrev: pagination['has_prev'] ?? false,
-        );
+        return InternalTransactionsPageModel.fromJson(data);
       },
     );
   }
@@ -173,7 +158,7 @@ class InternalTransactionsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw ServerException(failure.message),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         return data;
@@ -182,59 +167,18 @@ class InternalTransactionsRemoteDataSource {
   }
 
   Future<Map<String, dynamic>> completeSignedTransaction({
-  required int transactionId,
-  required Map<String, dynamic> payload,
-}) async {
-  final result = await apiService.makeRequest(
-    method: ApiMethod.post,
-    endPoint: _endPoints.completeSignedTransaction(transactionId),
-    body: payload,
-  );
+    required int transactionId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.completeSignedTransaction(transactionId),
+      body: payload,
+    );
 
-  return result.fold(
-    (failure) => throw Exception(failure.message),
-    (response) => response as Map<String, dynamic>,
-  );
-}
-
-}
-
-class InternalProcessesPageData {
-  final List<InternalProcessEntity> items;
-  final int page;
-  final int limit;
-  final int total;
-  final int totalPages;
-  final bool hasNext;
-  final bool hasPrev;
-
-  const InternalProcessesPageData({
-    required this.items,
-    required this.page,
-    required this.limit,
-    required this.total,
-    required this.totalPages,
-    required this.hasNext,
-    required this.hasPrev,
-  });
-}
-
-class InternalTransactionsPageData {
-  final List<InternalTransactionEntity> items;
-  final int page;
-  final int limit;
-  final int total;
-  final int totalPages;
-  final bool hasNext;
-  final bool hasPrev;
-
-  const InternalTransactionsPageData({
-    required this.items,
-    required this.page,
-    required this.limit,
-    required this.total,
-    required this.totalPages,
-    required this.hasNext,
-    required this.hasPrev,
-  });
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) => response as Map<String, dynamic>,
+    );
+  }
 }

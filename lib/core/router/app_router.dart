@@ -1,5 +1,12 @@
 import 'package:go_router/go_router.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:government_employee_dashboard/features/internal_transactions/presentation/bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
+import 'package:government_employee_dashboard/features/internal_transactions/presentation/bloc/internal_transaction_form/internal_transaction_form_event.dart';
+import '../../features/internal_transactions/presentation/bloc/create_internal_transaction/create_internal_transaction_bloc.dart';
+import '../../features/internal_transactions/presentation/bloc/create_internal_transaction/create_internal_transaction_event.dart';
+import '../di/injection.dart';
+import '../../features/internal_transactions/presentation/bloc/internal_transactions_bloc.dart';
+import '../../features/internal_transactions/presentation/bloc/internal_transactions_event.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -76,22 +83,35 @@ class AppRouter {
           ),
           GoRoute(
             path: '/internal-transactions',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: InternalTransactionsPage(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider(
+                create: (_) => getIt<InternalTransactionsBloc>()
+                  ..add(const LoadInternalTransactionsOverview()),
+                child: const InternalTransactionsPage(),
+              ),
             ),
           ),
           GoRoute(
             path: '/create-internal-transaction',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CreateInternalTransactionPage(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider(
+                create: (_) => getIt<CreateInternalTransactionBloc>()
+                  ..add(const LoadCreateInternalTransactionData()),
+                child: const CreateInternalTransactionPage(),
+              ),
             ),
           ),
           GoRoute(
             path: '/internal-transaction-form',
             pageBuilder: (context, state) {
               final processId = state.extra as int? ?? 0;
+
               return NoTransitionPage(
-                child: InternalTransactionFormPage(processId: processId),
+                child: BlocProvider(
+                  create: (_) => getIt<InternalTransactionFormBloc>()
+                    ..add(LoadInternalTransactionForm(processId)),
+                  child: InternalTransactionFormPage(processId: processId),
+                ),
               );
             },
           ),
@@ -133,4 +153,3 @@ class AppRouter {
     ],
   );
 }
-

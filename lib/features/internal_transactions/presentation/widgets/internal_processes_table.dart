@@ -1,132 +1,96 @@
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:government_employee_dashboard/core/di/injection.dart';
-import 'package:government_employee_dashboard/core/services/api_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/theme/app_colors.dart';
-import '../../data/datasources/internal_transactions_remote_data_source.dart';
 import '../../domain/entities/internal_transaction_entity.dart';
+import '../bloc/internal_transactions_bloc.dart';
+import '../bloc/internal_transactions_event.dart';
+import '../bloc/internal_transactions_state.dart';
 
-class InternalProcessesTable extends StatefulWidget {
+class InternalProcessesTable extends StatelessWidget {
   const InternalProcessesTable({super.key});
 
-  @override
-  State<InternalProcessesTable> createState() => _InternalProcessesTableState();
-}
-
-class _InternalProcessesTableState extends State<InternalProcessesTable> {
-  final _dataSource = InternalTransactionsRemoteDataSource(
-    getIt<ApiService>(),
-  );
-
-  InternalTransactionsPageData? _pageData;
-
-  bool _loading = true;
-  String? _errorMessage;
-
-  int _page = 1;
-  static const int _limit = 10;
   static const double _minTableWidth = 1100;
 
   @override
-  void initState() {
-    super.initState();
-    _loadTransactions();
-  }
-
-  Future<void> _loadTransactions() async {
-    setState(() {
-      _loading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final data = await _dataSource.getMyTransactions(
-        page: _page,
-        limit: _limit,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _pageData = data;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _loading = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
-  void _goToPage(int page) {
-    setState(() => _page = page);
-    _loadTransactions();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const SizedBox(
-        height: 240,
-        child: Center(
-          child: CircularProgressIndicator(color: AppColors.forest),
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return _ErrorBox(message: _errorMessage!);
-    }
-
-    final data = _pageData!;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withOpacity(0.22)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tableWidth = constraints.maxWidth < _minTableWidth
-              ? _minTableWidth
-              : constraints.maxWidth;
-
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: tableWidth,
-              child: Column(
-                children: [
-                  _Table(items: data.items),
-                  _Pagination(
-                    page: data.page,
-                    totalPages: data.totalPages,
-                    total: data.total,
-                    limit: data.limit,
-                    hasNext: data.hasNext,
-                    hasPrev: data.hasPrev,
-                    onPageChanged: _goToPage,
-                  ),
-                ],
-              ),
+    return BlocBuilder<InternalTransactionsBloc, InternalTransactionsState>(
+      builder: (context, state) {
+        if (state.loadingTransactions) {
+          return const SizedBox(
+            height: 240,
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.forest),
             ),
           );
-        },
-      ),
+        }
+
+        if (state.errorMessage != null &&
+            state.transactionsPageData == null) {
+          return _ErrorBox(message: state.errorMessage!);
+        }
+
+        final data = state.transactionsPageData;
+
+        if (data == null) {
+          return const SizedBox(
+            height: 240,
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.forest),
+            ),
+          );
+        }
+
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.gold.withOpacity(0.22)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.charcoal.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final tableWidth = constraints.maxWidth < _minTableWidth
+                  ? _minTableWidth
+                  : constraints.maxWidth;
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    children: [
+                      _Table(items: data.items),
+                      _Pagination(
+                        page: data.page,
+                        totalPages: data.totalPages,
+                        total: data.total,
+                        limit: data.limit,
+                        hasNext: data.hasNext,
+                        hasPrev: data.hasPrev,
+                        onPageChanged: (page) {
+                          context.read<InternalTransactionsBloc>().add(
+                                LoadInternalTransactionsPage(page: page),
+                              );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -147,7 +111,10 @@ class _Table extends StatelessWidget {
             child: Center(
               child: Text(
                 'لا توجد معاملات حالياً',
-                style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: AppTextStyles.semiBold,
+                  color: AppColors.goldDark,
+                ),
               ),
             ),
           )
@@ -274,7 +241,9 @@ class _HeaderCell extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold),
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: AppTextStyles.bold,
+          ),
         ),
       ),
     );
@@ -307,7 +276,10 @@ class _BodyCell extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyMedium.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoal),
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: fontWeight,
+            color: color ?? AppColors.charcoal,
+          ),
         ),
       ),
     );
@@ -334,7 +306,10 @@ class _ProgressBadge extends StatelessWidget {
         child: Text(
           '$safePercent%',
           textAlign: TextAlign.center,
-          style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
+          style: AppTextStyles.bodySmall.copyWith(
+            fontWeight: AppTextStyles.bold,
+            color: AppColors.forest,
+          ),
         ),
       ),
     );
@@ -362,7 +337,10 @@ class _StatusBadge extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
-        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: data.textColor),
+        style: AppTextStyles.bodySmall.copyWith(
+          fontWeight: AppTextStyles.semiBold,
+          color: data.textColor,
+        ),
       ),
     );
   }
@@ -448,18 +426,21 @@ class _DetailsButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.visibility_outlined,
               size: 15,
               color: AppColors.charcoal,
             ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
                 'عرض التفاصيل',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: AppTextStyles.medium,
+                  color: AppColors.charcoalDark,
+                ),
               ),
             ),
           ],
@@ -487,6 +468,7 @@ class _Pagination extends StatelessWidget {
     required this.hasPrev,
     required this.onPageChanged,
   });
+
   @override
   Widget build(BuildContext context) {
     if (total == 0) {
@@ -497,7 +479,9 @@ class _Pagination extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Text(
           'عرض 0–0 من 0 معاملة',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.charcoal.withOpacity(0.6),
+          ),
         ),
       );
     }
@@ -514,7 +498,9 @@ class _Pagination extends StatelessWidget {
         children: [
           Text(
             'عرض $start–$end من $total معاملة',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.charcoal.withOpacity(0.6),
+            ),
           ),
           const Spacer(),
           _PageButton(
@@ -609,7 +595,10 @@ class _NumberButton extends StatelessWidget {
         ),
         child: Text(
           number.toString(),
-          style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: selected ? AppColors.white : AppColors.charcoal),
+          style: AppTextStyles.bodySmall.copyWith(
+            fontWeight: AppTextStyles.bold,
+            color: selected ? AppColors.white : AppColors.charcoal,
+          ),
         ),
       ),
     );
@@ -633,7 +622,10 @@ class _ErrorBox extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.right,
-        style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.umber),
+        style: AppTextStyles.bodyMedium.copyWith(
+          fontWeight: AppTextStyles.semiBold,
+          color: AppColors.umber,
+        ),
       ),
     );
   }

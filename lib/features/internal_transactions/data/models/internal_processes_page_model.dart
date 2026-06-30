@@ -1,7 +1,7 @@
-import '../datasources/internal_transactions_remote_data_source.dart';
+import '../../domain/entities/internal_processes_page_entity.dart';
 import 'internal_process_model.dart';
 
-class InternalProcessesPageModel extends InternalProcessesPageData {
+class InternalProcessesPageModel extends InternalProcessesPageEntity {
   const InternalProcessesPageModel({
     required super.items,
     required super.page,
@@ -17,9 +17,7 @@ class InternalProcessesPageModel extends InternalProcessesPageData {
     final pagination = json['pagination'] as Map<String, dynamic>? ?? {};
 
     return InternalProcessesPageModel(
-      items: itemsJson
-          .map((item) => InternalProcessModel.fromJson(item))
-          .toList(),
+      items: itemsJson.map((item) => InternalProcessModel.fromJson(item)).toList(),
       page: pagination['page'] ?? 1,
       limit: pagination['limit'] ?? 6,
       total: pagination['total'] ?? 0,

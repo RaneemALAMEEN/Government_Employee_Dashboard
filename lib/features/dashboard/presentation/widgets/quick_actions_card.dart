@@ -1,6 +1,7 @@
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+
 import '../../../../shared/theme/app_colors.dart';
 
 class QuickActionsCard extends StatelessWidget {

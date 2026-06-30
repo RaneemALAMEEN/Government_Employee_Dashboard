@@ -6,15 +6,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:pinput/pinput.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../bloc/otp/otp_bloc.dart';
 import '../bloc/otp/otp_event.dart';
 import '../bloc/otp/otp_state.dart';
+
+TextStyle _style({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? letterSpacing,
+}) {
+  return TextStyle(
+    fontFamily: AppTextStyles.fontFamily,
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    letterSpacing: letterSpacing,
+  );
+}
 
 class OtpPage extends StatefulWidget {
   final String sessionId;
@@ -28,8 +43,7 @@ class OtpPage extends StatefulWidget {
   State<OtpPage> createState() => _OtpPageState();
 }
 
-class _OtpPageState extends State<OtpPage>
-    with TickerProviderStateMixin {
+class _OtpPageState extends State<OtpPage> with TickerProviderStateMixin {
   final otpController = TextEditingController();
 
   Timer? _timer;
@@ -44,13 +58,11 @@ class _OtpPageState extends State<OtpPage>
     super.initState();
     _startTimer();
 
-    // Floating eagle animation controller
     _illusController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
     )..repeat(reverse: true);
 
-    // Drifting background circles controller (10s swap period)
     _bgController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -88,11 +100,8 @@ class _OtpPageState extends State<OtpPage>
 
   void _onResend() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'تم طلب رمز تحقق جديد',
-          style: GoogleFonts.cairo(),
-        ),
+      const SnackBar(
+        content: Text('تم طلب رمز تحقق جديد'),
       ),
     );
 
@@ -111,11 +120,8 @@ class _OtpPageState extends State<OtpPage>
             listener: (context, state) {
               if (state is OtpSuccess) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'تم تسجيل الدخول بنجاح',
-                      style: GoogleFonts.cairo(),
-                    ),
+                  const SnackBar(
+                    content: Text('تم تسجيل الدخول بنجاح'),
                   ),
                 );
 
@@ -125,10 +131,7 @@ class _OtpPageState extends State<OtpPage>
               if (state is OtpFailure) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      state.message,
-                      style: GoogleFonts.cairo(),
-                    ),
+                    content: Text(state.message),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
@@ -141,19 +144,18 @@ class _OtpPageState extends State<OtpPage>
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 850;
 
-                  // Define circular moving background circles for the main Scaffold
                   final scaffoldBackgroundCircles = [
-                    // Scaffold Circle A (Gold)
                     AnimatedBuilder(
                       animation: _bgController,
                       builder: (context, child) {
-                        final double angle = _bgController.value * 2 * pi;
-                        final double dx = cos(angle) * 240.0;
-                        final double dy = sin(angle) * 240.0;
+                        final angle = _bgController.value * 2 * pi;
                         return Align(
                           alignment: Alignment.center,
                           child: Transform.translate(
-                            offset: Offset(dx, dy),
+                            offset: Offset(
+                              cos(angle) * 240,
+                              sin(angle) * 240,
+                            ),
                             child: child!,
                           ),
                         );
@@ -166,23 +168,23 @@ class _OtpPageState extends State<OtpPage>
                           gradient: RadialGradient(
                             colors: [
                               AppColors.gold.withOpacity(0.12),
-                              AppColors.gold.withOpacity(0.0),
+                              AppColors.gold.withOpacity(0),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    // Scaffold Circle B (Forest Green - Opposite side)
                     AnimatedBuilder(
                       animation: _bgController,
                       builder: (context, child) {
-                        final double angle = _bgController.value * 2 * pi + pi;
-                        final double dx = cos(angle) * 240.0;
-                        final double dy = sin(angle) * 240.0;
+                        final angle = _bgController.value * 2 * pi + pi;
                         return Align(
                           alignment: Alignment.center,
                           child: Transform.translate(
-                            offset: Offset(dx, dy),
+                            offset: Offset(
+                              cos(angle) * 240,
+                              sin(angle) * 240,
+                            ),
                             child: child!,
                           ),
                         );
@@ -195,7 +197,7 @@ class _OtpPageState extends State<OtpPage>
                           gradient: RadialGradient(
                             colors: [
                               AppColors.forest.withOpacity(0.08),
-                              AppColors.forest.withOpacity(0.0),
+                              AppColors.forest.withOpacity(0),
                             ],
                           ),
                         ),
@@ -206,32 +208,28 @@ class _OtpPageState extends State<OtpPage>
                   if (isWide) {
                     return Stack(
                       children: [
-                        // Drifting background circles behind the white side
                         ...scaffoldBackgroundCircles,
-
                         Row(
                           children: [
-                            // Left Side - OTP Form Panel
                             Expanded(
                               flex: 5,
-                              child: Container(
-                                color: Colors.transparent,
-                                child: Center(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 48,
-                                      vertical: 40,
-                                    ),
-                                    child: Container(
-                                      constraints: const BoxConstraints(maxWidth: 420),
-                                      child: _buildOtpForm(isLoading, isWide: true),
+                              child: Center(
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 48,
+                                    vertical: 40,
+                                  ),
+                                  child: Container(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 420),
+                                    child: _buildOtpForm(
+                                      isLoading,
+                                      isWide: true,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-
-                            // Right Side - Branding/Identity Panel (Forest Green Gradient + Drifting Gold Spots)
                             Expanded(
                               flex: 5,
                               child: Container(
@@ -249,15 +247,16 @@ class _OtpPageState extends State<OtpPage>
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
-                                      // Drifting Gold Circle A (Orbits wide at 210 radius around the center)
                                       AnimatedBuilder(
                                         animation: _bgController,
                                         builder: (context, child) {
-                                          final double angle = _bgController.value * 2 * pi;
-                                          final double dx = cos(angle) * 210.0;
-                                          final double dy = sin(angle) * 210.0;
+                                          final angle =
+                                              _bgController.value * 2 * pi;
                                           return Transform.translate(
-                                            offset: Offset(dx, dy),
+                                            offset: Offset(
+                                              cos(angle) * 210,
+                                              sin(angle) * 210,
+                                            ),
                                             child: child!,
                                           );
                                         },
@@ -268,22 +267,26 @@ class _OtpPageState extends State<OtpPage>
                                             shape: BoxShape.circle,
                                             gradient: RadialGradient(
                                               colors: [
-                                                AppColors.gold.withOpacity(0.18),
-                                                AppColors.gold.withOpacity(0.0),
+                                                AppColors.gold
+                                                    .withOpacity(0.18),
+                                                AppColors.gold.withOpacity(0),
                                               ],
                                             ),
                                           ),
                                         ),
                                       ),
-                                      // Drifting Gold Circle B (Orbits wide opposite to Circle A)
                                       AnimatedBuilder(
                                         animation: _bgController,
                                         builder: (context, child) {
-                                          final double angle = _bgController.value * 2 * pi + pi;
-                                          final double dx = cos(angle) * 210.0;
-                                          final double dy = sin(angle) * 210.0;
+                                          final angle = _bgController.value *
+                                                  2 *
+                                                  pi +
+                                              pi;
                                           return Transform.translate(
-                                            offset: Offset(dx, dy),
+                                            offset: Offset(
+                                              cos(angle) * 210,
+                                              sin(angle) * 210,
+                                            ),
                                             child: child!,
                                           );
                                         },
@@ -294,15 +297,15 @@ class _OtpPageState extends State<OtpPage>
                                             shape: BoxShape.circle,
                                             gradient: RadialGradient(
                                               colors: [
-                                                AppColors.goldLight.withOpacity(0.14),
-                                                AppColors.goldLight.withOpacity(0.0),
+                                                AppColors.goldLight
+                                                    .withOpacity(0.14),
+                                                AppColors.goldLight
+                                                    .withOpacity(0),
                                               ],
                                             ),
                                           ),
                                         ),
                                       ),
-
-                                      // Content (Eagle & Text)
                                       Center(
                                         child: SingleChildScrollView(
                                           padding: const EdgeInsets.symmetric(
@@ -324,26 +327,25 @@ class _OtpPageState extends State<OtpPage>
                         ),
                       ],
                     );
-                  } else {
-                    // Mobile View - Scrollable form with drifting background circles
-                    return Stack(
-                      children: [
-                        ...scaffoldBackgroundCircles,
-                        Center(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 28,
-                              vertical: 40,
-                            ),
-                            child: Container(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: _buildOtpForm(isLoading, isWide: false),
-                            ),
+                  }
+
+                  return Stack(
+                    children: [
+                      ...scaffoldBackgroundCircles,
+                      Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 40,
+                          ),
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: _buildOtpForm(isLoading, isWide: false),
                           ),
                         ),
-                      ],
-                    );
-                  }
+                      ),
+                    ],
+                  );
                 },
               );
             },
@@ -358,23 +360,23 @@ class _OtpPageState extends State<OtpPage>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Mobile layout gets the logo header at the top of the form (No background circle)
         if (!isWide) ...[
           Center(
             child: FadeInDown(
               duration: const Duration(milliseconds: 500),
               child: Column(
                 children: [
-                  // Floating animation on mobile if controller is present
                   AnimatedBuilder(
                     animation: _illusController,
                     builder: (context, child) {
-                      final double yOffset = Tween<double>(begin: -6.0, end: 6.0).transform(
-                        CurvedAnimation(
-                          parent: _illusController,
-                          curve: Curves.easeInOut,
-                        ).value,
-                      );
+                      final value = CurvedAnimation(
+                        parent: _illusController,
+                        curve: Curves.easeInOut,
+                      ).value;
+
+                      final yOffset =
+                          Tween<double>(begin: -6, end: 6).transform(value);
+
                       return Transform.translate(
                         offset: Offset(0, yOffset),
                         child: child,
@@ -390,7 +392,7 @@ class _OtpPageState extends State<OtpPage>
                   const SizedBox(height: 18),
                   Text(
                     'مديرية تربية ريف دمشق',
-                    style: GoogleFonts.cairo(
+                    style: _style(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppColors.forest,
@@ -399,7 +401,7 @@ class _OtpPageState extends State<OtpPage>
                   Text(
                     'منصة الخدمات الموحدة للموظف الحكومي',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.cairo(
+                    style: _style(
                       color: Colors.grey[600],
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -417,13 +419,12 @@ class _OtpPageState extends State<OtpPage>
             ),
           ),
         ],
-
         FadeInDown(
           delay: const Duration(milliseconds: 50),
           duration: const Duration(milliseconds: 400),
           child: Text(
             'رمز التحقق',
-            style: GoogleFonts.cairo(
+            style: _style(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: AppColors.charcoal,
@@ -436,15 +437,13 @@ class _OtpPageState extends State<OtpPage>
           duration: const Duration(milliseconds: 400),
           child: Text(
             'أدخل رمز التحقق المكون من 6 أرقام المرسل إلى هاتفك',
-            style: GoogleFonts.cairo(
+            style: _style(
               color: Colors.grey[500],
               fontSize: 14,
             ),
           ),
         ),
         const SizedBox(height: 36),
-
-        // Pin input field
         FadeInUp(
           delay: const Duration(milliseconds: 150),
           duration: const Duration(milliseconds: 450),
@@ -457,7 +456,7 @@ class _OtpPageState extends State<OtpPage>
               defaultPinTheme: PinTheme(
                 width: 52,
                 height: 60,
-                textStyle: GoogleFonts.cairo(
+                textStyle: _style(
                   fontSize: 20,
                   color: AppColors.charcoal,
                   fontWeight: FontWeight.w700,
@@ -474,6 +473,11 @@ class _OtpPageState extends State<OtpPage>
               focusedPinTheme: PinTheme(
                 width: 54,
                 height: 62,
+                textStyle: _style(
+                  fontSize: 20,
+                  color: AppColors.forest,
+                  fontWeight: FontWeight.w700,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -482,18 +486,11 @@ class _OtpPageState extends State<OtpPage>
                     width: 1.8,
                   ),
                 ),
-                textStyle: GoogleFonts.cairo(
-                  fontSize: 20,
-                  color: AppColors.forest,
-                  fontWeight: FontWeight.w700,
-                ),
               ),
             ),
           ),
         ),
         const SizedBox(height: 32),
-
-        // Confirm Button (Solid Forest Green Color)
         FadeInUp(
           delay: const Duration(milliseconds: 200),
           duration: const Duration(milliseconds: 450),
@@ -501,9 +498,8 @@ class _OtpPageState extends State<OtpPage>
             height: 54,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: isLoading
-                  ? AppColors.forest.withOpacity(0.6)
-                  : AppColors.forest,
+              color:
+                  isLoading ? AppColors.forest.withOpacity(0.6) : AppColors.forest,
               boxShadow: [
                 if (!isLoading)
                   BoxShadow(
@@ -513,76 +509,70 @@ class _OtpPageState extends State<OtpPage>
                   ),
               ],
             ),
-            child: Builder(builder: (context) {
-              return ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        final otp = otpController.text.trim();
+            child: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          final otp = otpController.text.trim();
 
-                        if (otp.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'الرجاء إدخال رمز التحقق',
-                                style: GoogleFonts.cairo(),
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        if (otp.length != 6) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'رمز التحقق يجب أن يكون 6 أرقام',
-                                style: GoogleFonts.cairo(),
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        context.read<OtpBloc>().add(
-                              OtpSubmitted(
-                                sessionId: widget.sessionId,
-                                otp: otp,
+                          if (otp.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('الرجاء إدخال رمز التحقق'),
                               ),
                             );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                            return;
+                          }
+
+                          if (otp.length != 6) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('رمز التحقق يجب أن يكون 6 أرقام'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          context.read<OtpBloc>().add(
+                                OtpSubmitted(
+                                  sessionId: widget.sessionId,
+                                  otp: otp,
+                                ),
+                              );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    padding: EdgeInsets.zero,
                   ),
-                  padding: EdgeInsets.zero,
-                ),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          'تأكيد الرمز',
+                          style: _style(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )
-                    : Text(
-                        'تأكيد الرمز',
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              );
-            }),
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(height: 16),
-
-        // Resend Timer Outlined Button (Dynamic countdown & clicking)
         FadeInUp(
           delay: const Duration(milliseconds: 250),
           duration: const Duration(milliseconds: 450),
@@ -602,7 +592,7 @@ class _OtpPageState extends State<OtpPage>
               _resendAvailable
                   ? 'إعادة إرسال الرمز'
                   : 'إعادة إرسال الرمز خلال 00:${_remaining.toString().padLeft(2, '0')}',
-              style: GoogleFonts.cairo(
+              style: _style(
                 color: _resendAvailable ? AppColors.forest : Colors.grey[500],
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -632,22 +622,18 @@ class _LoginIllustration extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Eagle floating and scale transitions (No background circle)
             AnimatedBuilder(
               animation: controller,
               builder: (context, child) {
-                final double yOffset = Tween<double>(begin: -8.0, end: 8.0).transform(
-                  CurvedAnimation(
-                    parent: controller,
-                    curve: Curves.easeInOut,
-                  ).value,
-                );
-                final double scale = Tween<double>(begin: 0.98, end: 1.02).transform(
-                  CurvedAnimation(
-                    parent: controller,
-                    curve: Curves.easeInOut,
-                  ).value,
-                );
+                final value = CurvedAnimation(
+                  parent: controller,
+                  curve: Curves.easeInOut,
+                ).value;
+
+                final yOffset =
+                    Tween<double>(begin: -8, end: 8).transform(value);
+                final scale =
+                    Tween<double>(begin: 0.98, end: 1.02).transform(value);
 
                 return Transform.translate(
                   offset: Offset(0, yOffset),
@@ -668,7 +654,7 @@ class _LoginIllustration extends StatelessWidget {
             Text(
               'مديرية تربية ريف دمشق',
               textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
+              style: _style(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: AppColors.white,
@@ -679,7 +665,7 @@ class _LoginIllustration extends StatelessWidget {
             Text(
               'منصة الخدمات الموحدة للموظف الحكومي',
               textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
+              style: _style(
                 color: AppColors.goldLight.withOpacity(0.85),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -707,7 +693,7 @@ class _LoginIllustration extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     'بوابة وصول آمنة ومشفرة',
-                    style: GoogleFonts.cairo(
+                    style: _style(
                       color: AppColors.white.withOpacity(0.9),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

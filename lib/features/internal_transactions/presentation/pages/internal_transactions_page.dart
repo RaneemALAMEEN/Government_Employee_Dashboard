@@ -1,60 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:government_employee_dashboard/core/di/injection.dart';
-import 'package:government_employee_dashboard/core/services/api_service.dart';
 
 import '../../../../shared/theme/app_colors.dart';
-import '../../data/datasources/internal_transactions_remote_data_source.dart';
-import '../../domain/entities/internal_transaction_counts_entity.dart';
+import '../bloc/internal_transactions_bloc.dart';
+import '../bloc/internal_transactions_state.dart';
 import '../widgets/internal_processes_table.dart';
 import '../widgets/internal_stats_section.dart';
 
-class InternalTransactionsPage extends StatefulWidget {
+class InternalTransactionsPage extends StatelessWidget {
   const InternalTransactionsPage({super.key});
-
-  @override
-  State<InternalTransactionsPage> createState() =>
-      _InternalTransactionsPageState();
-}
-
-class _InternalTransactionsPageState extends State<InternalTransactionsPage> {
-  final _dataSource = InternalTransactionsRemoteDataSource(
-    getIt<ApiService>(),
-  );
-
-  InternalTransactionCountsEntity _counts =
-      const InternalTransactionCountsEntity(
-    total: 0,
-    inProgress: 0,
-    completed: 0,
-  );
-
-  bool _loadingCounts = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCounts();
-  }
-
-  Future<void> _loadCounts() async {
-    try {
-      final counts = await _dataSource.getMyTransactionCounts();
-
-      if (!mounted) return;
-
-      setState(() {
-        _counts = counts;
-        _loadingCounts = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _loadingCounts = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,19 +20,26 @@ class _InternalTransactionsPageState extends State<InternalTransactionsPage> {
         children: [
           const _Header(),
           const SizedBox(height: 28),
-          if (_loadingCounts)
-            const SizedBox(
-              height: 116,
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.forest),
-              ),
-            )
-          else
-            InternalStatsSection(
-              total: _counts.total,
-              inProgress: _counts.inProgress,
-              completed: _counts.completed,
-            ),
+          BlocBuilder<InternalTransactionsBloc, InternalTransactionsState>(
+            builder: (context, state) {
+              if (state.loadingCounts) {
+                return const SizedBox(
+                  height: 116,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.forest,
+                    ),
+                  ),
+                );
+              }
+
+              return InternalStatsSection(
+                total: state.counts.total,
+                inProgress: state.counts.inProgress,
+                completed: state.counts.completed,
+              );
+            },
+          ),
           const SizedBox(height: 24),
           const InternalProcessesTable(),
         ],

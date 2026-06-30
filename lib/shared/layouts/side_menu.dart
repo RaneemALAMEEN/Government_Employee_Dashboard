@@ -1,7 +1,8 @@
 import '../theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+
 import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
 import '../theme/app_colors.dart';
