@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -285,7 +286,7 @@ class _FilePickerWidget extends StatelessWidget {
             (file) => Text(
               file.name,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 12, color: AppColors.goldDark),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
             ),
           ),
         ],

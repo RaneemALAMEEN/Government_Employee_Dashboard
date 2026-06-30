@@ -5,7 +5,7 @@ import 'responsive_layout.dart';
 import 'side_menu.dart';
 import 'top_bar.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   final Widget child;
 
   const AppShell({
@@ -14,47 +14,58 @@ class AppShell extends StatelessWidget {
   });
 
   @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  bool? _userCollapsedOverride;
+  bool _wasSmallScreen = false;
+
+  static const double sidebarWidth = 255;
+
+  @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.goldLight,
-        body: ResponsiveLayout(
-          desktop: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              const SideMenu(width: 235),
-              Expanded(
-                child: Column(
-                  children: [
-                    const TopBar(),
-                    Expanded(child: child),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          tablet: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              const SideMenu(width: 230),
-              Expanded(
-                child: Column(
-                  children: [
-                    const TopBar(),
-                    Expanded(child: child),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          mobile: Column(
+    return Scaffold(
+      backgroundColor: AppColors.goldLight,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmallScreen = constraints.maxWidth < 900;
+
+          // Reset user override if we cross the small screen threshold
+          if (_wasSmallScreen != isSmallScreen) {
+            _wasSmallScreen = isSmallScreen;
+            _userCollapsedOverride = null;
+          }
+
+          final isCollapsed = _userCollapsedOverride ?? isSmallScreen;
+
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const TopBar(),
-              Expanded(child: child),
+              Expanded(child: widget.child),
             ],
-          ),
-        ),
+          );
+
+          return Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                width: isCollapsed ? 72 : sidebarWidth,
+                child: SideMenu(
+                  isCollapsed: isCollapsed,
+                  onToggleCollapse: () {
+                    setState(() {
+                      _userCollapsedOverride = !isCollapsed;
+                    });
+                  },
+                ),
+              ),
+              Expanded(child: content),
+            ],
+          );
+        },
       ),
     );
   }

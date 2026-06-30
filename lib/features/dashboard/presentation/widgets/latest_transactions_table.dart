@@ -1,14 +1,36 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
-class LatestTransactionsTable extends StatelessWidget {
+class LatestTransactionsTable extends StatefulWidget {
   final List<TransactionEntity> transactions;
 
   const LatestTransactionsTable({
     super.key,
     required this.transactions,
   });
+
+  @override
+  State<LatestTransactionsTable> createState() =>
+      _LatestTransactionsTableState();
+}
+
+class _LatestTransactionsTableState extends State<LatestTransactionsTable> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,43 +56,61 @@ class LatestTransactionsTable extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 textDirection: TextDirection.rtl,
-                children: const [
+                children: [
                   Text(
                     'آخر المعاملات',
-                    style: TextStyle(
-                      fontSize: 18,
-                      height: 1,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.titleLarge.copyWith(height: 1),
                   ),
                   Spacer(),
                   Text(
                     'عرض الكل ‹',
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.forest,
-                    ),
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.forest, height: 1),
                   ),
                 ],
               ),
             ),
           ),
           Container(height: 1, color: AppColors.gold.withOpacity(0.25)),
-          const _TableHeader(),
-          ListView.separated(
-            shrinkWrap: true,
-            padding: EdgeInsets.zero,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: transactions.length,
-            separatorBuilder: (_, __) => Container(
-              height: 1,
-              color: AppColors.gold.withOpacity(0.18),
-            ),
-            itemBuilder: (context, index) {
-              return _TransactionRow(tx: transactions[index]);
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const double minTableWidth = 650;
+              final double availableWidth = constraints.maxWidth;
+
+              final Widget tableContent = Column(
+                children: [
+                  const _TableHeader(),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: widget.transactions.length,
+                    separatorBuilder: (_, __) => Container(
+                      height: 1,
+                      color: AppColors.gold.withOpacity(0.18),
+                    ),
+                    itemBuilder: (context, index) {
+                      return _TransactionRow(tx: widget.transactions[index]);
+                    },
+                  ),
+                ],
+              );
+
+              if (availableWidth < minTableWidth) {
+                return Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: minTableWidth,
+                      child: tableContent,
+                    ),
+                  ),
+                );
+              } else {
+                return tableContent;
+              }
             },
           ),
         ],
@@ -91,12 +131,12 @@ class _TableHeader extends StatelessWidget {
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderText('رقم المعاملة', flex: 16),
+          _HeaderText('رقم المعاملة', flex: 12),
           _HeaderText('النوع', flex: 16),
           _HeaderText('مقدم الطلب', flex: 18),
           _HeaderText('التاريخ', flex: 14),
           _HeaderText('الحالة', flex: 14),
-          _HeaderText('إجراء', flex: 12),
+          _HeaderText('إجراء', flex: 16),
         ],
       ),
     );
@@ -119,32 +159,33 @@ class _TransactionRow extends StatelessWidget {
           children: [
             _CellText(
               tx.number,
-              flex: 16,
+              flex: 12,
               color: AppColors.forest,
               fontWeight: FontWeight.w600,
             ),
             _CellText(tx.type, flex: 16),
             _CellText(tx.applicant, flex: 18),
-            _CellText(tx.date, flex: 14, color: AppColors.charcoal.withOpacity(0.70)),
+            _CellText(tx.date,
+                flex: 14, color: AppColors.charcoal.withOpacity(0.70)),
             Expanded(
               flex: 14,
               child: Center(child: _StatusBadge(status: tx.status)),
             ),
             Expanded(
-              flex: 12,
+              flex: 16,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _ActionIcon(
-                    icon: Icons.visibility_outlined,
+                    icon: LucideIcons.eye,
                     tooltip: 'عرض التفاصيل',
                     onTap: () {},
                   ),
                   if (tx.canSign) ...[
                     const SizedBox(width: 6),
                     _ActionIcon(
-                      icon: Icons.edit_square,
+                      icon: LucideIcons.edit,
                       tooltip: 'توقيع المعاملة',
                       onTap: () {},
                     ),
@@ -172,12 +213,7 @@ class _HeaderText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          color: AppColors.charcoal,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
       ),
     );
   }
@@ -205,12 +241,7 @@ class _CellText extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          height: 1.25,
-          fontWeight: fontWeight,
-          color: color ?? AppColors.charcoalDark,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoalDark, height: 1.25),
       ),
     );
   }
@@ -234,12 +265,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w500,
-          color: fg,
-        ),
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: fg, height: 1),
       ),
     );
   }

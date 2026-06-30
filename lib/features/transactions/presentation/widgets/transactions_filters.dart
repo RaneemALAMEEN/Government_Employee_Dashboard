@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -60,13 +61,10 @@ class _SearchField extends StatelessWidget {
       height: 50,
       child: TextField(
         textAlign: TextAlign.right,
-        style: const TextStyle(fontSize: 16),
+        style: AppTextStyles.titleMedium,
         decoration: InputDecoration(
           hintText: 'بحث برقم المعاملة أو الاسم أو النوع...',
-          hintStyle: const TextStyle(
-            color: AppColors.goldDark,
-            fontSize: 16,
-          ),
+          hintStyle: AppTextStyles.titleMedium.copyWith(color: AppColors.goldDark),
           prefixIcon: const Icon(
             Icons.search,
             color: AppColors.goldDark,
@@ -135,13 +133,9 @@ class _FiltersBar extends StatelessWidget {
                   ),
                   child: Text(
                     filter,
-                    style: TextStyle(
-                      color: isSelected
-                          ? AppColors.white
-                          : AppColors.charcoalDark,
-                      fontSize: 14,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: isSelected ? AppTextStyles.bold : AppTextStyles.medium,
+                      color: isSelected ? Colors.white : AppColors.charcoalDark,
                     ),
                   ),
                 ),

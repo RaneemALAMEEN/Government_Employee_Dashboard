@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -119,11 +120,7 @@ class _TransactionRow extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.forest,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
                   ),
                 ),
               ],
@@ -257,11 +254,7 @@ class _HeaderCell extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: AppColors.charcoal,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
+        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold),
       ),
     );
   }
@@ -289,11 +282,7 @@ class _BodyCell extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color ?? AppColors.charcoal,
-          fontSize: 13,
-          fontWeight: fontWeight,
-        ),
+        style: AppTextStyles.bodySmall.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoal),
       ),
     );
   }
@@ -328,11 +317,7 @@ class _Badge extends StatelessWidget {
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: color),
       ),
     );
   }
@@ -396,21 +381,16 @@ class _SignButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.edit_square,
               size: 14,
               color: AppColors.white,
             ),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             Text(
               'توقيع',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                height: 1,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.white, height: 1),
             ),
           ],
         ),

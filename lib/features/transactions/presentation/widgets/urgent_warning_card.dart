@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 
 class UrgentWarningCard extends StatelessWidget {
   final int urgentCount;
@@ -50,10 +51,10 @@ class UrgentWarningCard extends StatelessWidget {
                   'لديك $urgentCount معاملات مستعجلة تحتاج توقيعك في أقرب وقت',
                   maxLines: isSmall ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.umber,
                     fontSize: isSmall ? 14 : 17,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppTextStyles.bold,
                     height: 1.25,
                   ),
                 ),
@@ -62,10 +63,10 @@ class UrgentWarningCard extends StatelessWidget {
                   'المعاملات المستعجلة تشمل بأيقونة التحذير',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.goldDark,
                     fontSize: isSmall ? 12 : 14,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: AppTextStyles.regular,
                   ),
                 ),
               ],

@@ -179,6 +179,19 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_GETMINMAXINFO: {
+      auto info = reinterpret_cast<MINMAXINFO*>(lparam);
+      double scale_factor = 1.0;
+      if (hwnd != nullptr) {
+        HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+        scale_factor = dpi / 96.0;
+      }
+      info->ptMinTrackSize.x = static_cast<LONG>(400 * scale_factor);
+      info->ptMinTrackSize.y = static_cast<LONG>(500 * scale_factor);
+      return 0;
+    }
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();

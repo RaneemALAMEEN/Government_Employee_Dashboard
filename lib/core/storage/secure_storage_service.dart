@@ -1,11 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorageService {
-
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   static const _tokenKey = "token";
   static const _refreshTokenKey = "refresh_token";
+  static const _roleKey = "user_role";
 
   // ===== Access token =====
   Future<void> saveToken(String token) async {
@@ -13,7 +13,11 @@ class SecureStorageService {
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    final token = await _storage.read(key: _tokenKey);
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    return token;
   }
 
   Future<void> deleteToken() async {
@@ -33,6 +37,19 @@ class SecureStorageService {
     await _storage.delete(key: _refreshTokenKey);
   }
 
+  // ===== Active User Role =====
+  Future<void> writeRole(String role) async {
+    await _storage.write(key: _roleKey, value: role);
+  }
+
+  Future<String?> readRole() async {
+    return await _storage.read(key: _roleKey);
+  }
+
+  Future<void> deleteRole() async {
+    await _storage.delete(key: _roleKey);
+  }
+
   // ===== Both tokens =====
   Future<void> saveTokens({
     required String token,
@@ -46,5 +63,6 @@ class SecureStorageService {
   Future<void> clear() async {
     await deleteToken();
     await deleteRefreshToken();
+    await deleteRole();
   }
 }

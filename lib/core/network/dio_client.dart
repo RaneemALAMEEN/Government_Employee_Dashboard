@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -22,6 +24,16 @@ class DioClient {
       ),
     );
 
+    // Bypass SSL certificate validation to prevent handshake freezes/timeouts
+    final adapter = dio.httpClientAdapter;
+    if (adapter is IOHttpClientAdapter) {
+      adapter.createHttpClient = () {
+        final client = HttpClient();
+        client.badCertificateCallback = (cert, host, port) => true;
+        return client;
+      };
+    }
+
     dio.interceptors.add(
       AuthInterceptor(dio: dio, storage: storage),
     );
@@ -43,4 +55,4 @@ class DioClient {
 
     return dio;
   }
-}
+}

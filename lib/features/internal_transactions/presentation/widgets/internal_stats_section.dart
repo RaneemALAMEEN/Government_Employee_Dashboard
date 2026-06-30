@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -118,23 +119,13 @@ class _StatCard extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.charcoal,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium),
             ),
           ),
           const SizedBox(width: 10),
           Text(
             value,
-            style: const TextStyle(
-              color: AppColors.forest,
-              fontSize: 32,
-              height: 1,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTextStyles.displayMedium.copyWith(fontSize: 32, height: 1),
           ),
         ],
       ),

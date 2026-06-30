@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../data/datasources/transactions_local_data_source.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../widgets/transaction_stats.dart';
@@ -143,21 +144,20 @@ class _TransactionsHeader extends StatelessWidget {
             Text(
               'معاملاتي',
               textAlign: TextAlign.right,
-              style: TextStyle(
-                color: AppColors.forest,
+              style: AppTextStyles.displayMedium.copyWith(
                 fontSize: isSmall ? 34 : 42,
+                fontWeight: AppTextStyles.black,
                 height: 1,
-                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 10),
             Text(
               'المعاملات الموجهة إليك — $waitingCount بانتظار توقيعك',
               textAlign: TextAlign.right,
-              style: TextStyle(
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.goldDark,
                 fontSize: isSmall ? 14 : 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: AppTextStyles.medium,
               ),
             ),
           ],

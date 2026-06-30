@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:government_employee_dashboard/core/di/injection.dart';
@@ -201,7 +202,7 @@ class _InternalTransactionFormPageState
               widgetId: id,
               widgetData: widget.data,
               value: value,
-            )
+              )
           : value;
 
       widgetsPayload.add({
@@ -247,12 +248,69 @@ class _InternalTransactionFormPageState
     return uploadedFiles;
   }
 
+<<<<<<< HEAD
   int _parseTypeDocId(dynamic value) {
     if (value is int) return value;
     return int.tryParse(value.toString()) ?? 1;
+=======
+  void _setProgrammaticDecisionValue(List<dynamic> widgets, bool isApprove) {
+    for (final widget in widgets) {
+      final wData = widget.data;
+      if (wData['is_gateway'] == true || wData['id'] == 'decision') {
+        final id = wData['id']?.toString() ?? 'decision';
+        final options = wData['options'] as List? ?? [];
+        if (options.isNotEmpty) {
+          String? selectedValue;
+          for (final opt in options) {
+            final val = (opt['value'] ?? opt['key'] ?? '').toString();
+            if (isApprove) {
+              if (val.contains('مقبول') || val.contains('موافق') || val.contains('نعم') || val.toLowerCase().contains('approve') || val.toLowerCase().contains('yes')) {
+                selectedValue = val;
+                break;
+              }
+            } else {
+              if (val.contains('مرفوض') || val.contains('رفض') || val.contains('لا') || val.toLowerCase().contains('reject') || val.toLowerCase().contains('no')) {
+                selectedValue = val;
+                break;
+              }
+            }
+          }
+          if (selectedValue == null && options.isNotEmpty) {
+            if (isApprove) {
+              selectedValue = (options.last['value'] ?? options.last['key'] ?? '').toString();
+            } else {
+              selectedValue = (options.first['value'] ?? options.first['key'] ?? '').toString();
+            }
+          }
+          if (selectedValue != null) {
+            _formValues[id] = selectedValue;
+            print('Programmatically set form value for $id to "$selectedValue"');
+          }
+        } else {
+          _formValues[id] = isApprove ? 'الطلب مقبول' : 'الطلب مرفوض';
+        }
+      }
+    }
+  }
+
+  String _determineDecision(DynamicFormEntity form,
+      {required String defaultDecision}) {
+    for (final widget in form.widgets) {
+      final wData = widget.data;
+      if (wData['is_gateway'] == true || wData['id'] == 'decision') {
+        final id = wData['id']?.toString() ?? '';
+        final val = _formValues[id];
+        if (val != null && val.toString().isNotEmpty) {
+          return val.toString();
+        }
+      }
+    }
+    return defaultDecision;
+>>>>>>> f622de6252a0e071a03f6190dd26b9bc9710646f
   }
 
   Future<void> _submitSignedTransaction(DynamicFormEntity form) async {
+    _setProgrammaticDecisionValue(form.widgets, true);
     final error = _validateForm(form);
 
     if (error != null) {
@@ -290,9 +348,15 @@ class _InternalTransactionFormPageState
         message: message,
       );
 
+<<<<<<< HEAD
       if (signature.isEmpty) {
         throw Exception('فشل إنشاء التوقيع الرقمي.');
       }
+=======
+      final decisionValue =
+          _determineDecision(form, defaultDecision: 'approve');
+      print('Determined internal transaction decision value: "$decisionValue"');
+>>>>>>> f622de6252a0e071a03f6190dd26b9bc9710646f
 
       final completePayload = {
         ...payload,
@@ -361,7 +425,7 @@ class _InternalTransactionFormPageState
       return Center(
         child: Text(
           _errorMessage!,
-          style: const TextStyle(color: AppColors.umber),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.umber),
         ),
       );
     }
@@ -382,6 +446,7 @@ class _InternalTransactionFormPageState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+<<<<<<< HEAD
             _FormHeader(form: form),
             const SizedBox(height: 24),
             _FormCard(
@@ -392,6 +457,52 @@ class _InternalTransactionFormPageState
                   _formValues[id] = value;
                 });
               },
+=======
+            Text(
+              form.formName,
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    color: AppColors.forest,
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'عدد الحقول: ${form.widgets.length}',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.goldDark),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.gold.withOpacity(0.22)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: form.widgets
+                    .where((widgetConfig) {
+                      final wData = widgetConfig.data;
+                      return wData['is_gateway'] != true &&
+                          wData['id'] != 'decision';
+                    })
+                    .map(
+                      (widgetConfig) => Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: DynamicFormWidgetRenderer(
+                          widgetEntity: widgetConfig,
+                          value: _formValues[widgetConfig.data['id']],
+                          onChanged: (value) {
+                            setState(() {
+                              _formValues[widgetConfig.data['id']] = value;
+                            });
+                          },
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+>>>>>>> f622de6252a0e071a03f6190dd26b9bc9710646f
             ),
             const SizedBox(height: 20),
             Align(
@@ -477,9 +588,85 @@ class _FormCard extends StatelessWidget {
   }
 }
 
+<<<<<<< HEAD
 class _SubmitButton extends StatelessWidget {
   final bool submitting;
   final VoidCallback onPressed;
+=======
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.charcoal.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.green,
+                size: 72,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'تم توقيع وتقديم المعاملة بنجاح',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headlineLarge.copyWith(fontWeight: AppTextStyles.black, color: AppColors.forest),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'تم حفظ البيانات وإرسال المعاملة للمرحلة التالية.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.goldDark),
+              ),
+              const SizedBox(height: 28),
+              _sectionTitle('ملخص المعاملة'),
+              const SizedBox(height: 12),
+              _summaryRow(
+                'اسم المعاملة',
+                transactionData['form_name']?.toString() ?? '-',
+              ),
+              _summaryRow(
+                'المرحلة الحالية',
+                transactionData['stage_name']?.toString() ?? '-',
+              ),
+              _summaryRow(
+                'تاريخ التقديم',
+                transactionData['completed_at']?.toString() ?? '-',
+              ),
+              _summaryRow(
+                'حالة سير العمل',
+                _workflowStatusText(
+                  submittedTransaction['workflow_status']?.toString(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _sectionTitle('البيانات المقدّمة'),
+              const SizedBox(height: 12),
+              if (widgets.isEmpty)
+                const Text(
+                  'لا توجد بيانات إضافية.',
+                  style: AppTextStyles.bodyMedium,
+                )
+              else
+                ...widgets.map((item) {
+                  final widget = item as Map<String, dynamic>;
+                  final data = widget['data'] as Map<String, dynamic>? ?? {};
+                  final label = data['label']?.toString() ?? '-';
+                  final value = _formatValue(widget['value']);
+>>>>>>> f622de6252a0e071a03f6190dd26b9bc9710646f
 
   const _SubmitButton({
     required this.submitting,
@@ -513,4 +700,84 @@ class _SubmitButton extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
+=======
+
+  static Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w800),
+    );
+  }
+
+  static Widget _summaryRow(String title, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.goldLight.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              title,
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.charcoalDark),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _workflowStatusText(String? status) {
+    switch (status) {
+      case 'running':
+        return 'قيد المعالجة';
+      case 'completed':
+        return 'مكتملة';
+      case 'rejected':
+        return 'مرفوضة';
+      default:
+        return status ?? '-';
+    }
+  }
+
+  static String _formatValue(dynamic value) {
+    if (value == null) return '-';
+
+    if (value is List) {
+      if (value.isEmpty) return '-';
+
+      return value.map((item) {
+        if (item is Map) {
+          return item['original_name']?.toString() ??
+              item['path']?.toString() ??
+              item.toString();
+        }
+
+        return item.toString();
+      }).join('، ');
+    }
+
+    if (value is Map) {
+      return value['value']?.toString() ??
+          value['name']?.toString() ??
+          value.toString();
+    }
+
+    return value.toString();
+  }
+>>>>>>> f622de6252a0e071a03f6190dd26b9bc9710646f
 }

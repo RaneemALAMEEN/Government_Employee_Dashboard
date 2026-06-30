@@ -1,4 +1,6 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
@@ -24,32 +26,22 @@ class BottleneckCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Row(
+          Row(
             textDirection: TextDirection.rtl,
             children: [
               Text(
                 'تنبيه: عنق الزجاجة',
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1.15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.umber,
-                ),
+                style: AppTextStyles.titleLarge.copyWith(color: AppColors.umber),
               ),
               SizedBox(width: 8),
-              Icon(Icons.warning_amber, size: 21, color: AppColors.umber),
+              Icon(LucideIcons.alertTriangle, size: 21, color: AppColors.umber),
             ],
           ),
           const SizedBox(height: 9),
-          const Text(
+          Text(
             'المراحل الأكثر تعطيلًا في النظام حالياً',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1,
-              fontWeight: FontWeight.w400,
-              color: AppColors.goldDark,
-            ),
+            style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark, height: 1),
           ),
           const SizedBox(height: 18),
           Column(
@@ -78,13 +70,9 @@ class BottleneckCard extends StatelessWidget {
                 ),
                 padding: EdgeInsets.zero,
               ),
-              child: const Text(
+              child: Text(
                 'عرض تقرير تفصيلي',
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
               ),
             ),
           ),
@@ -122,23 +110,13 @@ class _BottleneckItem extends StatelessWidget {
                 Text(
                   item.title,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.1,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark, height: 1.1),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   item.delay,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    height: 1,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.goldDark,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.goldDark, height: 1),
                 ),
               ],
             ),
@@ -152,12 +130,7 @@ class _BottleneckItem extends StatelessWidget {
             ),
             child: Text(
               item.count,
-              style: const TextStyle(
-                fontSize: 11,
-                height: 1,
-                fontWeight: FontWeight.w500,
-                color: AppColors.umber,
-              ),
+              style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.umber, height: 1),
             ),
           ),
         ],

@@ -1,5 +1,10 @@
+import 'dart:math';
+
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:government_employee_dashboard/core/storage/secure_storage_service.dart';
 
 import '../../../../core/di/injection.dart';
@@ -12,17 +17,40 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashPageState extends State<SplashPage>
+    with TickerProviderStateMixin {
+  late AnimationController _illusController;
+  late AnimationController _bgController;
+
   @override
   void initState() {
     super.initState();
+    // Controller for the eagle floating animation
+    _illusController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat(reverse: true);
+
+    // Controller for the slow background drifting circles
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    )..repeat();
+
     _checkAuth();
   }
 
-  Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
+  @override
+  void dispose() {
+    _illusController.dispose();
+    _bgController.dispose();
+    super.dispose();
+  }
 
-final token = await getIt<SecureStorageService>().getToken();
+  Future<void> _checkAuth() async {
+    await Future.delayed(const Duration(milliseconds: 2500)); // slightly longer delay for user to appreciate animations
+
+    final token = await getIt<SecureStorageService>().getToken();
     if (!mounted) return;
 
     if (token != null && token.isNotEmpty) {
@@ -34,72 +62,230 @@ final token = await getIt<SecureStorageService>().getToken();
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.goldLight,
-      body: Center(
-        child: _SplashContent(),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                AppColors.forest,
+                AppColors.forestDark,
+              ],
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Drifting Background Circle A
+              AnimatedBuilder(
+                animation: _bgController,
+                builder: (context, child) {
+                  final double angle = _bgController.value * 2 * pi;
+                  final double dx = cos(angle) * 180.0;
+                  final double dy = sin(angle) * 180.0;
+                  return Align(
+                    alignment: Alignment.center,
+                    child: Transform.translate(
+                      offset: Offset(dx, dy),
+                      child: child!,
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.gold.withOpacity(0.12),
+                        AppColors.gold.withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Drifting Background Circle B (Opposite Side)
+              AnimatedBuilder(
+                animation: _bgController,
+                builder: (context, child) {
+                  final double angle = _bgController.value * 2 * pi + pi;
+                  final double dx = cos(angle) * 180.0;
+                  final double dy = sin(angle) * 180.0;
+                  return Align(
+                    alignment: Alignment.center,
+                    child: Transform.translate(
+                      offset: Offset(dx, dy),
+                      child: child!,
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 280,
+                  height: 280,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.goldLight.withOpacity(0.1),
+                        AppColors.goldLight.withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Main content centered
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Eagle floating & scaling animation
+                    AnimatedBuilder(
+                      animation: _illusController,
+                      builder: (context, child) {
+                        final double yOffset = Tween<double>(begin: -10.0, end: 10.0).transform(
+                          CurvedAnimation(
+                            parent: _illusController,
+                            curve: Curves.easeInOut,
+                          ).value,
+                        );
+                        final double scale = Tween<double>(begin: 0.97, end: 1.03).transform(
+                          CurvedAnimation(
+                            parent: _illusController,
+                            curve: Curves.easeInOut,
+                          ).value,
+                        );
+
+                        return Transform.translate(
+                          offset: Offset(0, yOffset),
+                          child: Transform.scale(
+                            scale: scale,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: SvgPicture.asset(
+                        'assets/vectors/syria-logo.svg',
+                        width: 140,
+                        height: 140,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 600),
+                      child: Text(
+                        'مديرية تربية ريف دمشق',
+                        style: GoogleFonts.cairo(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    FadeInDown(
+                      delay: const Duration(milliseconds: 150),
+                      duration: const Duration(milliseconds: 600),
+                      child: Text(
+                        'منصة الخدمات الموحدة للموظف الحكومي',
+                        style: GoogleFonts.cairo(
+                          color: AppColors.goldLight.withOpacity(0.85),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 64),
+                    // Premium unique loader
+                    FadeIn(
+                      delay: const Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 600),
+                      child: const _CircularLoadingIndicator(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _SplashContent extends StatelessWidget {
-  const _SplashContent();
+class _CircularLoadingIndicator extends StatefulWidget {
+  const _CircularLoadingIndicator();
+
+  @override
+  State<_CircularLoadingIndicator> createState() => _CircularLoadingIndicatorState();
+}
+
+class _CircularLoadingIndicatorState extends State<_CircularLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 92,
-          height: 92,
-          decoration: BoxDecoration(
-            color: AppColors.forest,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.forest.withOpacity(0.18),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+    return RotationTransition(
+      turns: _controller,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Circular tracks
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.white.withOpacity(0.08),
+                width: 3.0,
               ),
-            ],
+            ),
           ),
-          child: const Icon(
-            Icons.account_balance_outlined,
-            color: AppColors.white,
-            size: 48,
+          // Spinning glowing dot
+          Positioned(
+            top: 0,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.gold,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold,
+                    blurRadius: 8,
+                    spreadRadius: 1.5,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 26),
-        const Text(
-          'مديرية التربية',
-          style: TextStyle(
-            color: AppColors.forest,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'لوحة موظفي المديرية',
-          style: TextStyle(
-            color: AppColors.goldDark,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 36),
-        const SizedBox(
-          width: 30,
-          height: 30,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            color: AppColors.forest,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

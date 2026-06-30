@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -41,13 +42,9 @@ class InternalCategoriesSection extends StatelessWidget {
               CrossAxisAlignment.start, // يبدأ من اليمين بسبب RTL
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'تصنيفات المعاملات',
-              style: TextStyle(
-                color: AppColors.goldDark,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.goldDark),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -140,11 +137,7 @@ class _CategoryChip extends StatelessWidget {
                 title,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: TextStyle(
-                  color: isSelected ? AppColors.white : AppColors.charcoalDark,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: isSelected ? AppColors.white : AppColors.charcoalDark),
               ),
             ),
             const SizedBox(width: 8),
@@ -161,11 +154,7 @@ class _CategoryChip extends StatelessWidget {
               ),
               child: Text(
                 count.toString(),
-                style: TextStyle(
-                  color: isSelected ? AppColors.white : AppColors.goldDark,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: isSelected ? AppColors.white : AppColors.goldDark),
               ),
             ),
           ],

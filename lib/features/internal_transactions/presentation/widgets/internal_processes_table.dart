@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:government_employee_dashboard/core/di/injection.dart';
 import 'package:government_employee_dashboard/core/services/api_service.dart';
@@ -141,16 +142,12 @@ class _Table extends StatelessWidget {
       children: [
         const _TableHeader(),
         if (items.isEmpty)
-          const SizedBox(
+          SizedBox(
             height: 72,
             child: Center(
               child: Text(
                 'لا توجد معاملات حالياً',
-                style: TextStyle(
-                  color: AppColors.goldDark,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
               ),
             ),
           )
@@ -277,11 +274,7 @@ class _HeaderCell extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppColors.charcoal,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold),
         ),
       ),
     );
@@ -314,11 +307,7 @@ class _BodyCell extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: color ?? AppColors.charcoal,
-            fontSize: 14,
-            fontWeight: fontWeight,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoal),
         ),
       ),
     );
@@ -345,11 +334,7 @@ class _ProgressBadge extends StatelessWidget {
         child: Text(
           '$safePercent%',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.forest,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
         ),
       ),
     );
@@ -377,11 +362,7 @@ class _StatusBadge extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
-        style: TextStyle(
-          color: data.textColor,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: data.textColor),
       ),
     );
   }
@@ -464,7 +445,7 @@ class _DetailsButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppColors.gold.withOpacity(0.2)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
@@ -478,11 +459,7 @@ class _DetailsButton extends StatelessWidget {
                 'عرض التفاصيل',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppColors.charcoalDark,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
               ),
             ),
           ],
@@ -520,11 +497,7 @@ class _Pagination extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Text(
           'عرض 0–0 من 0 معاملة',
-          style: TextStyle(
-            color: AppColors.charcoal.withOpacity(0.6),
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
         ),
       );
     }
@@ -541,11 +514,7 @@ class _Pagination extends StatelessWidget {
         children: [
           Text(
             'عرض $start–$end من $total معاملة',
-            style: TextStyle(
-              color: AppColors.charcoal.withOpacity(0.6),
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
           ),
           const Spacer(),
           _PageButton(
@@ -640,11 +609,7 @@ class _NumberButton extends StatelessWidget {
         ),
         child: Text(
           number.toString(),
-          style: TextStyle(
-            color: selected ? AppColors.white : AppColors.charcoal,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.bold, color: selected ? AppColors.white : AppColors.charcoal),
         ),
       ),
     );
@@ -668,11 +633,7 @@ class _ErrorBox extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.right,
-        style: const TextStyle(
-          color: AppColors.umber,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.umber),
       ),
     );
   }

@@ -1,4 +1,6 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 
 class AlertsCard extends StatelessWidget {
@@ -28,20 +30,15 @@ class AlertsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Row(
+          Row(
             textDirection: TextDirection.rtl,
             children: [
               Text(
                 'التنبيهات التشغيلية',
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1.1,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleLarge.copyWith(height: 1.1),
               ),
               SizedBox(width: 8),
-              Icon(Icons.notifications_none, size: 18, color: AppColors.umber),
+              Icon(LucideIcons.bell, size: 18, color: AppColors.umber),
             ],
           ),
           const SizedBox(height: 17),
@@ -79,26 +76,20 @@ class _AlertItem extends StatelessWidget {
         ),
       ),
       child: Row(
-        textDirection: TextDirection.rtl,
         children: [
+          const Icon(LucideIcons.alertTriangle, color: AppColors.umber, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               textAlign: TextAlign.right,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.25,
-                fontWeight: FontWeight.w400,
-                color: AppColors.umber,
-              ),
+              style: AppTextStyles.labelLarge.copyWith(color: AppColors.umber, height: 1.25),
             ),
           ),
-          const SizedBox(width: 10),
-          const Icon(Icons.warning_amber, color: AppColors.umber, size: 18),
         ],
       ),
     );
   }
-} 
+}

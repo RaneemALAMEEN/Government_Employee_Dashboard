@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animate_do/animate_do.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
@@ -82,69 +84,115 @@ class DashboardContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _Header(),
+                FadeInDown(
+                  duration: const Duration(milliseconds: 400),
+                  child: const _Header(),
+                ),
                 const SizedBox(height: 32),
 
                 if (isSmall)
-                  Wrap(
-                    spacing: gap,
-                    runSpacing: gap,
-                    children: dashboard.stats.map((e) {
-                      return SizedBox(
-                        width: 245,
-                        height: 135,
-                        child: StatCard(stat: e),
-                      );
-                    }).toList(),
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 400),
+                    delay: const Duration(milliseconds: 100),
+                    child: Wrap(
+                      spacing: gap,
+                      runSpacing: gap,
+                      children: dashboard.stats.map((e) {
+                        return SizedBox(
+                          width: 245,
+                          height: 135,
+                          child: StatCard(stat: e),
+                        );
+                      }).toList(),
+                    ),
                   )
                 else
                   Row(
                     textDirection: TextDirection.rtl,
                     children: [
-                      Expanded(child: StatCard(stat: dashboard.stats[0])),
+                      Expanded(
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: const Duration(milliseconds: 100),
+                          child: StatCard(stat: dashboard.stats[0]),
+                        ),
+                      ),
                       const SizedBox(width: gap),
-                      Expanded(child: StatCard(stat: dashboard.stats[1])),
+                      Expanded(
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: const Duration(milliseconds: 200),
+                          child: StatCard(stat: dashboard.stats[1]),
+                        ),
+                      ),
                       const SizedBox(width: gap),
-                      Expanded(child: StatCard(stat: dashboard.stats[2])),
+                      Expanded(
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: const Duration(milliseconds: 300),
+                          child: StatCard(stat: dashboard.stats[2]),
+                        ),
+                      ),
                       const SizedBox(width: gap),
-                      Expanded(child: StatCard(stat: dashboard.stats[3])),
+                      Expanded(
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: const Duration(milliseconds: 400),
+                          child: StatCard(stat: dashboard.stats[3]),
+                        ),
+                      ),
                     ],
                   ),
 
                 const SizedBox(height: 32),
 
                 if (isSmall)
-                  Column(
-                    children: [
-                      BottleneckCard(items: dashboard.bottlenecks),
-                      const SizedBox(height: gap),
-                      CompletionTimeCard(
-                        completionTime: dashboard.completionTime,
-                      ),
-                      const SizedBox(height: gap),
-                      WeeklyIndicatorsCard(
-                        indicators: dashboard.weeklyIndicators,
-                      ),
-                    ],
-                  )
-                else
-                  Row(
-                    textDirection: TextDirection.rtl,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: BottleneckCard(items: dashboard.bottlenecks),
-                      ),
-                      const SizedBox(width: gap),
-                      Expanded(
-                        child: CompletionTimeCard(
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 500),
+                    delay: const Duration(milliseconds: 200),
+                    child: Column(
+                      children: [
+                        BottleneckCard(items: dashboard.bottlenecks),
+                        const SizedBox(height: gap),
+                        CompletionTimeCard(
                           completionTime: dashboard.completionTime,
                         ),
+                        const SizedBox(height: gap),
+                        WeeklyIndicatorsCard(
+                          indicators: dashboard.weeklyIndicators,
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Row(
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      Expanded(
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 200),
+                          child: BottleneckCard(items: dashboard.bottlenecks),
+                        ),
                       ),
                       const SizedBox(width: gap),
                       Expanded(
-                        child: WeeklyIndicatorsCard(
-                          indicators: dashboard.weeklyIndicators,
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 300),
+                          child: CompletionTimeCard(
+                            completionTime: dashboard.completionTime,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: gap),
+                      Expanded(
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 400),
+                          child: WeeklyIndicatorsCard(
+                            indicators: dashboard.weeklyIndicators,
+                          ),
                         ),
                       ),
                     ],
@@ -153,16 +201,20 @@ class DashboardContent extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 if (isSmall)
-                  Column(
-                    children: [
-                      const QuickActionsCard(),
-                      const SizedBox(height: gap),
-                      AlertsCard(alerts: dashboard.alerts),
-                      const SizedBox(height: gap),
-                      LatestTransactionsTable(
-                        transactions: dashboard.latestTransactions,
-                      ),
-                    ],
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    delay: const Duration(milliseconds: 300),
+                    child: Column(
+                      children: [
+                        const QuickActionsCard(),
+                        const SizedBox(height: gap),
+                        AlertsCard(alerts: dashboard.alerts),
+                        const SizedBox(height: gap),
+                        LatestTransactionsTable(
+                          transactions: dashboard.latestTransactions,
+                        ),
+                      ],
+                    ),
                   )
                 else
                   Row(
@@ -171,19 +223,27 @@ class DashboardContent extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: 335,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const QuickActionsCard(),
-                            const SizedBox(height: 16),
-                            AlertsCard(alerts: dashboard.alerts),
-                          ],
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 600),
+                          delay: const Duration(milliseconds: 300),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const QuickActionsCard(),
+                              const SizedBox(height: 16),
+                              AlertsCard(alerts: dashboard.alerts),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(width: gap),
                       Expanded(
-                        child: LatestTransactionsTable(
-                          transactions: dashboard.latestTransactions,
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 600),
+                          delay: const Duration(milliseconds: 400),
+                          child: LatestTransactionsTable(
+                            transactions: dashboard.latestTransactions,
+                          ),
                         ),
                       ),
                     ],
@@ -202,7 +262,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Directionality(
+    return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,23 +270,13 @@ class _Header extends StatelessWidget {
           Text(
             'لوحة رئيس الدائرة',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 30,
-              height: 1.15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.forest,
-            ),
+            style: AppTextStyles.displayMedium,
           ),
           SizedBox(height: 6),
           Text(
             'الأحد، 31 يناير 2024 — نظرة شاملة على معاملات الدائرة',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.2,
-              fontWeight: FontWeight.w400,
-              color: AppColors.goldDark,
-            ),
+            style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
           ),
         ],
       ),

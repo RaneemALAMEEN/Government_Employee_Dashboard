@@ -1,4 +1,6 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
@@ -13,13 +15,13 @@ class StatCard extends StatelessWidget {
   IconData get _icon {
     switch (stat.type) {
       case 'done':
-        return Icons.check_circle_outline;
+        return LucideIcons.checkCircle;
       case 'urgent':
-        return Icons.bolt_outlined;
+        return LucideIcons.zap;
       case 'sign':
-        return Icons.edit_square;
+        return LucideIcons.edit;
       default:
-        return Icons.inbox_outlined;
+        return LucideIcons.inbox;
     }
   }
 
@@ -74,19 +76,14 @@ class StatCard extends StatelessWidget {
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   stat.title,
                   textAlign: TextAlign.right,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.25,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.charcoal,
-                  ),
+                  style: AppTextStyles.bodyMedium.copyWith(height: 1.25),
                 ),
                 const SizedBox(height: 7),
                 Text(
@@ -94,12 +91,7 @@ class StatCard extends StatelessWidget {
                   textAlign: TextAlign.right,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.2,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.goldDark,
-                  ),
+                  style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
                 ),
               ],
             ),
@@ -111,12 +103,7 @@ class StatCard extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 stat.value,
-                style: const TextStyle(
-                  fontSize: 34,
-                  height: 1,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.displayLarge,
               ),
             ),
           ),

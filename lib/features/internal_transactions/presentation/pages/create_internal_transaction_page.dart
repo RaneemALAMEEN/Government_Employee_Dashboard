@@ -1,3 +1,4 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:government_employee_dashboard/core/di/injection.dart';
@@ -178,10 +179,7 @@ class _BackButton extends StatelessWidget {
         label: const Text('العودة لمركز المعاملات'),
         style: TextButton.styleFrom(
           foregroundColor: AppColors.forest,
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold),
         ),
       ),
     );
@@ -237,10 +235,7 @@ class _SearchBox extends StatelessWidget {
           filled: true,
           fillColor: AppColors.white,
           hintText: 'البحث في أنواع المعاملات...',
-          hintStyle: const TextStyle(
-            color: AppColors.goldDark,
-            fontSize: 14,
-          ),
+          hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.goldDark),
           prefixIcon: const Icon(
             Icons.search,
             color: AppColors.goldDark,
@@ -312,12 +307,7 @@ class _CategoriesChips extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         category.name,
-                        style: TextStyle(
-                          color:
-                              selected ? AppColors.white : AppColors.charcoal,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: selected ? AppColors.white : AppColors.charcoal),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -332,12 +322,7 @@ class _CategoriesChips extends StatelessWidget {
                         ),
                         child: Text(
                           '1',
-                          style: TextStyle(
-                            color:
-                                selected ? AppColors.white : AppColors.goldDark,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: selected ? AppColors.white : AppColors.goldDark),
                         ),
                       ),
                     ],
@@ -373,16 +358,12 @@ class _ProcessesGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (processes.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 180,
         child: Center(
           child: Text(
             'لا توجد معاملات ضمن هذا التصنيف',
-            style: TextStyle(
-              color: AppColors.goldDark,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.titleSmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
           ),
         ),
       );
@@ -491,12 +472,7 @@ class _ProcessCardState extends State<_ProcessCard> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: AppColors.charcoalDark,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        height: 1.4,
-                      ),
+                      style: AppTextStyles.titleMedium.copyWith(fontSize: 17, fontWeight: AppTextStyles.bold, height: 1.4),
                     ),
                   ),
                 ],
@@ -518,14 +494,10 @@ class _ProcessCardState extends State<_ProcessCard> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '5 خطوات',
                 textAlign: TextAlign.left,
-                style: TextStyle(
-                  color: AppColors.goldDark,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.goldDark),
               ),
               const SizedBox(height: 18),
               const Divider(height: 1),
@@ -549,13 +521,9 @@ class _ProcessCardState extends State<_ProcessCard> {
                     ),
                   ),
                   const Spacer(),
-                  const Text(
+                  Text(
                     'إنشاء هذه المعاملة',
-                    style: TextStyle(
-                      color: AppColors.forest,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
                   ),
                 ],
               ),
@@ -586,11 +554,7 @@ class _ErrorBox extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.right,
-        style: const TextStyle(
-          color: AppColors.umber,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.umber),
       ),
     );
   }

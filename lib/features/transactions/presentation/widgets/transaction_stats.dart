@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
 
 class TransactionStats extends StatelessWidget {
   final int waitingCount;
@@ -127,22 +128,20 @@ class _StatCard extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.charcoal,
+              style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: isSmall ? 14 : 15,
                 height: 1.25,
-                fontWeight: FontWeight.w500,
+                fontWeight: AppTextStyles.medium,
               ),
             ),
           ),
           const SizedBox(width: 12),
           Text(
             value,
-            style: TextStyle(
-              color: AppColors.forest,
-             fontSize: isSmall ? 30 : 36,
+            style: AppTextStyles.displayMedium.copyWith(
+              fontSize: isSmall ? 30 : 36,
               height: 1,
-              fontWeight: FontWeight.w700,
+              fontWeight: AppTextStyles.bold,
             ),
           ),
         ],

@@ -1,4 +1,6 @@
+import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/dashboard_entity.dart';
 
@@ -29,20 +31,15 @@ class WeeklyIndicatorsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Row(
+          Row(
             textDirection: TextDirection.rtl,
             children: [
               Text(
                 'مؤشرات الأسبوع',
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 1.1,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.forest,
-                ),
+                style: AppTextStyles.titleLarge.copyWith(height: 1.1),
               ),
               SizedBox(width: 8),
-              Icon(Icons.trending_up, color: AppColors.forest, size: 20),
+              Icon(LucideIcons.trendingUp, color: AppColors.forest, size: 20),
             ],
           ),
           const SizedBox(height: 27),
@@ -92,22 +89,13 @@ class _IndicatorRow extends StatelessWidget {
                 Text(
                   item.title,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.charcoalDark,
-                  ),
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark, height: 1),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   item.subtitle,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    height: 1,
-                    color: AppColors.goldDark,
-                  ),
+                  style: AppTextStyles.labelMedium.copyWith(color: AppColors.goldDark, height: 1),
                 ),
               ],
             ),
@@ -115,12 +103,7 @@ class _IndicatorRow extends StatelessWidget {
           const SizedBox(width: 16),
           Text(
             item.value,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1,
-              fontWeight: FontWeight.w600,
-              color: valueColor,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.semiBold, color: valueColor, height: 1),
           ),
         ],
       ),
