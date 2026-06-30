@@ -55,7 +55,6 @@ class UsbSigningService {
 
     return base64Encode(signature.bytes);
   }
-<<<<<<< HEAD
 
   Future<List<int>> _readCipherText(File encFile) async {
     try {
@@ -141,6 +140,3 @@ class UsbSigningService {
     }
   }
 }
-=======
-}
->>>>>>> f622de6252a0e071a03f6190dd26b9bc9710646f
