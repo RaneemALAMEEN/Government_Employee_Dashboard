@@ -54,6 +54,10 @@ dependencies:
   cryptography: ^2.9.0
   syncfusion_flutter_pdfviewer: ^33.2.13
   pointycastle: ^4.0.0
+  stream_transform: ^2.1.1
+  image: ^4.5.3
+  desktop_drop: ^0.5.0
+  pdfx: ^2.9.2
 
 dev_dependencies:
   flutter_test:

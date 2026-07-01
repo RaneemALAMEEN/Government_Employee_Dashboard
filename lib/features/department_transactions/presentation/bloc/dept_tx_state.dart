@@ -9,51 +9,51 @@ class DeptTxInitial extends DeptTxState {}
 class DeptTxLoading extends DeptTxState {}
 
 class DeptTxLoaded extends DeptTxState {
-  final List<DepartmentTransactionEntity> allTransactions;
-  final List<DepartmentTransactionEntity> filteredTransactions;
+  final List<DepartmentTransactionEntity> transactions;
   final String statusFilter;
-  final String classificationFilter;
+  final String? fromDate;
+  final String? toDate;
   final String searchQuery;
-
+  final int page;
+  final bool hasReachedMax;
+  final bool isFetchingMore;
+  
   // Stats
   final int totalCount;
-  final int pendingCount;
-  final int processingCount;
-  final int completedCount;
 
   const DeptTxLoaded({
-    required this.allTransactions,
-    required this.filteredTransactions,
+    required this.transactions,
     required this.statusFilter,
-    required this.classificationFilter,
+    this.fromDate,
+    this.toDate,
     required this.searchQuery,
+    required this.page,
+    required this.hasReachedMax,
+    this.isFetchingMore = false,
     required this.totalCount,
-    required this.pendingCount,
-    required this.processingCount,
-    required this.completedCount,
   });
 
   DeptTxLoaded copyWith({
-    List<DepartmentTransactionEntity>? allTransactions,
-    List<DepartmentTransactionEntity>? filteredTransactions,
+    List<DepartmentTransactionEntity>? transactions,
     String? statusFilter,
-    String? classificationFilter,
+    String? fromDate,
+    String? toDate,
     String? searchQuery,
+    int? page,
+    bool? hasReachedMax,
+    bool? isFetchingMore,
     int? totalCount,
-    int? pendingCount,
-    int? processingCount,
-    int? completedCount,
   }) {
     return DeptTxLoaded(
-      allTransactions: allTransactions ?? this.allTransactions,
-      filteredTransactions: filteredTransactions ?? this.filteredTransactions,
+      transactions: transactions ?? this.transactions,
       statusFilter: statusFilter ?? this.statusFilter,
-      classificationFilter: classificationFilter ?? this.classificationFilter,
+      fromDate: fromDate ?? this.fromDate,
+      toDate: toDate ?? this.toDate,
       searchQuery: searchQuery ?? this.searchQuery,
+      page: page ?? this.page,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       totalCount: totalCount ?? this.totalCount,
-      pendingCount: pendingCount ?? this.pendingCount,
-      processingCount: processingCount ?? this.processingCount,
-      completedCount: completedCount ?? this.completedCount,
     );
   }
 }

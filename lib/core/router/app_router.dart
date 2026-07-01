@@ -14,6 +14,7 @@ import '../../features/internal_transactions/presentation/pages/create_internal_
 import '../../features/internal_transactions/presentation/pages/internal_transaction_form_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
+import '../../features/document_quality_checker/presentation/pages/document_quality_checker_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -126,6 +127,12 @@ class AppRouter {
             path: '/complaints',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ComingSoonPage(title: 'الشكاوى'),
+            ),
+          ),
+          GoRoute(
+            path: '/document-quality-checker',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DocumentQualityCheckerPage(),
             ),
           ),
         ],

@@ -72,7 +72,11 @@ class BottleneckCard extends StatelessWidget {
               ),
               child: Text(
                 'عرض تقرير تفصيلي',
-                style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: AppTextStyles.semiBold, 
+                  height: 1, 
+                  color: AppColors.white,
+                ),
               ),
             ),
           ),

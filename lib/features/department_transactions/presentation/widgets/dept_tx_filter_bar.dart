@@ -5,19 +5,21 @@ import '../../../../shared/theme/app_colors.dart';
 
 class DeptTxFilterBar extends StatefulWidget {
   final String activeStatusFilter;
-  final String activeClassificationFilter;
   final String searchQuery;
+  final String? fromDate;
+  final String? toDate;
   final ValueChanged<String> onStatusFilterChanged;
-  final ValueChanged<String> onClassificationFilterChanged;
+  final Function(String?, String?) onDateRangeChanged;
   final ValueChanged<String> onSearchChanged;
 
   const DeptTxFilterBar({
     super.key,
     required this.activeStatusFilter,
-    required this.activeClassificationFilter,
     required this.searchQuery,
+    this.fromDate,
+    this.toDate,
     required this.onStatusFilterChanged,
-    required this.onClassificationFilterChanged,
+    required this.onDateRangeChanged,
     required this.onSearchChanged,
   });
 
@@ -48,18 +50,41 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
     super.dispose();
   }
 
+  Future<void> _selectDateRange(BuildContext context) async {
+    final initialDateRange = DateTimeRange(
+      start: widget.fromDate != null ? DateTime.tryParse(widget.fromDate!) ?? DateTime.now().subtract(const Duration(days: 30)) : DateTime.now().subtract(const Duration(days: 30)),
+      end: widget.toDate != null ? DateTime.tryParse(widget.toDate!) ?? DateTime.now() : DateTime.now(),
+    );
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: initialDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.forest,
+              onPrimary: Colors.white,
+              onSurface: AppColors.charcoalDark,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final fromStr = "${picked.start.year}-${picked.start.month.toString().padLeft(2, '0')}-${picked.start.day.toString().padLeft(2, '0')}";
+      final toStr = "${picked.end.year}-${picked.end.month.toString().padLeft(2, '0')}-${picked.end.day.toString().padLeft(2, '0')}";
+      widget.onDateRangeChanged(fromStr, toStr);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final statuses = ['الكل', 'قيد الانتظار', 'قيد المعالجة', 'منجزة', 'مرفوضة'];
-    final classifications = [
-      'الكل',
-      'الموارد البشرية',
-      'التعليم الأساسي',
-      'الأبنية والصيانة',
-      'الشؤون الإدارية',
-      'التعليم الثانوي',
-      'التخطيط'
-    ];
+    final statuses = ['منجزة', 'مرفوضة'];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -98,30 +123,36 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
           ),
         );
 
-        final classificationDropdown = Container(
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.gold.withOpacity(0.25)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: widget.activeClassificationFilter,
-              icon: const Icon(LucideIcons.chevronDown, color: AppColors.forest, size: 20),
-              style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
-              onChanged: (val) {
-                if (val != null) {
-                  widget.onClassificationFilterChanged(val);
-                }
-              },
-              items: classifications.map((cls) {
-                return DropdownMenuItem<String>(
-                  value: cls,
-                  child: Text(cls),
-                );
-              }).toList(),
+        final datePickerButton = InkWell(
+          onTap: () => _selectDateRange(context),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.calendar, color: AppColors.forest, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  (widget.fromDate != null && widget.toDate != null) 
+                    ? '${widget.fromDate} إلى ${widget.toDate}'
+                    : 'تحديد الفترة الزمنية',
+                  style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
+                ),
+                if (widget.fromDate != null || widget.toDate != null) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => widget.onDateRangeChanged(null, null),
+                    child: const Icon(LucideIcons.x, size: 16, color: Colors.grey),
+                  ),
+                ],
+              ],
             ),
           ),
         );
@@ -166,7 +197,7 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  classificationDropdown,
+                  datePickerButton,
                   const Spacer(),
                 ],
               ),
@@ -183,7 +214,7 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
           children: [
             searchBox,
             const SizedBox(width: 12),
-            classificationDropdown,
+            datePickerButton,
             const Spacer(),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,

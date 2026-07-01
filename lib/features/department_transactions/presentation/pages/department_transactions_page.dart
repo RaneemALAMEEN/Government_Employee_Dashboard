@@ -17,17 +17,44 @@ class DepartmentTransactionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<DeptTxBloc>(
-      create: (_) => getIt<DeptTxBloc>()..add(LoadDeptTx()),
+      create: (_) => getIt<DeptTxBloc>()..add(const LoadDeptTx()),
       child: const _DepartmentTransactionsView(),
     );
   }
 }
 
-class _DepartmentTransactionsView extends StatelessWidget {
+class _DepartmentTransactionsView extends StatefulWidget {
   const _DepartmentTransactionsView();
 
+  @override
+  State<_DepartmentTransactionsView> createState() => _DepartmentTransactionsViewState();
+}
+
+class _DepartmentTransactionsViewState extends State<_DepartmentTransactionsView> {
   static const double contentPadding = 32;
   static const double gap = 20;
+  
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      context.read<DeptTxBloc>().add(LoadMoreDeptTx());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +80,7 @@ class _DepartmentTransactionsView extends StatelessWidget {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    context.read<DeptTxBloc>().add(LoadDeptTx());
+                    context.read<DeptTxBloc>().add(const LoadDeptTx());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.forest,
@@ -72,6 +99,7 @@ class _DepartmentTransactionsView extends StatelessWidget {
               final isSmall = constraints.maxWidth < 1050;
 
               return SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(
                   contentPadding,
                   32,
@@ -114,26 +142,8 @@ class _DepartmentTransactionsView extends StatelessWidget {
                                 children: [
                                   DeptTxStatsCard(
                                     value: '${state.totalCount}',
-                                    label: 'الإجمالي',
+                                    label: 'الإجمالي (${state.statusFilter})',
                                     valueColor: AppColors.charcoalDark,
-                                  ),
-                                  const SizedBox(height: gap),
-                                  DeptTxStatsCard(
-                                    value: '${state.pendingCount}',
-                                    label: 'قيد الانتظار',
-                                    valueColor: Colors.blue.shade700,
-                                  ),
-                                  const SizedBox(height: gap),
-                                  DeptTxStatsCard(
-                                    value: '${state.processingCount}',
-                                    label: 'قيد المعالجة',
-                                    valueColor: AppColors.goldDark,
-                                  ),
-                                  const SizedBox(height: gap),
-                                  DeptTxStatsCard(
-                                    value: '${state.completedCount}',
-                                    label: 'منجزة',
-                                    valueColor: AppColors.forest,
                                   ),
                                 ],
                               )
@@ -143,34 +153,16 @@ class _DepartmentTransactionsView extends StatelessWidget {
                                   Expanded(
                                     child: DeptTxStatsCard(
                                       value: '${state.totalCount}',
-                                      label: 'الإجمالي',
+                                      label: 'الإجمالي (${state.statusFilter})',
                                       valueColor: AppColors.charcoalDark,
                                     ),
                                   ),
                                   const SizedBox(width: gap),
-                                  Expanded(
-                                    child: DeptTxStatsCard(
-                                      value: '${state.pendingCount}',
-                                      label: 'قيد الانتظار',
-                                      valueColor: Colors.blue.shade700,
-                                    ),
-                                  ),
+                                  const Spacer(), // Placeholder for future stats
                                   const SizedBox(width: gap),
-                                  Expanded(
-                                    child: DeptTxStatsCard(
-                                      value: '${state.processingCount}',
-                                      label: 'قيد المعالجة',
-                                      valueColor: AppColors.goldDark,
-                                    ),
-                                  ),
+                                  const Spacer(),
                                   const SizedBox(width: gap),
-                                  Expanded(
-                                    child: DeptTxStatsCard(
-                                      value: '${state.completedCount}',
-                                      label: 'منجزة',
-                                      valueColor: AppColors.forest,
-                                    ),
-                                  ),
+                                  const Spacer(),
                                 ],
                               ),
                       ),
@@ -182,13 +174,14 @@ class _DepartmentTransactionsView extends StatelessWidget {
                         delay: const Duration(milliseconds: 140),
                         child: DeptTxFilterBar(
                           activeStatusFilter: state.statusFilter,
-                          activeClassificationFilter: state.classificationFilter,
                           searchQuery: state.searchQuery,
+                          fromDate: state.fromDate,
+                          toDate: state.toDate,
                           onStatusFilterChanged: (filter) {
                             context.read<DeptTxBloc>().add(FilterDeptTxByStatus(filter));
                           },
-                          onClassificationFilterChanged: (filter) {
-                            context.read<DeptTxBloc>().add(FilterDeptTxByClassification(filter));
+                          onDateRangeChanged: (from, to) {
+                            context.read<DeptTxBloc>().add(FilterDeptTxByDate(fromDate: from, toDate: to));
                           },
                           onSearchChanged: (query) {
                             context.read<DeptTxBloc>().add(SearchDeptTx(query));
@@ -202,9 +195,18 @@ class _DepartmentTransactionsView extends StatelessWidget {
                         duration: const Duration(milliseconds: 500),
                         delay: const Duration(milliseconds: 220),
                         child: DeptTxTable(
-                          transactions: state.filteredTransactions,
+                          transactions: state.transactions,
                         ),
                       ),
+                      
+                      // Loading indicator at bottom
+                      if (state.isFetchingMore)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.forest),
+                          ),
+                        ),
                     ],
                   ),
                 ),

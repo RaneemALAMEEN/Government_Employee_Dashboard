@@ -59,7 +59,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
               textDirection: TextDirection.rtl,
               children: [
                 Text(
-                  '${widget.transactions.length} معاملة',
+                  '${widget.transactions.length} معاملة في هذه الصفحة',
                   style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
                 ),
                 const Spacer(),
@@ -130,7 +130,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
                       itemBuilder: (context, index) {
                         return FadeInUp(
                           duration: const Duration(milliseconds: 350),
-                          delay: Duration(milliseconds: index * 45),
+                          delay: Duration(milliseconds: (index % 10) * 45),
                           child: _TransactionRow(tx: widget.transactions[index]),
                         );
                       },
@@ -176,9 +176,9 @@ class _TableHeader extends StatelessWidget {
         children: [
           _HeaderText('رقم المعاملة', flex: 12),
           _HeaderText('النوع', flex: 16),
-          _HeaderText('التصنيف', flex: 14),
+          _HeaderText('الدائرة', flex: 14),
           _HeaderText('التاريخ', flex: 12),
-          _HeaderText('بين يدي', flex: 18),
+          _HeaderText('المقدم', flex: 18),
           _HeaderText('الحالة', flex: 14),
           _HeaderText('عرض التفاصيل', flex: 20),
         ],
@@ -195,7 +195,7 @@ class _TransactionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Generate avatar background color based on name letter
-    final String firstLetter = tx.assignedTo.isNotEmpty ? tx.assignedTo[0] : '';
+    final String firstLetter = tx.applicantName.isNotEmpty ? tx.applicantName[0] : '';
     final Color avatarBgColor = _getAvatarColor(firstLetter);
 
     return SizedBox(
@@ -210,7 +210,7 @@ class _TransactionRow extends StatelessWidget {
               flex: 12,
               child: Center(
                 child: Text(
-                  tx.number,
+                  tx.transactionNumber,
                   style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
                 ),
               ),
@@ -223,7 +223,7 @@ class _TransactionRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
-                    LucideIcons.user,
+                    LucideIcons.fileText,
                     size: 15,
                     color: AppColors.charcoal,
                   ),
@@ -240,7 +240,7 @@ class _TransactionRow extends StatelessWidget {
                 ],
               ),
             ),
-            // Classification Badge
+            // Department Badge
             Expanded(
               flex: 14,
               child: Center(
@@ -252,7 +252,7 @@ class _TransactionRow extends StatelessWidget {
                     border: Border.all(color: AppColors.forest.withOpacity(0.12)),
                   ),
                   child: Text(
-                    tx.classification,
+                    tx.department,
                     style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.forest, height: 1),
                   ),
                 ),
@@ -260,7 +260,7 @@ class _TransactionRow extends StatelessWidget {
             ),
             // Date
             _CellText(tx.date, flex: 12, color: AppColors.charcoal.withOpacity(0.70)),
-            // Assigned To ("بين يدي")
+            // Applicant Name
             Expanded(
               flex: 18,
               child: Row(
@@ -278,32 +278,18 @@ class _TransactionRow extends StatelessWidget {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      tx.assignedTo,
+                      tx.applicantName,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
                     ),
                   ),
-                  if (tx.isAssignedToMe) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'أنت',
-                        style: AppTextStyles.labelSmall.copyWith(fontSize: 9, fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
             // Status Badge
             Expanded(
               flex: 14,
-              child: Center(child: _StatusBadge(status: tx.status)),
+              child: Center(child: _StatusBadge(status: tx.status, statusLabel: tx.statusLabel)),
             ),
             // Details Action Button
             Expanded(
@@ -410,8 +396,9 @@ class _CellText extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final String status;
+  final String statusLabel;
 
-  const _StatusBadge({required this.status});
+  const _StatusBadge({required this.status, required this.statusLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -419,19 +406,20 @@ class _StatusBadge extends StatelessWidget {
     Color fg;
 
     switch (status) {
-      case 'قيد الانتظار':
+      case 'pending_pickup':
         bg = Colors.blue.shade50;
         fg = Colors.blue.shade700;
         break;
-      case 'قيد المعالجة':
+      case 'in_progress':
         bg = AppColors.gold.withOpacity(0.14);
         fg = AppColors.goldDark;
         break;
-      case 'منجزة':
+      case 'completed':
         bg = AppColors.forestLight.withOpacity(0.12);
         fg = AppColors.forest;
         break;
-      default: // مرفوضة
+      case 'rejected':
+      default:
         bg = AppColors.umber.withOpacity(0.08);
         fg = AppColors.umber;
     }
@@ -443,7 +431,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status,
+        statusLabel,
         style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
       ),
     );

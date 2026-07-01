@@ -28,6 +28,7 @@ class SideMenu extends StatelessWidget {
       const _MenuItem(LucideIcons.building, 'معاملات الدائرة', '/department-transactions'),
       const _MenuItem(LucideIcons.users, 'الموظفين', '/employees'),
       const _MenuItem(LucideIcons.messageSquare, 'الشكاوى', '/complaints'),
+      const _MenuItem(LucideIcons.shieldCheck, 'فحص الوثائق', '/document-quality-checker'),
     ];
 
     return Container(

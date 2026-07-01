@@ -39,12 +39,20 @@ class _AppShellState extends State<AppShell> {
 
           final isCollapsed = _userCollapsedOverride ?? isSmallScreen;
 
-          final content = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const TopBar(),
-              Expanded(child: widget.child),
-            ],
+          final double currentSidebarWidth = isCollapsed ? 72 : sidebarWidth;
+          final double availableWidth = constraints.maxWidth - currentSidebarWidth;
+          final double minContentWidth = 600.0;
+          final double contentWidth = availableWidth < minContentWidth ? minContentWidth : availableWidth;
+
+          final content = SizedBox(
+            width: contentWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const TopBar(),
+                Expanded(child: widget.child),
+              ],
+            ),
           );
 
           return Row(
@@ -52,7 +60,7 @@ class _AppShellState extends State<AppShell> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
-                width: isCollapsed ? 72 : sidebarWidth,
+                width: currentSidebarWidth,
                 child: SideMenu(
                   isCollapsed: isCollapsed,
                   onToggleCollapse: () {
@@ -62,7 +70,12 @@ class _AppShellState extends State<AppShell> {
                   },
                 ),
               ),
-              Expanded(child: content),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: content,
+                ),
+              ),
             ],
           );
         },
