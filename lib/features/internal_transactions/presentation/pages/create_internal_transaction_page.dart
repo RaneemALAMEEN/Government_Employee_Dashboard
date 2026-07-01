@@ -1,13 +1,14 @@
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:government_employee_dashboard/core/di/injection.dart';
 
-import '../../../../core/services/api_service.dart';
 import '../../../../shared/theme/app_colors.dart';
-import '../../data/datasources/internal_transactions_remote_data_source.dart';
 import '../../domain/entities/internal_category_entity.dart';
 import '../../domain/entities/internal_process_entity.dart';
+import '../bloc/create_internal_transaction/create_internal_transaction_bloc.dart';
+import '../bloc/create_internal_transaction/create_internal_transaction_event.dart';
+import '../bloc/create_internal_transaction/create_internal_transaction_state.dart';
 
 class CreateInternalTransactionPage extends StatefulWidget {
   const CreateInternalTransactionPage({super.key});
@@ -19,28 +20,7 @@ class CreateInternalTransactionPage extends StatefulWidget {
 
 class _CreateInternalTransactionPageState
     extends State<CreateInternalTransactionPage> {
-  final _dataSource = InternalTransactionsRemoteDataSource(
-    getIt<ApiService>(),
-  );
-
   final _searchController = TextEditingController();
-
-  List<InternalCategoryEntity> _categories = [];
-  List<InternalProcessEntity> _processes = [];
-
-  int _selectedCategoryId = -1;
-  bool _loadingCategories = true;
-  bool _loadingProcesses = false;
-  String? _errorMessage;
-
-  static const int _page = 1;
-  static const int _limit = 6;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
 
   @override
   void dispose() {
@@ -48,122 +28,73 @@ class _CreateInternalTransactionPageState
     super.dispose();
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await _dataSource.getCategories();
-
-      if (!mounted) return;
-
-      setState(() {
-        _categories = categories;
-        _loadingCategories = false;
-        _selectedCategoryId = categories.isNotEmpty ? categories.first.id : -1;
-      });
-
-      if (categories.isNotEmpty) {
-        await _loadProcesses(categories.first.id);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loadingCategories = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
+  void _onSearchChanged(String value) {
+    context.read<CreateInternalTransactionBloc>().add(
+          SearchInternalTransactionProcesses(value),
+        );
   }
 
-  Future<void> _loadProcesses(int categoryId) async {
-    setState(() {
-      _loadingProcesses = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final data = await _dataSource.getProcessesByCategory(
-        categoryId: categoryId,
-        page: _page,
-        limit: _limit,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _processes = data.items;
-        _loadingProcesses = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _processes = [];
-        _loadingProcesses = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
-  void _selectCategory(int id) {
-    if (_selectedCategoryId == id) return;
-
-    setState(() {
-      _selectedCategoryId = id;
-    });
-
-    _loadProcesses(id);
+  void _onCategorySelected(int id) {
+    context.read<CreateInternalTransactionBloc>().add(
+          SelectInternalTransactionCategory(id),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredProcesses = _searchController.text.trim().isEmpty
-        ? _processes
-        : _processes.where((item) {
-            final query = _searchController.text.trim();
-            return item.name.contains(query) || item.code.contains(query);
-          }).toList();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _BackButton(),
-            const SizedBox(height: 36),
-            const _Header(),
-            const SizedBox(height: 28),
-            _SearchBox(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
+    return BlocBuilder<CreateInternalTransactionBloc,
+        CreateInternalTransactionState>(
+      builder: (context, state) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _BackButton(),
+                const SizedBox(height: 36),
+                const _Header(),
+                const SizedBox(height: 28),
+                _SearchBox(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                ),
+                const SizedBox(height: 20),
+                if (state.loadingCategories)
+                  const SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.forest,
+                      ),
+                    ),
+                  )
+                else
+                  _CategoriesChips(
+                    categories: state.categories,
+                    selectedCategoryId: state.selectedCategoryId,
+                    onSelected: _onCategorySelected,
+                  ),
+                const SizedBox(height: 32),
+                if (state.errorMessage != null)
+                  _ErrorBox(message: state.errorMessage!)
+                else if (state.loadingProcesses)
+                  const SizedBox(
+                    height: 220,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.forest,
+                      ),
+                    ),
+                  )
+                else
+                  _ProcessesGrid(processes: state.filteredProcesses),
+              ],
             ),
-            const SizedBox(height: 20),
-            if (_loadingCategories)
-              const SizedBox(
-                height: 120,
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.forest),
-                ),
-              )
-            else
-              _CategoriesChips(
-                categories: _categories,
-                selectedCategoryId: _selectedCategoryId,
-                onSelected: _selectCategory,
-              ),
-            const SizedBox(height: 32),
-            if (_errorMessage != null)
-              _ErrorBox(message: _errorMessage!)
-            else if (_loadingProcesses)
-              const SizedBox(
-                height: 220,
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.forest),
-                ),
-              )
-            else
-              _ProcessesGrid(processes: filteredProcesses),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -179,7 +110,9 @@ class _BackButton extends StatelessWidget {
         label: const Text('العودة لمركز المعاملات'),
         style: TextButton.styleFrom(
           foregroundColor: AppColors.forest,
-          textStyle: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold),
+          textStyle: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: AppTextStyles.bold,
+          ),
         ),
       ),
     );
@@ -235,7 +168,9 @@ class _SearchBox extends StatelessWidget {
           filled: true,
           fillColor: AppColors.white,
           hintText: 'البحث في أنواع المعاملات...',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.goldDark),
+          hintStyle: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.goldDark,
+          ),
           prefixIcon: const Icon(
             Icons.search,
             color: AppColors.goldDark,
@@ -268,6 +203,21 @@ class _CategoriesChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (categories.isEmpty) {
+      return SizedBox(
+        height: 80,
+        child: Center(
+          child: Text(
+            'لا توجد تصنيفات متاحة حالياً',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: AppTextStyles.semiBold,
+              color: AppColors.goldDark,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Align(
       alignment: Alignment.centerRight,
       child: Wrap(
@@ -307,7 +257,11 @@ class _CategoriesChips extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         category.name,
-                        style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: selected ? AppColors.white : AppColors.charcoal),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: AppTextStyles.semiBold,
+                          color:
+                              selected ? AppColors.white : AppColors.charcoal,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -322,7 +276,12 @@ class _CategoriesChips extends StatelessWidget {
                         ),
                         child: Text(
                           '1',
-                          style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.bold, color: selected ? AppColors.white : AppColors.goldDark),
+                          style: AppTextStyles.labelLarge.copyWith(
+                            fontWeight: AppTextStyles.bold,
+                            color: selected
+                                ? AppColors.white
+                                : AppColors.goldDark,
+                          ),
                         ),
                       ),
                     ],
@@ -363,7 +322,10 @@ class _ProcessesGrid extends StatelessWidget {
         child: Center(
           child: Text(
             'لا توجد معاملات ضمن هذا التصنيف',
-            style: AppTextStyles.titleSmall.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.goldDark),
+            style: AppTextStyles.titleSmall.copyWith(
+              fontWeight: AppTextStyles.semiBold,
+              color: AppColors.goldDark,
+            ),
           ),
         ),
       );
@@ -472,7 +434,11 @@ class _ProcessCardState extends State<_ProcessCard> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: AppTextStyles.titleMedium.copyWith(fontSize: 17, fontWeight: AppTextStyles.bold, height: 1.4),
+                      style: AppTextStyles.titleMedium.copyWith(
+                        fontSize: 17,
+                        fontWeight: AppTextStyles.bold,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -497,7 +463,10 @@ class _ProcessCardState extends State<_ProcessCard> {
               Text(
                 '5 خطوات',
                 textAlign: TextAlign.left,
-                style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.goldDark),
+                style: AppTextStyles.labelLarge.copyWith(
+                  fontWeight: AppTextStyles.medium,
+                  color: AppColors.goldDark,
+                ),
               ),
               const SizedBox(height: 18),
               const Divider(height: 1),
@@ -523,7 +492,10 @@ class _ProcessCardState extends State<_ProcessCard> {
                   const Spacer(),
                   Text(
                     'إنشاء هذه المعاملة',
-                    style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.bold, color: AppColors.forest),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: AppTextStyles.bold,
+                      color: AppColors.forest,
+                    ),
                   ),
                 ],
               ),
@@ -554,7 +526,10 @@ class _ErrorBox extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.right,
-        style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.umber),
+        style: AppTextStyles.bodyMedium.copyWith(
+          fontWeight: AppTextStyles.semiBold,
+          color: AppColors.umber,
+        ),
       ),
     );
   }

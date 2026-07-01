@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-
+import '../../features/internal_transactions/di/injection.dart';
 import '../network/dio_client.dart';
 import '../services/api_service.dart';
 import '../services/session_service.dart';
@@ -33,4 +33,6 @@ Future<void> setupCoreInjection() async {
       () => ApiService(getIt<Dio>()),
     );
   }
+
+    setupInternalTransactionsInjection(getIt);
 }

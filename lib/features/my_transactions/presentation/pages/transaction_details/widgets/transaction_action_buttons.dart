@@ -1,7 +1,8 @@
 import '../../../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:government_employee_dashboard/shared/theme/app_colors.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+
 
 class TransactionActionButtons extends StatelessWidget {
   final String status;

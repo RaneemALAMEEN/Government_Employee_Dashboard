@@ -2,7 +2,8 @@ import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/assigned_transaction_entity.dart';
 import '../../domain/entities/employee_entity.dart';
