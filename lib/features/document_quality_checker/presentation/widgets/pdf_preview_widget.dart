@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -61,7 +61,8 @@ class _PdfPreviewWidgetState extends State<PdfPreviewWidget> {
             SizedBox(
               height: 340,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(11)),
                 child: PdfView(
                   controller: _controller,
                   onPageChanged: (page) {
@@ -76,7 +77,8 @@ class _PdfPreviewWidgetState extends State<PdfPreviewWidget> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.goldLight.withOpacity(0.5),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(11)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(11)),
               ),
               child: Column(
                 children: [
@@ -119,7 +121,8 @@ class _PdfPreviewWidgetState extends State<PdfPreviewWidget> {
                   if (widget.totalPages > widget.analyzedPages) ...[
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppColors.goldDark.withOpacity(0.10),
                         borderRadius: BorderRadius.circular(6),
@@ -162,7 +165,9 @@ class _NavButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 18,
-            color: enabled ? AppColors.forest : AppColors.charcoal.withOpacity(0.3),
+            color: enabled
+                ? AppColors.forest
+                : AppColors.charcoal.withOpacity(0.3),
           ),
         ),
       ),

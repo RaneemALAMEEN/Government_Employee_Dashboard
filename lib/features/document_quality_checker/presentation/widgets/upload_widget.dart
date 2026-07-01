@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
@@ -136,7 +136,9 @@ class _UploadWidgetState extends State<UploadWidget> {
                     child: Icon(
                       LucideIcons.uploadCloud,
                       size: 40,
-                      color: _isDragging ? AppColors.forest : AppColors.forestLight,
+                      color: _isDragging
+                          ? AppColors.forest
+                          : AppColors.forestLight,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -144,7 +146,9 @@ class _UploadWidgetState extends State<UploadWidget> {
                     'اسحب الملف هنا أو اضغط للاختيار',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.titleMedium.copyWith(
-                      color: _isDragging ? AppColors.forest : AppColors.charcoalDark,
+                      color: _isDragging
+                          ? AppColors.forest
+                          : AppColors.charcoalDark,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -159,7 +163,8 @@ class _UploadWidgetState extends State<UploadWidget> {
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: AppColors.umber.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(8),
