@@ -154,12 +154,23 @@ class PushSocket {
     Uri uri;
     try {
       final base = Uri.parse(wsBase);
-      uri = (token != null && token.isNotEmpty)
-          ? base.replace(queryParameters: {
-              ...base.queryParameters,
-              'token': token,
-            })
-          : base;
+
+      // نضبط المنفذ صراحةً: على Windows مع IOWebSocketChannel قد يبقى المنفذ
+      // 0 عندما لا يُحدَّد في الرابط (wss بلا :443)، فيفشل الاتصال بخطأ 10049
+      // (address not valid / port=0). نشتقّه من المخطّط إن كان صفرًا.
+      final explicitPort = base.hasPort
+          ? base.port
+          : (base.scheme == 'wss' || base.scheme == 'https' ? 443 : 80);
+
+      final queryParams = {
+        ...base.queryParameters,
+        if (token != null && token.isNotEmpty) 'token': token,
+      };
+
+      uri = base.replace(
+        port: explicitPort,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
     } catch (e) {
       debugPrint('[PushSocket] WS_URL غير صالح: $e');
       return;
