@@ -149,12 +149,12 @@ class AppRouter {
               child: ComingSoonPage(title: 'الشكاوى'),
             ),
           ),
-          GoRoute(
-            path: '/document-quality-checker',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: DocumentQualityCheckerPage(),
-            ),
-          ),
+          // GoRoute(
+          //   path: '/document-quality-checker',
+          //   pageBuilder: (context, state) => const NoTransitionPage(
+          //     child: DocumentQualityCheckerPage(),
+          //   ),
+          // ),
         ],
       ),
     ],

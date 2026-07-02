@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
@@ -154,4 +155,20 @@ class InternalTransactionsRepositoryImpl
   String _cleanError(Object error) {
     return error.toString().replaceFirst('Exception: ', '');
   }
+
+  @override
+Future<Either<Failure, DocumentTemplateEntity>> getDocumentTemplate({
+  required int templateId,
+}) async {
+  try {
+    final data = await remoteDataSource.getDocumentTemplate(
+      templateId: templateId,
+    );
+    return Right(data);
+  } on ServerException catch (e) {
+    return Left(ServerFailure(e.message));
+  } catch (e) {
+    return Left(ServerFailure(_cleanError(e)));
+  }
+}
 }

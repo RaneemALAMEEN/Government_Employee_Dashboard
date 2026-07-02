@@ -33,6 +33,9 @@ class EndPoints {
       'api/transaction/process/$processId/submit-documents/signing-challenge';
   String completeSignedTransaction(int transactionId) =>
       'api/transaction/$transactionId/submit-documents/complete';
+
+      String documentTemplate(int id) =>
+    'api/document-templates/$id';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

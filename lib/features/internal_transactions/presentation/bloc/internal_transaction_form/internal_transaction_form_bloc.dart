@@ -4,6 +4,7 @@ import '../../../../../core/services/usb_signing_service.dart';
 import '../../../domain/entities/dynamic_form_entity.dart';
 import '../../../domain/usecases/complete_signed_transaction_usecase.dart';
 import '../../../domain/usecases/create_signing_challenge_usecase.dart';
+import '../../../domain/usecases/get_document_template_usecase.dart';
 import '../../../domain/usecases/get_stage_config_usecase.dart';
 import '../../../domain/usecases/upload_transaction_file_usecase.dart';
 import 'internal_transaction_form_event.dart';
@@ -12,6 +13,7 @@ import 'internal_transaction_form_state.dart';
 class InternalTransactionFormBloc
     extends Bloc<InternalTransactionFormEvent, InternalTransactionFormState> {
   final GetStageConfigUseCase getStageConfig;
+  final GetDocumentTemplateUseCase getDocumentTemplate;
   final UploadTransactionFileUseCase uploadTransactionFile;
   final CreateSigningChallengeUseCase createSigningChallenge;
   final CompleteSignedTransactionUseCase completeSignedTransaction;
@@ -19,6 +21,7 @@ class InternalTransactionFormBloc
 
   InternalTransactionFormBloc({
     required this.getStageConfig,
+    required this.getDocumentTemplate,
     required this.uploadTransactionFile,
     required this.createSigningChallenge,
     required this.completeSignedTransaction,
@@ -26,6 +29,7 @@ class InternalTransactionFormBloc
   }) : super(InternalTransactionFormState.initial()) {
     on<LoadInternalTransactionForm>(_onLoadForm);
     on<UpdateInternalTransactionFormValue>(_onUpdateValue);
+    on<UpdateInternalTransactionTemplateValue>(_onUpdateTemplateValue);
     on<SubmitInternalTransactionForm>(_onSubmit);
     on<ResetInternalTransactionForm>(_onReset);
   }
@@ -38,8 +42,8 @@ class InternalTransactionFormBloc
 
     final result = await getStageConfig(processId: event.processId);
 
-    result.fold(
-      (failure) {
+    await result.fold(
+      (failure) async {
         emit(
           state.copyWith(
             loading: false,
@@ -47,12 +51,33 @@ class InternalTransactionFormBloc
           ),
         );
       },
-      (form) {
-        emit(
-          state.copyWith(
-            loading: false,
-            form: form,
-          ),
+      (form) async {
+        final templateId =
+            form.templateIds.isNotEmpty ? form.templateIds.first : 1;
+
+        final templateResult = await getDocumentTemplate(
+          templateId: templateId,
+        );
+
+        templateResult.fold(
+          (failure) {
+            emit(
+              state.copyWith(
+                loading: false,
+                form: form,
+                errorMessage: failure.message,
+              ),
+            );
+          },
+          (template) {
+            emit(
+              state.copyWith(
+                loading: false,
+                form: form,
+                template: template,
+              ),
+            );
+          },
         );
       },
     );
@@ -68,6 +93,16 @@ class InternalTransactionFormBloc
     emit(state.copyWith(formValues: updatedValues));
   }
 
+  void _onUpdateTemplateValue(
+    UpdateInternalTransactionTemplateValue event,
+    Emitter<InternalTransactionFormState> emit,
+  ) {
+    final updatedValues = Map<String, dynamic>.from(state.templateValues);
+    updatedValues[event.id] = event.value;
+
+    emit(state.copyWith(templateValues: updatedValues));
+  }
+
   Future<void> _onSubmit(
     SubmitInternalTransactionForm event,
     Emitter<InternalTransactionFormState> emit,
@@ -79,10 +114,23 @@ class InternalTransactionFormBloc
       return;
     }
 
-    final validationError = _validateForm(form, state.formValues);
-    if (validationError != null) {
-      emit(state.copyWith(errorMessage: validationError));
+    final formValidationError = _validateForm(form, state.formValues);
+    if (formValidationError != null) {
+      emit(state.copyWith(errorMessage: formValidationError));
       return;
+    }
+
+    final template = state.template;
+    if (template != null) {
+      final templateValidationError = _validateForm(
+        template.config,
+        state.templateValues,
+      );
+
+      if (templateValidationError != null) {
+        emit(state.copyWith(errorMessage: templateValidationError));
+        return;
+      }
     }
 
     emit(
@@ -96,6 +144,8 @@ class InternalTransactionFormBloc
       final payload = await _buildSubmitPayload(
         form: form,
         formValues: state.formValues,
+        template: template,
+        templateValues: state.templateValues,
       );
 
       final challengeResult = await createSigningChallenge(
@@ -190,6 +240,7 @@ class InternalTransactionFormBloc
       InternalTransactionFormState.initial().copyWith(
         loading: false,
         form: state.form,
+        template: state.template,
       ),
     );
   }
@@ -197,6 +248,8 @@ class InternalTransactionFormBloc
   Future<Map<String, dynamic>> _buildSubmitPayload({
     required DynamicFormEntity form,
     required Map<String, dynamic> formValues,
+    required dynamic template,
+    required Map<String, dynamic> templateValues,
   }) async {
     final widgetsPayload = <Map<String, dynamic>>[];
 
@@ -219,11 +272,20 @@ class InternalTransactionFormBloc
       });
     }
 
+    final templatesPayload = <Map<String, dynamic>>[];
+
+    if (template != null) {
+      templatesPayload.add({
+        'id': template.id,
+        'value': Map<String, dynamic>.from(templateValues),
+      });
+    }
+
     return {
       'form_id': form.formId,
       'form_name': form.formName,
       'widgets': widgetsPayload,
-      'templates': [],
+      'templates': templatesPayload,
       'note': '',
     };
   }

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../entities/dynamic_form_entity.dart';
@@ -44,4 +45,9 @@ abstract class InternalTransactionsRepository {
     required int transactionId,
     required Map<String, dynamic> payload,
   });
+
+  Future<Either<Failure, DocumentTemplateEntity>>
+    getDocumentTemplate({
+  required int templateId,
+});
 }

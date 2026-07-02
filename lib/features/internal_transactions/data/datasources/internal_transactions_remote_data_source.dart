@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart' as dio;
+import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -9,6 +10,7 @@ import '../../domain/entities/internal_category_entity.dart';
 import '../../domain/entities/internal_processes_page_entity.dart';
 import '../../domain/entities/internal_transaction_counts_entity.dart';
 import '../../domain/entities/internal_transactions_page_entity.dart';
+import '../models/document_template_model.dart';
 import '../models/dynamic_form_model.dart';
 import '../models/internal_category_model.dart';
 import '../models/internal_processes_page_model.dart';
@@ -181,4 +183,22 @@ class InternalTransactionsRemoteDataSource {
       (response) => response as Map<String, dynamic>,
     );
   }
+
+  Future<DocumentTemplateEntity> getDocumentTemplate({
+  required int templateId,
+}) async {
+  final result = await apiService.makeRequest(
+    method: ApiMethod.get,
+    endPoint: _endPoints.documentTemplate(templateId),
+  );
+
+  return result.fold(
+    (failure) => throw ServerException(failure.message),
+    (response) {
+      return DocumentTemplateModel.fromJson(
+        response as Map<String, dynamic>,
+      );
+    },
+  );
+}
 }

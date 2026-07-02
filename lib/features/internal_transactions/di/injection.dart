@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:government_employee_dashboard/features/internal_transactions/domain/usecases/get_document_template_usecase.dart';
 import '../presentation/bloc/create_internal_transaction/create_internal_transaction_bloc.dart';
 import '../../../core/services/api_service.dart';
 import '../data/datasources/internal_transactions_remote_data_source.dart';
@@ -112,6 +113,13 @@ void setupInternalTransactionsInjection(GetIt getIt) {
       ),
     );
   }
+  if (!getIt.isRegistered<GetDocumentTemplateUseCase>()) {
+    getIt.registerLazySingleton(
+      () => GetDocumentTemplateUseCase(
+        getIt<InternalTransactionsRepository>(),
+      ),
+    );
+  }
 
   if (!getIt.isRegistered<UsbSigningService>()) {
     getIt.registerLazySingleton<UsbSigningService>(
@@ -123,6 +131,7 @@ void setupInternalTransactionsInjection(GetIt getIt) {
     getIt.registerFactory(
       () => InternalTransactionFormBloc(
         getStageConfig: getIt<GetStageConfigUseCase>(),
+        getDocumentTemplate: getIt<GetDocumentTemplateUseCase>(),
         uploadTransactionFile: getIt<UploadTransactionFileUseCase>(),
         createSigningChallenge: getIt<CreateSigningChallengeUseCase>(),
         completeSignedTransaction: getIt<CompleteSignedTransactionUseCase>(),

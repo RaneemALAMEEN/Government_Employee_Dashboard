@@ -30,6 +30,20 @@ class UpdateInternalTransactionFormValue
   List<Object?> get props => [id, value];
 }
 
+class UpdateInternalTransactionTemplateValue
+    extends InternalTransactionFormEvent {
+  final String id;
+  final dynamic value;
+
+  const UpdateInternalTransactionTemplateValue({
+    required this.id,
+    required this.value,
+  });
+
+  @override
+  List<Object?> get props => [id, value];
+}
+
 class SubmitInternalTransactionForm extends InternalTransactionFormEvent {
   final int processId;
   final String keysDirectoryPath;
