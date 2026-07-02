@@ -1,10 +1,15 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:window_manager/window_manager.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/push_socket.dart';
+import 'core/services/tray_service.dart';
 import 'features/auth/di/injection.dart';
 import 'features/dashboard/di/injection.dart';
 import 'features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -62,10 +67,28 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 
+/// `true` على منصّات سطح المكتب التي ندعم عليها الإشعارات والـ tray.
+bool get _isDesktop =>
+    !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
 Future<void> main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
 
+  // تهيئة نافذة سطح المكتب يجب أن تسبق runApp وبعد ensureInitialized مباشرةً.
+  // النافذة تُنشأ مخفية ثم تُظهَر داخل waitUntilReadyToShow.
+  if (_isDesktop) {
+    await windowManager.ensureInitialized();
+    const windowOptions = WindowOptions(
+      size: Size(1280, 720),
+      center: true,
+      titleBarStyle: TitleBarStyle.normal,
+    );
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   await dotenv.load(fileName: "env/dev.env");
 
@@ -75,6 +98,23 @@ Future<void> main() async {
   await setupMyTransactionsInjection();
   await setupDepartmentTransactionsInjection();
   await setupEmployeesInjection();
+
+  // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق
+  // → (3) فتح اتصال الـ socket. الاتصال يبقى حيًّا في الـ tray عند "إغلاق"
+  // النافذة، فتصل الإشعارات حتى وقتها.
+  await NotificationService.instance.init(
+    onSelect: (payload) {
+      // TODO(routing): اربط الـ payload بمنطق التنقّل (go_router) عند الضغط
+      // على الإشعار. مثال: فكّ JSON واستخرج المسار ثم AppRouter.router.go(...).
+      debugPrint('[Notification] tapped, payload: $payload');
+    },
+  );
+  if (_isDesktop) {
+    await TrayService.instance.init();
+  }
+  // يبدأ الاتصال؛ يعيد المحاولة تلقائيًّا. قبل تسجيل الدخول لا يوجد توكن فيرفضه
+  // الخادم، ثم يتعافى ذاتيًّا (إعادة محاولة كل 60ث) ويلتقط التوكن بعد الدخول.
+  await getIt<PushSocket>().start();
 
   runApp(const GovernmentEmployeeApp());
 }
@@ -111,9 +151,17 @@ class GovernmentEmployeeApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         builder: (context, child) {
-          return Directionality(
+          final app = Directionality(
             textDirection: TextDirection.rtl,
             child: child ?? const SizedBox.shrink(),
+          );
+          // على سطح المكتب نغلّف التطبيق بـ TrayBootstrap: يعترض زر الإغلاق
+          // (إخفاء إلى الـ tray) ويدير قائمة شريط النظام، ويُغلق الـ socket عند
+          // الخروج النهائي. يبقى حيًّا طوال الجلسة (لا يُعاد بناؤه عند التنقّل).
+          if (!_isDesktop) return app;
+          return TrayBootstrap(
+            onBeforeExit: () => getIt<PushSocket>().dispose(),
+            child: app,
           );
         },
         routerConfig: AppRouter.router,
