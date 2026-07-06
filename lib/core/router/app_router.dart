@@ -4,6 +4,8 @@ import 'package:government_employee_dashboard/features/internal_transactions/pre
 import 'package:government_employee_dashboard/features/internal_transactions/presentation/bloc/internal_transaction_form/internal_transaction_form_event.dart';
 import '../../features/internal_transactions/presentation/bloc/create_internal_transaction/create_internal_transaction_bloc.dart';
 import '../../features/internal_transactions/presentation/bloc/create_internal_transaction/create_internal_transaction_event.dart';
+import '../../features/internal_transactions/presentation/bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
+import '../../features/internal_transactions/presentation/bloc/internal_transaction_first_stage/internal_transaction_first_stage_event.dart';
 import '../di/injection.dart';
 import '../../features/internal_transactions/presentation/bloc/internal_transactions_bloc.dart';
 import '../../features/internal_transactions/presentation/bloc/internal_transactions_event.dart';
@@ -13,15 +15,16 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
 import '../../features/employees/presentation/pages/employee_detail_page.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
+import '../../features/statistics/presentation/pages/statistics_page.dart';
 import '../../features/my_transactions/presentation/pages/my_transactions_page.dart';
 import '../../features/my_transactions/presentation/pages/transaction_details_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
 import '../../features/internal_transactions/presentation/pages/create_internal_transaction_page.dart';
+import '../../features/internal_transactions/presentation/pages/internal_transaction_first_stage_page.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transaction_form_page.dart';
 import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
-import '../../features/document_quality_checker/presentation/pages/document_quality_checker_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -93,6 +96,23 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: '/internal-transactions/:id/first-stage',
+            pageBuilder: (context, state) {
+              final transactionId =
+                  int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+
+              return NoTransitionPage(
+                child: BlocProvider(
+                  create: (_) => getIt<InternalTransactionFirstStageBloc>()
+                    ..add(LoadInternalTransactionFirstStage(transactionId)),
+                  child: InternalTransactionFirstStagePage(
+                    transactionId: transactionId,
+                  ),
+                ),
+              );
+            },
+          ),
+          GoRoute(
             path: '/create-internal-transaction',
             pageBuilder: (context, state) => NoTransitionPage(
               child: BlocProvider(
@@ -126,6 +146,12 @@ class AppRouter {
             path: '/drafts',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ComingSoonPage(title: 'مسوداتي'),
+            ),
+          ),
+          GoRoute(
+            path: '/statistics',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: StatisticsPage(),
             ),
           ),
           GoRoute(

@@ -83,12 +83,15 @@ class _EmployeesView extends StatelessWidget {
                     children: [
                       Text(
                         'الموظفين',
-                        style: AppTextStyles.headlineLarge.copyWith(fontSize: 28, color: AppColors.forest),
+                        style: AppTextStyles.headlineLarge
+                            .copyWith(fontSize: 28, color: AppColors.forest),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${state.allEmployees.length} موظف في الدائرة',
-                        style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.goldDark.withOpacity(0.85)),
+                        style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: AppTextStyles.medium,
+                            color: AppColors.goldDark.withOpacity(0.85)),
                       ),
                     ],
                   ),
@@ -97,7 +100,8 @@ class _EmployeesView extends StatelessWidget {
                   // Stats Row
                   LayoutBuilder(
                     builder: (context, statsConstraints) {
-                      final cardWidth = (statsConstraints.maxWidth - (3 * gap)) / 4;
+                      final cardWidth =
+                          (statsConstraints.maxWidth - (3 * gap)) / 4;
                       final useColumns = statsConstraints.maxWidth < 650;
 
                       if (useColumns) {
@@ -108,7 +112,8 @@ class _EmployeesView extends StatelessWidget {
                               label: 'معاملات نشطة',
                               icon: LucideIcons.clock,
                               iconColor: AppColors.forest,
-                              iconBgColor: AppColors.forestLight.withOpacity(0.12),
+                              iconBgColor:
+                                  AppColors.forestLight.withOpacity(0.12),
                             ),
                             const SizedBox(height: gap),
                             EmployeesStatsCard(
@@ -116,7 +121,8 @@ class _EmployeesView extends StatelessWidget {
                               label: 'منجزة هذا الشهر',
                               icon: LucideIcons.checkCircle,
                               iconColor: AppColors.forest,
-                              iconBgColor: AppColors.forestLight.withOpacity(0.12),
+                              iconBgColor:
+                                  AppColors.forestLight.withOpacity(0.12),
                             ),
                             const SizedBox(height: gap),
                             EmployeesStatsCard(
@@ -147,7 +153,8 @@ class _EmployeesView extends StatelessWidget {
                               label: 'معاملات نشطة',
                               icon: LucideIcons.clock,
                               iconColor: AppColors.forest,
-                              iconBgColor: AppColors.forestLight.withOpacity(0.12),
+                              iconBgColor:
+                                  AppColors.forestLight.withOpacity(0.12),
                             ),
                           ),
                           const SizedBox(width: gap),
@@ -157,7 +164,8 @@ class _EmployeesView extends StatelessWidget {
                               label: 'منجزة هذا الشهر',
                               icon: LucideIcons.checkCircle,
                               iconColor: AppColors.forest,
-                              iconBgColor: AppColors.forestLight.withOpacity(0.12),
+                              iconBgColor:
+                                  AppColors.forestLight.withOpacity(0.12),
                             ),
                           ),
                           const SizedBox(width: gap),
@@ -192,19 +200,24 @@ class _EmployeesView extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                      border:
+                          Border.all(color: AppColors.gold.withOpacity(0.2)),
                     ),
                     child: Directionality(
                       textDirection: TextDirection.rtl,
                       child: TextField(
                         onChanged: (val) {
-                          context.read<EmployeesBloc>().add(SearchEmployees(val));
+                          context
+                              .read<EmployeesBloc>()
+                              .add(SearchEmployees(val));
                         },
                         decoration: InputDecoration(
                           hintText: 'بحث في الموظفين...',
-                          prefixIcon: const Icon(LucideIcons.search, color: AppColors.charcoal, size: 20),
+                          prefixIcon: const Icon(LucideIcons.search,
+                              color: AppColors.charcoal, size: 20),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                     ),
@@ -222,7 +235,8 @@ class _EmployeesView extends StatelessWidget {
                   ValueListenableBuilder<String>(
                     valueListenable: getIt<SessionService>().activeRoleNotifier,
                     builder: (context, activeRole, _) {
-                      final showWorkload = activeRole == 'مدير التربية' || activeRole == 'معاون مدير التربية';
+                      final showWorkload = activeRole == 'مدير التربية' ||
+                          activeRole == 'معاون مدير التربية';
                       if (!showWorkload) return const SizedBox.shrink();
                       return const Column(
                         children: [

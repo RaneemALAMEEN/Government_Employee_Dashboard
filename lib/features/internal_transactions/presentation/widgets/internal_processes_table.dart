@@ -1,6 +1,8 @@
 import '../../../../shared/theme/app_text_styles.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/internal_transaction_entity.dart';
@@ -26,8 +28,7 @@ class InternalProcessesTable extends StatelessWidget {
           );
         }
 
-        if (state.errorMessage != null &&
-            state.transactionsPageData == null) {
+        if (state.errorMessage != null && state.transactionsPageData == null) {
           return _ErrorBox(message: state.errorMessage!);
         }
 
@@ -47,10 +48,10 @@ class InternalProcessesTable extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.gold.withOpacity(0.22)),
+            border: Border.all(color: AppColors.gold.withValues(alpha: 0.22)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.charcoal.withOpacity(0.04),
+                color: AppColors.charcoal.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -119,7 +120,13 @@ class _Table extends StatelessWidget {
             ),
           )
         else
-          ...items.map((item) => _TransactionRow(item: item)),
+          ...items.asMap().entries.map(
+                (entry) => FadeInUp(
+                  duration: const Duration(milliseconds: 350),
+                  delay: Duration(milliseconds: (entry.key % 10) * 50),
+                  child: _TransactionRow(item: entry.value),
+                ),
+              ),
       ],
     );
   }
@@ -132,7 +139,7 @@ class _TableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 54,
-      color: AppColors.goldLight.withOpacity(0.4),
+      color: AppColors.goldLight.withValues(alpha: 0.4),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: const Row(
         textDirection: TextDirection.rtl,
@@ -162,7 +169,9 @@ class _TransactionRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(
-          bottom: BorderSide(color: AppColors.charcoal.withOpacity(0.08)),
+          bottom: BorderSide(
+            color: AppColors.charcoal.withValues(alpha: 0.08),
+          ),
         ),
       ),
       child: Row(
@@ -209,7 +218,13 @@ class _TransactionRow extends StatelessWidget {
             child: Transform.translate(
               offset: const Offset(10, 0),
               child: Center(
-                child: _DetailsButton(onTap: () {}),
+                child: _DetailsButton(
+                  onTap: () {
+                    context.go(
+                      '/internal-transactions/${item.transactionId}/first-stage',
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -300,7 +315,7 @@ class _ProgressBadge extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 92, maxWidth: 120),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.forestLight.withOpacity(0.08),
+          color: AppColors.forestLight.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -363,7 +378,7 @@ class _StatusBadge extends StatelessWidget {
         return _StatusViewData(
           text: 'قيد المعالجة',
           textColor: AppColors.goldDark,
-          background: AppColors.goldLight.withOpacity(0.45),
+          background: AppColors.goldLight.withValues(alpha: 0.45),
         );
       case 'completed':
         return const _StatusViewData(
@@ -419,9 +434,9 @@ class _DetailsButton extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 104, maxWidth: 140),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.goldLight.withOpacity(0.3),
+          color: AppColors.goldLight.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -480,7 +495,7 @@ class _Pagination extends StatelessWidget {
         child: Text(
           'عرض 0–0 من 0 معاملة',
           style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.charcoal.withOpacity(0.6),
+            color: AppColors.charcoal.withValues(alpha: 0.6),
           ),
         ),
       );
@@ -499,7 +514,7 @@ class _Pagination extends StatelessWidget {
           Text(
             'عرض $start–$end من $total معاملة',
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.charcoal.withOpacity(0.6),
+              color: AppColors.charcoal.withValues(alpha: 0.6),
             ),
           ),
           const Spacer(),
@@ -557,7 +572,7 @@ class _PageButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.gold.withOpacity(0.15)),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.15)),
         ),
         child: Icon(
           icon,
@@ -615,9 +630,9 @@ class _ErrorBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.umber.withOpacity(0.08),
+        color: AppColors.umber.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.umber.withOpacity(0.18)),
+        border: Border.all(color: AppColors.umber.withValues(alpha: 0.18)),
       ),
       child: Text(
         message,

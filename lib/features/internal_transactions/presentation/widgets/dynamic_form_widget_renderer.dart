@@ -253,7 +253,7 @@ class _FilePickerWidget extends StatelessWidget {
             .toList() ??
         ['pdf', 'png', 'jpg'];
 
-    final files = value is List<PlatformFile> ? value : <PlatformFile>[];
+    final files = value is List ? value : const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -277,20 +277,35 @@ class _FilePickerWidget extends StatelessWidget {
                 ? _label(widgetEntity)
                 : allowMultiple
                     ? 'تم اختيار ${files.length} ملفات'
-                    : files.first.name,
+                    : _fileDisplayName(files.first),
           ),
         ),
         if (files.isNotEmpty) ...[
           const SizedBox(height: 8),
           ...files.map(
             (file) => Text(
-              file.name,
+              _fileDisplayName(file),
               textAlign: TextAlign.right,
-              style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
+              style:
+                  AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
             ),
           ),
         ],
       ],
     );
+  }
+
+  String _fileDisplayName(dynamic file) {
+    if (file is PlatformFile) return file.name;
+
+    if (file is Map) {
+      return file['original_name']?.toString() ??
+          file['name']?.toString() ??
+          file['path']?.toString() ??
+          file['url']?.toString() ??
+          'ملف مرفق';
+    }
+
+    return file?.toString() ?? 'ملف مرفق';
   }
 }

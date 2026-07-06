@@ -34,8 +34,11 @@ class EndPoints {
   String completeSignedTransaction(int transactionId) =>
       'api/transaction/$transactionId/submit-documents/complete';
 
-      String documentTemplate(int id) =>
-    'api/document-templates/$id';
+  String documentTemplate(int id) => 'api/document-templates/$id';
+  String firstStageTransaction(int transactionId) =>
+      'api/transaction/$transactionId/first-stage';
+  String get employeesByDepartments => 'api/employees/by-departments';
+  String get processDefinitionStats => 'api/process_definitions/stats';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

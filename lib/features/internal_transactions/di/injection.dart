@@ -8,6 +8,7 @@ import '../domain/repositories/internal_transactions_repository.dart';
 import '../domain/usecases/complete_signed_transaction_usecase.dart';
 import '../domain/usecases/create_signing_challenge_usecase.dart';
 import '../domain/usecases/get_internal_categories_usecase.dart';
+import '../domain/usecases/get_internal_transaction_first_stage_usecase.dart';
 import '../domain/usecases/get_my_transaction_counts_usecase.dart';
 import '../domain/usecases/get_my_transactions_usecase.dart';
 import '../domain/usecases/get_processes_by_category_usecase.dart';
@@ -15,6 +16,7 @@ import '../domain/usecases/get_stage_config_usecase.dart';
 import '../domain/usecases/upload_transaction_file_usecase.dart';
 import '../presentation/bloc/internal_transactions_bloc.dart';
 import '../../../core/services/usb_signing_service.dart';
+import '../presentation/bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../presentation/bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
 
 void setupInternalTransactionsInjection(GetIt getIt) {
@@ -64,6 +66,14 @@ void setupInternalTransactionsInjection(GetIt getIt) {
     );
   }
 
+  if (!getIt.isRegistered<GetInternalTransactionFirstStageUseCase>()) {
+    getIt.registerLazySingleton(
+      () => GetInternalTransactionFirstStageUseCase(
+        getIt<InternalTransactionsRepository>(),
+      ),
+    );
+  }
+
   if (!getIt.isRegistered<GetStageConfigUseCase>()) {
     getIt.registerLazySingleton(
       () => GetStageConfigUseCase(
@@ -101,6 +111,14 @@ void setupInternalTransactionsInjection(GetIt getIt) {
       () => InternalTransactionsBloc(
         getMyTransactionCounts: getIt<GetMyTransactionCountsUseCase>(),
         getMyTransactions: getIt<GetMyTransactionsUseCase>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<InternalTransactionFirstStageBloc>()) {
+    getIt.registerFactory(
+      () => InternalTransactionFirstStageBloc(
+        getFirstStage: getIt<GetInternalTransactionFirstStageUseCase>(),
       ),
     );
   }

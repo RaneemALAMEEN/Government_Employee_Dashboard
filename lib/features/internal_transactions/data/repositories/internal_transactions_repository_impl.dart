@@ -6,6 +6,7 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/dynamic_form_entity.dart';
 import '../../domain/entities/internal_category_entity.dart';
 import '../../domain/entities/internal_processes_page_entity.dart';
+import '../../domain/entities/internal_transaction_first_stage_entity.dart';
 import '../../domain/entities/internal_transaction_counts_entity.dart';
 import '../../domain/entities/internal_transactions_page_entity.dart';
 import '../../domain/repositories/internal_transactions_repository.dart';
@@ -73,6 +74,23 @@ class InternalTransactionsRepositoryImpl
         page: page,
         limit: limit,
         status: status,
+      );
+      return Right(data);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(_cleanError(e)));
+    }
+  }
+
+  @override
+  Future<Either<Failure, InternalTransactionFirstStageEntity>>
+      getFirstStageTransaction({
+    required int transactionId,
+  }) async {
+    try {
+      final data = await remoteDataSource.getFirstStageTransaction(
+        transactionId: transactionId,
       );
       return Right(data);
     } on ServerException catch (e) {
@@ -157,18 +175,18 @@ class InternalTransactionsRepositoryImpl
   }
 
   @override
-Future<Either<Failure, DocumentTemplateEntity>> getDocumentTemplate({
-  required int templateId,
-}) async {
-  try {
-    final data = await remoteDataSource.getDocumentTemplate(
-      templateId: templateId,
-    );
-    return Right(data);
-  } on ServerException catch (e) {
-    return Left(ServerFailure(e.message));
-  } catch (e) {
-    return Left(ServerFailure(_cleanError(e)));
+  Future<Either<Failure, DocumentTemplateEntity>> getDocumentTemplate({
+    required int templateId,
+  }) async {
+    try {
+      final data = await remoteDataSource.getDocumentTemplate(
+        templateId: templateId,
+      );
+      return Right(data);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(_cleanError(e)));
+    }
   }
-}
 }

@@ -52,8 +52,22 @@ class InternalTransactionFormBloc
         );
       },
       (form) async {
-        final templateId =
-            form.templateIds.isNotEmpty ? form.templateIds.first : 1;
+        final formValues = _initialValuesFromWidgets(form.widgets);
+        final templateValues = _initialValuesFromInlineTemplates(form);
+
+        if (form.templates.isNotEmpty || form.templateIds.isEmpty) {
+          emit(
+            state.copyWith(
+              loading: false,
+              form: form,
+              formValues: formValues,
+              templateValues: templateValues,
+            ),
+          );
+          return;
+        }
+
+        final templateId = form.templateIds.first;
 
         final templateResult = await getDocumentTemplate(
           templateId: templateId,
@@ -65,6 +79,8 @@ class InternalTransactionFormBloc
               state.copyWith(
                 loading: false,
                 form: form,
+                formValues: formValues,
+                templateValues: templateValues,
                 errorMessage: failure.message,
               ),
             );
@@ -75,6 +91,11 @@ class InternalTransactionFormBloc
                 loading: false,
                 form: form,
                 template: template,
+                formValues: formValues,
+                templateValues: {
+                  ...templateValues,
+                  ..._initialValuesFromWidgets(template.config.widgets),
+                },
               ),
             );
           },
@@ -133,6 +154,18 @@ class InternalTransactionFormBloc
       }
     }
 
+    for (final inlineTemplate in form.templates) {
+      final templateValidationError = _validateForm(
+        inlineTemplate.config,
+        state.templateValues,
+      );
+
+      if (templateValidationError != null) {
+        emit(state.copyWith(errorMessage: templateValidationError));
+        return;
+      }
+    }
+
     emit(
       state.copyWith(
         submitting: true,
@@ -141,12 +174,24 @@ class InternalTransactionFormBloc
     );
 
     try {
-      final payload = await _buildSubmitPayload(
+      final payloadResult = await _buildSubmitPayload(
         form: form,
         formValues: state.formValues,
         template: template,
         templateValues: state.templateValues,
       );
+
+      if (!payloadResult.isSuccess) {
+        emit(
+          state.copyWith(
+            submitting: false,
+            errorMessage: payloadResult.errorMessage,
+          ),
+        );
+        return;
+      }
+
+      final payload = payloadResult.payload!;
 
       final challengeResult = await createSigningChallenge(
         processId: event.processId,
@@ -183,7 +228,9 @@ class InternalTransactionFormBloc
 
           final completePayload = {
             ...payload,
-            'decision': 'approve',
+            'decision': payload['decision']?.toString().isNotEmpty == true
+                ? payload['decision']
+                : 'approve',
             'signature': {
               'challenge_id': challenge['challenge_id']?.toString() ?? '',
               'signature': signature,
@@ -245,25 +292,98 @@ class InternalTransactionFormBloc
     );
   }
 
-  Future<Map<String, dynamic>> _buildSubmitPayload({
+  Future<_SubmitPayloadResult> _buildSubmitPayload({
     required DynamicFormEntity form,
     required Map<String, dynamic> formValues,
     required dynamic template,
     required Map<String, dynamic> templateValues,
   }) async {
+    final widgetsResult = await _buildWidgetsPayload(
+      widgets: form.widgets,
+      values: formValues,
+    );
+
+    if (!widgetsResult.isSuccess) {
+      return _SubmitPayloadResult.failure(widgetsResult.errorMessage!);
+    }
+
+    final templatesPayload = <Map<String, dynamic>>[];
+
+    for (final inlineTemplate in form.templates) {
+      final templateWidgetsResult = await _buildWidgetsPayload(
+        widgets: inlineTemplate.config.widgets,
+        values: templateValues,
+      );
+
+      if (!templateWidgetsResult.isSuccess) {
+        return _SubmitPayloadResult.failure(
+          templateWidgetsResult.errorMessage!,
+        );
+      }
+
+      templatesPayload.add({
+        'id': inlineTemplate.id,
+        'widgets': templateWidgetsResult.widgets,
+      });
+    }
+
+    if (template != null) {
+      final templateWidgetsResult = await _buildWidgetsPayload(
+        widgets: template.config.widgets,
+        values: templateValues,
+      );
+
+      if (!templateWidgetsResult.isSuccess) {
+        return _SubmitPayloadResult.failure(
+          templateWidgetsResult.errorMessage!,
+        );
+      }
+
+      templatesPayload.add({
+        'id': template.id,
+        'widgets': templateWidgetsResult.widgets,
+      });
+    }
+
+    final payload = {
+      'form_id': form.formId,
+      'form_name': form.formName,
+      'widgets': widgetsResult.widgets,
+      'templates': templatesPayload,
+      'note': form.note,
+      if (form.decision.isNotEmpty) 'decision': form.decision,
+      if (form.expectedVersion != null)
+        'expected_version': form.expectedVersion,
+    };
+
+    return _SubmitPayloadResult.success(payload);
+  }
+
+  Future<_WidgetsPayloadResult> _buildWidgetsPayload({
+    required List<dynamic> widgets,
+    required Map<String, dynamic> values,
+  }) async {
     final widgetsPayload = <Map<String, dynamic>>[];
 
-    for (final widget in form.widgets) {
+    for (final widget in widgets) {
       final id = widget.data['id']?.toString() ?? '';
-      final value = formValues[id];
+      final value = values[id];
 
-      final finalValue = widget.widgetType == 'file_picker'
-          ? await _uploadFilePickerValue(
-              widgetId: id,
-              widgetData: widget.data,
-              value: value,
-            )
-          : value;
+      dynamic finalValue = value;
+
+      if (widget.widgetType == 'file_picker') {
+        final uploadResult = await _uploadFilePickerValue(
+          widgetId: id,
+          widgetData: widget.data,
+          value: value,
+        );
+
+        if (!uploadResult.isSuccess) {
+          return _WidgetsPayloadResult.failure(uploadResult.errorMessage!);
+        }
+
+        finalValue = uploadResult.files;
+      }
 
       widgetsPayload.add({
         'widget_type': widget.widgetType,
@@ -272,35 +392,27 @@ class InternalTransactionFormBloc
       });
     }
 
-    final templatesPayload = <Map<String, dynamic>>[];
-
-    if (template != null) {
-      templatesPayload.add({
-        'id': template.id,
-        'value': Map<String, dynamic>.from(templateValues),
-      });
-    }
-
-    return {
-      'form_id': form.formId,
-      'form_name': form.formName,
-      'widgets': widgetsPayload,
-      'templates': templatesPayload,
-      'note': '',
-    };
+    return _WidgetsPayloadResult.success(widgetsPayload);
   }
 
-  Future<List<Map<String, dynamic>>> _uploadFilePickerValue({
+  Future<_FilePickerUploadResult> _uploadFilePickerValue({
     required String widgetId,
     required Map<String, dynamic> widgetData,
     required dynamic value,
   }) async {
-    if (value is! List || value.isEmpty) return [];
+    if (value is! List || value.isEmpty) {
+      return _FilePickerUploadResult.success(const []);
+    }
 
     final uploadedFiles = <Map<String, dynamic>>[];
     final typeDocId = _parseTypeDocId(widgetData['type_doc_id']);
 
     for (final file in value) {
+      if (file is Map) {
+        uploadedFiles.add(Map<String, dynamic>.from(file));
+        continue;
+      }
+
       final filePath = file.path?.toString();
 
       if (filePath == null || filePath.isEmpty) continue;
@@ -311,13 +423,20 @@ class InternalTransactionFormBloc
         key: widgetId,
       );
 
-      result.fold(
-        (failure) => throw Exception(failure.message),
-        (uploaded) => uploadedFiles.add(uploaded),
+      final uploadError = result.fold<String?>(
+        (failure) => failure.message,
+        (uploaded) {
+          uploadedFiles.add(uploaded);
+          return null;
+        },
       );
+
+      if (uploadError != null) {
+        return _FilePickerUploadResult.failure(uploadError);
+      }
     }
 
-    return uploadedFiles;
+    return _FilePickerUploadResult.success(uploadedFiles);
   }
 
   String? _validateForm(
@@ -433,7 +552,93 @@ class InternalTransactionFormBloc
     return int.tryParse(value.toString()) ?? 1;
   }
 
+  Map<String, dynamic> _initialValuesFromWidgets(List<dynamic> widgets) {
+    final values = <String, dynamic>{};
+
+    for (final widget in widgets) {
+      final id = widget.data['id']?.toString() ?? '';
+
+      if (id.isEmpty || widget.initialValue == null) continue;
+
+      values[id] = widget.initialValue;
+    }
+
+    return values;
+  }
+
+  Map<String, dynamic> _initialValuesFromInlineTemplates(
+    DynamicFormEntity form,
+  ) {
+    final values = <String, dynamic>{};
+
+    for (final template in form.templates) {
+      values.addAll(_initialValuesFromWidgets(template.config.widgets));
+    }
+
+    return values;
+  }
+
   String _cleanError(Object error) {
     return error.toString().replaceFirst('Exception: ', '');
   }
+}
+
+class _SubmitPayloadResult {
+  final Map<String, dynamic>? payload;
+  final String? errorMessage;
+
+  const _SubmitPayloadResult._({
+    this.payload,
+    this.errorMessage,
+  });
+
+  factory _SubmitPayloadResult.success(Map<String, dynamic> payload) {
+    return _SubmitPayloadResult._(payload: payload);
+  }
+
+  factory _SubmitPayloadResult.failure(String errorMessage) {
+    return _SubmitPayloadResult._(errorMessage: errorMessage);
+  }
+
+  bool get isSuccess => payload != null;
+}
+
+class _WidgetsPayloadResult {
+  final List<Map<String, dynamic>>? widgets;
+  final String? errorMessage;
+
+  const _WidgetsPayloadResult._({
+    this.widgets,
+    this.errorMessage,
+  });
+
+  factory _WidgetsPayloadResult.success(List<Map<String, dynamic>> widgets) {
+    return _WidgetsPayloadResult._(widgets: widgets);
+  }
+
+  factory _WidgetsPayloadResult.failure(String errorMessage) {
+    return _WidgetsPayloadResult._(errorMessage: errorMessage);
+  }
+
+  bool get isSuccess => widgets != null;
+}
+
+class _FilePickerUploadResult {
+  final List<Map<String, dynamic>>? files;
+  final String? errorMessage;
+
+  const _FilePickerUploadResult._({
+    this.files,
+    this.errorMessage,
+  });
+
+  factory _FilePickerUploadResult.success(List<Map<String, dynamic>> files) {
+    return _FilePickerUploadResult._(files: files);
+  }
+
+  factory _FilePickerUploadResult.failure(String errorMessage) {
+    return _FilePickerUploadResult._(errorMessage: errorMessage);
+  }
+
+  bool get isSuccess => files != null;
 }

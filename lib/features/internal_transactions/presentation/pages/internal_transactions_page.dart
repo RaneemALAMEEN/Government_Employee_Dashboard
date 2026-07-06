@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,30 +19,42 @@ class InternalTransactionsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Header(),
+          FadeInDown(
+            duration: const Duration(milliseconds: 400),
+            child: const _Header(),
+          ),
           const SizedBox(height: 28),
-          BlocBuilder<InternalTransactionsBloc, InternalTransactionsState>(
-            builder: (context, state) {
-              if (state.loadingCounts) {
-                return const SizedBox(
-                  height: 116,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.forest,
+          FadeInUp(
+            duration: const Duration(milliseconds: 400),
+            delay: const Duration(milliseconds: 100),
+            child: BlocBuilder<InternalTransactionsBloc,
+                InternalTransactionsState>(
+              builder: (context, state) {
+                if (state.loadingCounts) {
+                  return const SizedBox(
+                    height: 116,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.forest,
+                      ),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              return InternalStatsSection(
-                total: state.counts.total,
-                inProgress: state.counts.inProgress,
-                completed: state.counts.completed,
-              );
-            },
+                return InternalStatsSection(
+                  total: state.counts.total,
+                  inProgress: state.counts.inProgress,
+                  completed: state.counts.completed,
+                );
+              },
+            ),
           ),
           const SizedBox(height: 24),
-          const InternalProcessesTable(),
+          FadeInUp(
+            duration: const Duration(milliseconds: 500),
+            delay: const Duration(milliseconds: 200),
+            child: const InternalProcessesTable(),
+          ),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -122,50 +123,87 @@ class _InternalTransactionFormPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _FormHeader(
-                  form: form,
-                  hasTemplate: state.template != null,
+                FadeInDown(
+                  duration: const Duration(milliseconds: 400),
+                  child: _FormHeader(
+                    form: form,
+                    hasTemplate:
+                        state.template != null || form.templates.isNotEmpty,
+                  ),
                 ),
                 const SizedBox(height: 24),
-                _SectionCard(
-                  title: 'بيانات المرحلة',
-                  subtitle: 'يرجى تعبئة الحقول المطلوبة لإكمال هذه المرحلة',
-                  icon: Icons.dynamic_form_outlined,
-                  child: _FormFields(
-                    form: form,
-                    values: state.formValues,
-                    emptyMessage: 'لا توجد حقول مباشرة في هذه المرحلة.',
-                    onChanged: (id, value) {
-                      context.read<InternalTransactionFormBloc>().add(
-                            UpdateInternalTransactionFormValue(
-                              id: id,
-                              value: value,
-                            ),
-                          );
-                    },
+                FadeInUp(
+                  duration: const Duration(milliseconds: 400),
+                  delay: const Duration(milliseconds: 100),
+                  child: _SectionCard(
+                    title: 'بيانات المرحلة',
+                    subtitle: 'يرجى تعبئة الحقول المطلوبة لإكمال هذه المرحلة',
+                    icon: Icons.dynamic_form_outlined,
+                    child: _FormFields(
+                      form: form,
+                      values: state.formValues,
+                      emptyMessage: 'لا توجد حقول مباشرة في هذه المرحلة.',
+                      onChanged: (id, value) {
+                        context.read<InternalTransactionFormBloc>().add(
+                              UpdateInternalTransactionFormValue(
+                                id: id,
+                                value: value,
+                              ),
+                            );
+                      },
+                    ),
                   ),
                 ),
                 if (state.template != null) ...[
                   const SizedBox(height: 22),
-                  _TemplateSection(
-                    template: state.template!,
-                    values: state.templateValues,
-                    onChanged: (id, value) {
-                      context.read<InternalTransactionFormBloc>().add(
-                            UpdateInternalTransactionTemplateValue(
-                              id: id,
-                              value: value,
-                            ),
-                          );
-                    },
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 400),
+                    delay: const Duration(milliseconds: 160),
+                    child: _TemplateSection(
+                      template: state.template!,
+                      values: state.templateValues,
+                      onChanged: (id, value) {
+                        context.read<InternalTransactionFormBloc>().add(
+                              UpdateInternalTransactionTemplateValue(
+                                id: id,
+                                value: value,
+                              ),
+                            );
+                      },
+                    ),
                   ),
                 ],
+                ...form.templates.toList().asMap().entries.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(top: 22),
+                        child: FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: Duration(milliseconds: 180 + (entry.key * 50)),
+                          child: _InlineTemplateSection(
+                            template: entry.value,
+                            values: state.templateValues,
+                            onChanged: (id, value) {
+                              context.read<InternalTransactionFormBloc>().add(
+                                    UpdateInternalTransactionTemplateValue(
+                                      id: id,
+                                      value: value,
+                                    ),
+                                  );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
                 const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _SubmitButton(
-                    submitting: state.submitting,
-                    onPressed: _submit,
+                FadeInUp(
+                  duration: const Duration(milliseconds: 350),
+                  delay: const Duration(milliseconds: 220),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _SubmitButton(
+                      submitting: state.submitting,
+                      onPressed: _submit,
+                    ),
                   ),
                 ),
               ],
@@ -217,6 +255,33 @@ class _FormHeader extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _InlineTemplateSection extends StatelessWidget {
+  final DynamicFormTemplateEntity template;
+  final Map<String, dynamic> values;
+  final void Function(String id, dynamic value) onChanged;
+
+  const _InlineTemplateSection({
+    required this.template,
+    required this.values,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'القالب رقم ${template.id}',
+      subtitle: 'حقول القالب المرسلة ضمن إعدادات هذه المرحلة',
+      icon: Icons.description_outlined,
+      child: _FormFields(
+        form: template.config,
+        values: values,
+        emptyMessage: 'لا توجد حقول مطلوبة ضمن هذا القالب.',
+        onChanged: onChanged,
+      ),
     );
   }
 }
@@ -470,44 +535,6 @@ class _TemplateInfo extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.forest, size: 18),
-        const SizedBox(width: 8),
-        Text(
-          '$title: ',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.charcoalDark,
-            fontWeight: AppTextStyles.bold,
-          ),
-        ),
-        Expanded(
-          child: SelectableText(
-            value,
-            textAlign: TextAlign.right,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.charcoal,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

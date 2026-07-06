@@ -6,9 +6,13 @@ class DynamicFormModel extends DynamicFormEntity {
     required super.transactionId,
     required super.formId,
     required super.formName,
+    required super.note,
+    required super.decision,
     required super.requiresDigitalSignature,
     required super.widgets,
+    super.expectedVersion,
     super.templateIds,
+    super.templates,
   });
 
   factory DynamicFormModel.fromJson(Map<String, dynamic> json) {
@@ -17,13 +21,20 @@ class DynamicFormModel extends DynamicFormEntity {
 
     final templateJson =
         config['template'] as List? ?? config['templates'] as List? ?? [];
+    final inlineTemplatesJson = templateJson
+        .whereType<Map<String, dynamic>>()
+        .where((item) => item['widgets'] is List)
+        .toList();
 
     return DynamicFormModel(
       transactionId: json['transaction_id'] ?? 0,
       formId: config['form_id']?.toString() ?? '',
       formName: config['form_name']?.toString() ?? '',
-      requiresDigitalSignature:
-          config['requires_digital_signature'] == true,
+      note: config['note']?.toString() ?? '',
+      decision: config['decision']?.toString() ?? '',
+      expectedVersion:
+          int.tryParse(config['expected_version']?.toString() ?? ''),
+      requiresDigitalSignature: config['requires_digital_signature'] == true,
       widgets: widgetsJson
           .map(
             (item) => DynamicWidgetModel.fromJson(
@@ -41,6 +52,14 @@ class DynamicFormModel extends DynamicFormEntity {
           .where((id) => id != null)
           .map((id) => int.tryParse(id.toString()) ?? 0)
           .where((id) => id > 0)
+          .toList(),
+      templates: inlineTemplatesJson
+          .map(
+            (item) => DynamicFormTemplateEntity(
+              id: int.tryParse(item['id']?.toString() ?? '') ?? 0,
+              config: DynamicFormModel.fromJson(item),
+            ),
+          )
           .toList(),
     );
   }

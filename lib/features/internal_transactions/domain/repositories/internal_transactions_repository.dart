@@ -5,6 +5,7 @@ import '../../../../core/errors/failures.dart';
 import '../entities/dynamic_form_entity.dart';
 import '../entities/internal_category_entity.dart';
 import '../entities/internal_processes_page_entity.dart';
+import '../entities/internal_transaction_first_stage_entity.dart';
 import '../entities/internal_transaction_counts_entity.dart';
 import '../entities/internal_transactions_page_entity.dart';
 
@@ -24,6 +25,11 @@ abstract class InternalTransactionsRepository {
     required int page,
     required int limit,
     String? status,
+  });
+
+  Future<Either<Failure, InternalTransactionFirstStageEntity>>
+      getFirstStageTransaction({
+    required int transactionId,
   });
 
   Future<Either<Failure, DynamicFormEntity>> getStageConfig({
@@ -46,8 +52,7 @@ abstract class InternalTransactionsRepository {
     required Map<String, dynamic> payload,
   });
 
-  Future<Either<Failure, DocumentTemplateEntity>>
-    getDocumentTemplate({
-  required int templateId,
-});
+  Future<Either<Failure, DocumentTemplateEntity>> getDocumentTemplate({
+    required int templateId,
+  });
 }

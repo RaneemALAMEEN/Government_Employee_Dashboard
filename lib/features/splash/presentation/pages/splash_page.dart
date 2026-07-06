@@ -17,8 +17,7 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with TickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late AnimationController _illusController;
   late AnimationController _bgController;
 
@@ -143,8 +142,8 @@ class _SplashPageState extends State<SplashPage>
 
                         final yOffset =
                             Tween<double>(begin: -10, end: 10).transform(value);
-                        final scale =
-                            Tween<double>(begin: 0.97, end: 1.03).transform(value);
+                        final scale = Tween<double>(begin: 0.97, end: 1.03)
+                            .transform(value);
 
                         return Transform.translate(
                           offset: Offset(0, yOffset),

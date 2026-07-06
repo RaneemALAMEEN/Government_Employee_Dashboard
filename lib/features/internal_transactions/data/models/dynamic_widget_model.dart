@@ -6,6 +6,7 @@ class DynamicWidgetModel extends DynamicWidgetEntity {
     required super.widgetType,
     required super.data,
     super.options,
+    super.initialValue,
   });
 
   factory DynamicWidgetModel.fromJson(Map<String, dynamic> json) {
@@ -15,6 +16,7 @@ class DynamicWidgetModel extends DynamicWidgetEntity {
     return DynamicWidgetModel(
       widgetType: json['widget_type']?.toString() ?? '',
       data: data,
+      initialValue: json['value'],
       options: optionsJson
           .map(
             (item) => WidgetOptionModel.fromJson(

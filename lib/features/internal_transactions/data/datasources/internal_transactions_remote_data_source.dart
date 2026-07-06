@@ -14,6 +14,7 @@ import '../models/document_template_model.dart';
 import '../models/dynamic_form_model.dart';
 import '../models/internal_category_model.dart';
 import '../models/internal_processes_page_model.dart';
+import '../models/internal_transaction_first_stage_model.dart';
 import '../models/internal_transaction_counts_model.dart';
 import '../models/internal_transactions_page_model.dart';
 
@@ -147,6 +148,22 @@ class InternalTransactionsRemoteDataSource {
     );
   }
 
+  Future<InternalTransactionFirstStageModel> getFirstStageTransaction({
+    required int transactionId,
+  }) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.firstStageTransaction(transactionId),
+    );
+
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) => InternalTransactionFirstStageModel.fromJson(
+        response as Map<String, dynamic>,
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>> createSigningChallenge({
     required int processId,
     required String pin,
@@ -185,20 +202,20 @@ class InternalTransactionsRemoteDataSource {
   }
 
   Future<DocumentTemplateEntity> getDocumentTemplate({
-  required int templateId,
-}) async {
-  final result = await apiService.makeRequest(
-    method: ApiMethod.get,
-    endPoint: _endPoints.documentTemplate(templateId),
-  );
+    required int templateId,
+  }) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.documentTemplate(templateId),
+    );
 
-  return result.fold(
-    (failure) => throw ServerException(failure.message),
-    (response) {
-      return DocumentTemplateModel.fromJson(
-        response as Map<String, dynamic>,
-      );
-    },
-  );
-}
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) {
+        return DocumentTemplateModel.fromJson(
+          response as Map<String, dynamic>,
+        );
+      },
+    );
+  }
 }

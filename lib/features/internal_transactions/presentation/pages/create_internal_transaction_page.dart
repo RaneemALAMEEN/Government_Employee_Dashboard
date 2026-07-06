@@ -1,4 +1,5 @@
 import '../../../../shared/theme/app_text_styles.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -52,13 +53,23 @@ class _CreateInternalTransactionPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _BackButton(),
+                FadeInDown(
+                  duration: const Duration(milliseconds: 300),
+                  child: _BackButton(),
+                ),
                 const SizedBox(height: 36),
-                const _Header(),
+                FadeInDown(
+                  duration: const Duration(milliseconds: 400),
+                  child: const _Header(),
+                ),
                 const SizedBox(height: 28),
-                _SearchBox(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
+                FadeInUp(
+                  duration: const Duration(milliseconds: 400),
+                  delay: const Duration(milliseconds: 100),
+                  child: _SearchBox(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 if (state.loadingCategories)
@@ -71,14 +82,21 @@ class _CreateInternalTransactionPageState
                     ),
                   )
                 else
-                  _CategoriesChips(
-                    categories: state.categories,
-                    selectedCategoryId: state.selectedCategoryId,
-                    onSelected: _onCategorySelected,
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 400),
+                    delay: const Duration(milliseconds: 150),
+                    child: _CategoriesChips(
+                      categories: state.categories,
+                      selectedCategoryId: state.selectedCategoryId,
+                      onSelected: _onCategorySelected,
+                    ),
                   ),
                 const SizedBox(height: 32),
                 if (state.errorMessage != null)
-                  _ErrorBox(message: state.errorMessage!)
+                  FadeIn(
+                    duration: const Duration(milliseconds: 300),
+                    child: _ErrorBox(message: state.errorMessage!),
+                  )
                 else if (state.loadingProcesses)
                   const SizedBox(
                     height: 220,
@@ -89,7 +107,11 @@ class _CreateInternalTransactionPageState
                     ),
                   )
                 else
-                  _ProcessesGrid(processes: state.filteredProcesses),
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 450),
+                    delay: const Duration(milliseconds: 200),
+                    child: _ProcessesGrid(processes: state.filteredProcesses),
+                  ),
               ],
             ),
           ),
@@ -263,27 +285,6 @@ class _CategoriesChips extends StatelessWidget {
                               selected ? AppColors.white : AppColors.charcoal,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 24,
-                        height: 24,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.white.withOpacity(0.18)
-                              : AppColors.goldLight,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '1',
-                          style: AppTextStyles.labelLarge.copyWith(
-                            fontWeight: AppTextStyles.bold,
-                            color: selected
-                                ? AppColors.white
-                                : AppColors.goldDark,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -351,7 +352,11 @@ class _ProcessesGrid extends StatelessWidget {
             mainAxisExtent: 208,
           ),
           itemBuilder: (context, index) {
-            return _ProcessCard(process: processes[index]);
+            return FadeInUp(
+              duration: const Duration(milliseconds: 350),
+              delay: Duration(milliseconds: (index % 9) * 45),
+              child: _ProcessCard(process: processes[index]),
+            );
           },
         );
       },
