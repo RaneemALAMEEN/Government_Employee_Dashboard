@@ -1,8 +1,9 @@
 import 'user.dart';
+import 'user_role.dart';
 
 class AuthResponse {
   final User user;
-  final List<int> roles;
+  final List<UserRole> roles;
   final String token;
   final String refreshToken;
 

@@ -9,7 +9,8 @@ class GetProcessDefinitionStats {
 
   GetProcessDefinitionStats(this.repository);
 
-  Future<Either<Failure, List<StatisticsProcessEntity>>> call() {
-    return repository.getProcessDefinitionStats();
+  Future<Either<Failure, List<StatisticsProcessEntity>>> call(
+      {required List<int> departmentIds}) {
+    return repository.getProcessDefinitionStats(departmentIds: departmentIds);
   }
 }

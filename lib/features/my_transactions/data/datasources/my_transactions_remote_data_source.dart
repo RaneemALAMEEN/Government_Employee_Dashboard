@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
 
@@ -109,6 +110,11 @@ class MyTransactionsRemoteDataSource {
     required Map<String, dynamic> payload,
     bool isSubmitDocuments = false,
   }) {
+    print('--- Payload Sent to Backend (JSON) ---');
+    final encoder = JsonEncoder.withIndent('  ');
+    print(encoder.convert(payload));
+    print('--------------------------------------');
+    
     final endPoint = isSubmitDocuments
         ? 'api/workflow/tasks/$taskId/submit-documents/complete'
         : 'api/workflow/tasks/$taskId/complete';
@@ -134,6 +140,15 @@ class MyTransactionsRemoteDataSource {
       method: ApiMethod.post,
       endPoint: '/api/transaction/files/upload',
       formData: formData,
+    );
+  }
+
+  Future<Either<Failure, dynamic>> getDocumentTemplate({
+    required int templateId,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/document-templates/$templateId',
     );
   }
 }

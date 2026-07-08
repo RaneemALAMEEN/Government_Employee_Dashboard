@@ -52,16 +52,21 @@ class _UserInfo extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'محمد العمر',
-              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark, height: 1.1),
+            ValueListenableBuilder(
+              valueListenable: getIt<SessionService>().currentUserNotifier,
+              builder: (context, user, _) {
+                return Text(
+                  user?.userName ?? 'مستخدم',
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark, height: 1.1),
+                );
+              }
             ),
             SizedBox(height: 4),
-            ValueListenableBuilder<String>(
+            ValueListenableBuilder(
               valueListenable: getIt<SessionService>().activeRoleNotifier,
               builder: (context, activeRole, _) {
                 return Text(
-                  activeRole,
+                  activeRole?.roleName ?? 'الدور غير محدد',
                   style: AppTextStyles.labelMedium.copyWith(height: 1),
                 );
               },

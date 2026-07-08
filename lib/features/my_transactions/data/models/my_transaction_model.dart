@@ -11,6 +11,8 @@ class MyTransactionModel extends MyTransactionEntity {
     required super.priority,
     required super.status,
     required super.canSign,
+    super.decision,
+    super.completedAt,
   });
 
   factory MyTransactionModel.fromJson(Map<String, dynamic> json) {
@@ -42,7 +44,7 @@ class MyTransactionModel extends MyTransactionEntity {
 
     // canSign is true if status is pending_pickup or in_progress
     final canSign = rawStatus == 'pending_pickup' || rawStatus == 'in_progress';
-    final idTask = json['task_id']?.toString() ?? json['id_task']?.toString() ?? json['transaction_number']?.toString() ?? '';
+    final idTask = json['task_id']?.toString() ?? json['id_task']?.toString() ?? json['transaction_id']?.toString() ?? json['transaction_number']?.toString() ?? '';
 
     return MyTransactionModel(
       idTask: idTask,
@@ -54,6 +56,8 @@ class MyTransactionModel extends MyTransactionEntity {
       priority: priorityLabel,
       status: statusLabel,
       canSign: canSign,
+      decision: json['decision'] as String?,
+      completedAt: json['completed_at'] as String?,
     );
   }
 }

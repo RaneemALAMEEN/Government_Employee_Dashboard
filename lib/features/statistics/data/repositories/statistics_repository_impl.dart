@@ -14,9 +14,9 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
 
   @override
   Future<Either<Failure, List<StatisticsEmployeeEntity>>>
-      getEmployeesByDepartments() async {
+      getEmployeesByDepartments({required List<int> departmentIds}) async {
     try {
-      final data = await remoteDataSource.getEmployeesByDepartments();
+      final data = await remoteDataSource.getEmployeesByDepartments(departmentIds: departmentIds);
       return Right(data);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -27,9 +27,9 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
 
   @override
   Future<Either<Failure, List<StatisticsProcessEntity>>>
-      getProcessDefinitionStats() async {
+      getProcessDefinitionStats({required List<int> departmentIds}) async {
     try {
-      final data = await remoteDataSource.getProcessDefinitionStats();
+      final data = await remoteDataSource.getProcessDefinitionStats(departmentIds: departmentIds);
       return Right(data);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

@@ -9,7 +9,8 @@ class GetDepartmentEmployeesStats {
 
   GetDepartmentEmployeesStats(this.repository);
 
-  Future<Either<Failure, List<StatisticsEmployeeEntity>>> call() {
-    return repository.getEmployeesByDepartments();
+  Future<Either<Failure, List<StatisticsEmployeeEntity>>> call(
+      {required List<int> departmentIds}) {
+    return repository.getEmployeesByDepartments(departmentIds: departmentIds);
   }
 }

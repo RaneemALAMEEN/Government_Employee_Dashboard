@@ -20,6 +20,9 @@ class SubmitTransaction {
     required bool isApprove,
     String? pin,
     String? keysDirectoryPath,
+    List<int> templateIds = const [],
+    List<Map<String, dynamic>> loadedTemplates = const [],
+    Map<String, dynamic> templateFormValues = const {},
   }) async {
     try {
       final isSubmitDocuments = formId.contains('sign') || formId.contains('document');
@@ -34,12 +37,64 @@ class SubmitTransaction {
       final payload = payloadResult.getOrElse(() => {});
       final decisionValue = isApprove ? 'approve' : 'reject';
       
-      // 3. Complete Task payload structure
+      // 3. Build templates payload — use loaded templates or fallback to fetch
+      final templatesPayload = <Map<String, dynamic>>[];
+      for (final templateId in templateIds) {
+        final templateWidgets = <Map<String, dynamic>>[];
+        
+        final existingTemplate = loadedTemplates.cast<Map<String, dynamic>?>().firstWhere(
+          (t) => (t?['id'] == templateId || t?['template_id'] == templateId),
+          orElse: () => null,
+        );
+
+        if (existingTemplate != null) {
+          final configJson = existingTemplate['config_json'] as Map<String, dynamic>? ?? {};
+          final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+          for (final field in fields) {
+            if (field is Map<String, dynamic>) {
+              final fieldId = field['data']?['id']?.toString() ?? field['id']?.toString() ?? '';
+              templateWidgets.add({
+                'widget_type': field['widget_type'] ?? field['type'] ?? 'text_field',
+                'data': field['data'] ?? field,
+                'value': templateFormValues[fieldId] ?? field['value'] ?? '',
+              });
+            }
+          }
+        } else {
+          final templateResult = await repository.getDocumentTemplate(templateId: templateId);
+          templateResult.fold(
+            (_) {}, // If template fetch fails, send empty widgets
+            (templateResponse) {
+              final templateData = templateResponse['data'] as Map<String, dynamic>? ?? templateResponse;
+              final configJson = templateData['config_json'] as Map<String, dynamic>? ?? {};
+              final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+              
+              for (final field in fields) {
+                if (field is Map<String, dynamic>) {
+                  final fieldId = field['data']?['id']?.toString() ?? field['id']?.toString() ?? '';
+                  templateWidgets.add({
+                    'widget_type': field['widget_type'] ?? field['type'] ?? 'text_field',
+                    'data': field['data'] ?? field,
+                    'value': templateFormValues[fieldId] ?? formValues[fieldId] ?? field['value'] ?? '',
+                  });
+                }
+              }
+            },
+          );
+        }
+        
+        templatesPayload.add({
+          'id': templateId,
+          'widgets': templateWidgets,
+        });
+      }
+
+      // 4. Complete Task payload structure
       final completePayload = {
         'form_id': formId,
         'form_name': formName,
         'widgets': payload['widgets'],
-        'templates': [],
+        'templates': templatesPayload,
         'note': '',
         'decision': decisionValue,
       };

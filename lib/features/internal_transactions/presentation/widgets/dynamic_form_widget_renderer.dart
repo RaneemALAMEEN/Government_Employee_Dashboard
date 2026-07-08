@@ -77,7 +77,17 @@ class _TextFieldWidget extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: _label(widgetEntity),
-        border: const OutlineInputBorder(),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+        ),
+        filled: true,
+        fillColor: Colors.white,
       ),
     );
   }
@@ -99,7 +109,17 @@ class _DropdownWidget extends StatelessWidget {
       value: value as String?,
       decoration: InputDecoration(
         labelText: _label(widgetEntity),
-        border: const OutlineInputBorder(),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+        ),
+        filled: true,
+        fillColor: Colors.white,
       ),
       items: widgetEntity.options
           .map((option) => DropdownMenuItem<String>(
@@ -133,7 +153,17 @@ class _DatePickerWidget extends StatelessWidget {
       textAlign: TextAlign.right,
       decoration: InputDecoration(
         labelText: _label(widgetEntity),
-        border: const OutlineInputBorder(),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+        ),
+        filled: true,
+        fillColor: Colors.white,
         suffixIcon: const Icon(Icons.calendar_month_outlined),
       ),
       onTap: () async {
@@ -175,7 +205,17 @@ class _RadioGroupWidget extends StatelessWidget {
     return InputDecorator(
       decoration: InputDecoration(
         labelText: _label(widgetEntity),
-        border: const OutlineInputBorder(),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+        ),
+        filled: true,
+        fillColor: Colors.white,
       ),
       child: Column(
         children: widgetEntity.options
@@ -208,7 +248,17 @@ class _CheckListWidget extends StatelessWidget {
     return InputDecorator(
       decoration: InputDecoration(
         labelText: _label(widgetEntity),
-        border: const OutlineInputBorder(),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+        ),
+        filled: true,
+        fillColor: Colors.white,
       ),
       child: Column(
         children: widgetEntity.options.map((option) {

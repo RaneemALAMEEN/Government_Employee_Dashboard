@@ -12,10 +12,12 @@ class StatisticsRemoteDataSource {
 
   static const _endPoints = EndPoints();
 
-  Future<List<StatisticsEmployeeModel>> getEmployeesByDepartments() async {
+  Future<List<StatisticsEmployeeModel>> getEmployeesByDepartments(
+      {required List<int> departmentIds}) async {
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.employeesByDepartments,
+      queryParameters: {'department_ids': departmentIds.join(',')},
     );
 
     return result.fold(
@@ -36,10 +38,12 @@ class StatisticsRemoteDataSource {
     );
   }
 
-  Future<List<StatisticsProcessModel>> getProcessDefinitionStats() async {
+  Future<List<StatisticsProcessModel>> getProcessDefinitionStats(
+      {required List<int> departmentIds}) async {
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.processDefinitionStats,
+      queryParameters: {'department_ids': departmentIds.join(',')},
     );
 
     return result.fold(
