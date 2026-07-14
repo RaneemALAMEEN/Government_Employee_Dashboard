@@ -8,6 +8,8 @@ class MyTransactionEntity {
   final String priority; // 'عالية', 'عادية', 'منخفضة'
   final String status;   // 'بانتظار توقيعي', 'منجزة', 'تم الرفض'
   final bool canSign;
+  final String? decision; // 'approve', 'reject' etc.
+  final String? completedAt;
 
   const MyTransactionEntity({
     required this.idTask,
@@ -19,6 +21,8 @@ class MyTransactionEntity {
     required this.priority,
     required this.status,
     required this.canSign,
+    this.decision,
+    this.completedAt,
   });
 
   MyTransactionEntity copyWith({
@@ -31,6 +35,8 @@ class MyTransactionEntity {
     String? priority,
     String? status,
     bool? canSign,
+    String? decision,
+    String? completedAt,
   }) {
     return MyTransactionEntity(
       idTask: idTask ?? this.idTask,
@@ -42,6 +48,8 @@ class MyTransactionEntity {
       priority: priority ?? this.priority,
       status: status ?? this.status,
       canSign: canSign ?? this.canSign,
+      decision: decision ?? this.decision,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 }

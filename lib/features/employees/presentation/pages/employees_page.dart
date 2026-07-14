@@ -5,6 +5,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/session_service.dart';
+import '../../../auth/domain/entities/user_role.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/employees_bloc.dart';
 import '../bloc/employees_event.dart';
@@ -232,11 +233,11 @@ class _EmployeesView extends StatelessWidget {
               final sidePanel = Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ValueListenableBuilder<String>(
+                  ValueListenableBuilder<UserRole?>(
                     valueListenable: getIt<SessionService>().activeRoleNotifier,
                     builder: (context, activeRole, _) {
-                      final showWorkload = activeRole == 'مدير التربية' ||
-                          activeRole == 'معاون مدير التربية';
+                      final showWorkload = activeRole?.roleName == 'مدير التربية' ||
+                          activeRole?.roleName == 'معاون مدير التربية';
                       if (!showWorkload) return const SizedBox.shrink();
                       return const Column(
                         children: [

@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:stream_transform/stream_transform.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/session_service.dart';
 import '../../domain/usecases/get_department_transactions.dart';
 import 'dept_tx_event.dart';
 import 'dept_tx_state.dart';
@@ -37,8 +39,11 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
     emit(DeptTxLoading());
 
+    final activeRole = getIt<SessionService>().activeRoleNotifier.value;
+    final departmentId = activeRole?.departmentId.toString() ?? '1';
+
     final result = await getDepartmentTransactions(
-      departmentIds: '1', // TODO: Get this dynamically from user profile or filter
+      departmentIds: departmentId,
       status: currentStatus,
       fromDate: currentFromDate,
       toDate: currentToDate,
@@ -82,8 +87,11 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
     final nextPage = currentState.page + 1;
 
+    final activeRole = getIt<SessionService>().activeRoleNotifier.value;
+    final departmentId = activeRole?.departmentId.toString() ?? '1';
+
     final result = await getDepartmentTransactions(
-      departmentIds: '1', // TODO: Get this dynamically from user profile or filter
+      departmentIds: departmentId,
       status: currentState.statusFilter,
       fromDate: currentState.fromDate,
       toDate: currentState.toDate,

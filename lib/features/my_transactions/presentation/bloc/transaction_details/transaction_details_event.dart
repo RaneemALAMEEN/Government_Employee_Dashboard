@@ -1,4 +1,3 @@
-
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/dynamic_widget_entity.dart';
 
 abstract class TransactionDetailsEvent {}
@@ -18,6 +17,13 @@ class ReleaseTransactionEvent extends TransactionDetailsEvent {
   ReleaseTransactionEvent(this.taskId);
 }
 
+class UpdateTemplateFormValue extends TransactionDetailsEvent {
+  final String fieldId;
+  final dynamic value;
+
+  UpdateTemplateFormValue(this.fieldId, this.value);
+}
+
 class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
   final String taskId;
   final List<DynamicWidgetEntity> widgets;
@@ -27,6 +33,9 @@ class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
   final bool isApprove;
   final String? pin;
   final String? keysDirectoryPath;
+  final List<int> templateIds;
+  final List<Map<String, dynamic>> loadedTemplates;
+  final Map<String, dynamic> templateFormValues;
 
   SubmitTransactionDetailsEvent({
     required this.taskId,
@@ -37,5 +46,8 @@ class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
     required this.isApprove,
     this.pin,
     this.keysDirectoryPath,
+    this.templateIds = const [],
+    this.loadedTemplates = const [],
+    this.templateFormValues = const {},
   });
 }

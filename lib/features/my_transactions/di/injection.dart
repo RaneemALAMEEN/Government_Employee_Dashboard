@@ -70,6 +70,7 @@ Future<void> setupMyTransactionsInjection() async {
         pickupTask: getIt<PickupTask>(),
         releaseTask: getIt<ReleaseTask>(),
         submitTransaction: getIt<SubmitTransaction>(),
+        repository: getIt<MyTransactionsRepository>(),
       ),
     );
   }

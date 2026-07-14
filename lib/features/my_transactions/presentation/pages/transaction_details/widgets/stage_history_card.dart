@@ -255,10 +255,10 @@ class StageHistoryCard extends StatelessWidget {
                           size: 16, color: AppColors.forest),
                       tooltip: 'عرض الملف',
                       onPressed: () {
-                        final path = file['path']?.toString() ?? '';
-                        if (path.isNotEmpty) {
-                          final fileUrl = buildFileUrl(path);
-                          final ext = path.split('.').last.toLowerCase();
+                        final rawPath = file['url']?.toString() ?? file['path']?.toString() ?? '';
+                        if (rawPath.isNotEmpty) {
+                          final fileUrl = buildFileUrl(rawPath);
+                          final ext = rawPath.split('.').last.toLowerCase();
                           final isImage = [
                             'jpg',
                             'jpeg',
@@ -296,9 +296,9 @@ class StageHistoryCard extends StatelessWidget {
                           size: 16, color: AppColors.goldDark),
                       tooltip: 'تحميل الملف',
                       onPressed: () {
-                        final path = file['path']?.toString() ?? '';
-                        if (path.isNotEmpty) {
-                          onDownloadFile(path, filename);
+                        final rawPath = file['path']?.toString() ?? file['url']?.toString() ?? '';
+                        if (rawPath.isNotEmpty) {
+                          onDownloadFile(rawPath, filename);
                         }
                       },
                     ),

@@ -112,4 +112,12 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
       return <String, dynamic>{};
     });
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getDocumentTemplate({
+    required int templateId,
+  }) async {
+    final result = await remoteDataSource.getDocumentTemplate(templateId: templateId);
+    return result.map((r) => r as Map<String, dynamic>);
+  }
 }

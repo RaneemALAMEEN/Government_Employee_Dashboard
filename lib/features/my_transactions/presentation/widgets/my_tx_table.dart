@@ -280,8 +280,12 @@ class _TransactionRow extends StatelessWidget {
             // Department
             _CellText(tx.department, flex: 17),
             // Date
-            _CellText(tx.date,
-                flex: 13, color: AppColors.charcoal.withOpacity(0.70)),
+            _CellText(
+                (tx.status == 'منجزة' || tx.status == 'تم الرفض') && tx.completedAt != null
+                    ? tx.completedAt!
+                    : tx.date,
+                flex: 13,
+                color: AppColors.charcoal.withOpacity(0.70)),
             // Priority
             Expanded(
               flex: 11,
@@ -290,7 +294,7 @@ class _TransactionRow extends StatelessWidget {
             // Status
             Expanded(
               flex: 13,
-              child: Center(child: _StatusBadge(status: tx.status)),
+              child: Center(child: _StatusBadge(tx: tx)),
             ),
             // Actions
             Expanded(
@@ -407,16 +411,17 @@ class _PriorityBadge extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  final String status;
+  final MyTransactionEntity tx;
 
-  const _StatusBadge({required this.status});
+  const _StatusBadge({required this.tx});
 
   @override
   Widget build(BuildContext context) {
     Color bg;
     Color fg;
+    String label = tx.status;
 
-    switch (status) {
+    switch (tx.status) {
       case 'بانتظار الاستلام':
         bg = Colors.blue.shade50;
         fg = Colors.blue.shade700;
@@ -441,7 +446,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status,
+        label,
         style: AppTextStyles.labelMedium
             .copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
       ),

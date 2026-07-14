@@ -8,6 +8,8 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../models/auth_response_model.dart';
 import '../models/login_response_model.dart';
+import '../models/user_model.dart';
+import '../models/user_role_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remote;
@@ -56,6 +58,15 @@ class AuthRepositoryImpl implements AuthRepository {
             refreshToken: authResponse.refreshToken,
           );
           await storage.saveDepartmentIds(authResponse.departmentIds);
+
+          final userModel = authResponse.user as UserModel;
+          await storage.writeUser(userModel);
+
+          if (authResponse.roles.isNotEmpty) {
+            final roleModels = authResponse.roles.cast<UserRoleModel>();
+            await storage.writeRoles(roleModels);
+            await storage.writeRole(roleModels.first);
+          }
 
           return Right(authResponse);
         } catch (_) {

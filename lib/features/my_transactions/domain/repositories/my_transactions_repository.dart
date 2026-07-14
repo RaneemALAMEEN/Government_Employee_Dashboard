@@ -29,4 +29,8 @@ abstract class MyTransactionsRepository {
     required int typeDocId,
     required String key,
   });
+
+  Future<Either<Failure, Map<String, dynamic>>> getDocumentTemplate({
+    required int templateId,
+  });
 }

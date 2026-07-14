@@ -7,6 +7,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -24,6 +25,7 @@ import '../bloc/transaction_details/transaction_details_event.dart';
 import '../bloc/transaction_details/transaction_details_state.dart';
 import 'transaction_details/widgets/transaction_header_widget.dart';
 import 'transaction_details/widgets/transaction_form_widget.dart';
+import 'transaction_details/widgets/template_form_card.dart';
 import 'transaction_details/widgets/employee_info_card.dart';
 import 'transaction_details/widgets/stage_history_card.dart';
 import 'transaction_details/widgets/lock_info_card.dart';
@@ -92,13 +94,24 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     }
   }
 
-  String _buildFileUrl(String path) {
-    String baseUrl = const String.fromEnvironment('BASE_URL',
-        defaultValue: 'http://10.0.2.2:5000');
+  String _buildFileUrl(String pathOrUrl) {
+    final trimmed = pathOrUrl.trim();
+    if (trimmed.isEmpty) return '';
+    if (trimmed.startsWith(RegExp(r'https?://'))) {
+      return trimmed;
+    }
+
+    var baseUrl = dotenv.env['BASE_URL']?.trim() ?? '';
+    if (baseUrl.isEmpty) {
+      baseUrl = const String.fromEnvironment('BASE_URL',
+          defaultValue: 'http://10.0.2.2:5000');
+    }
+
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.substring(0, baseUrl.length - 1);
     }
-    String normalizedPath = path.replaceAll('\\', '/');
+
+    var normalizedPath = trimmed.replaceAll('\\', '/');
     if (!normalizedPath.startsWith('/')) {
       normalizedPath = '/$normalizedPath';
     }
@@ -106,7 +119,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   }
 
   void _showSignatureDialog(List<DynamicWidgetEntity> widgets, String formId,
-      String formName, bool isApprove) async {
+      String formName, bool isApprove,
+      {List<int> templateIds = const [],
+      List<Map<String, dynamic>> loadedTemplates = const [],
+      Map<String, dynamic> templateFormValues = const {}}) async {
     final result = await showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
@@ -127,6 +143,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         isApprove: isApprove,
         pin: result['pin'],
         keysDirectoryPath: result['keysDirectoryPath'],
+        templateIds: templateIds,
+        loadedTemplates: loadedTemplates,
+        templateFormValues: templateFormValues,
       ));
     }
   }
@@ -254,6 +273,20 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     DynamicWidgetModel.fromJson(Map<String, dynamic>.from(w)))
                 .toList();
 
+            // Extract templateIds from config
+            final templateJson = config?['template'] as List? ?? config?['templates'] as List? ?? [];
+            final templateIds = templateJson
+                .map((item) {
+                  if (item is Map<String, dynamic>) {
+                    return item['template_id'] ?? item['id'];
+                  }
+                  return item;
+                })
+                .where((id) => id != null)
+                .map((id) => int.tryParse(id.toString()) ?? 0)
+                .where((id) => id > 0)
+                .toList();
+
             final taskLock = data['task_lock'] as Map<String, dynamic>? ?? {};
             final isLocked = taskLock['is_locked'] == true;
             final lockedByMe = taskLock['locked_by_me'] == true;
@@ -279,6 +312,120 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               priority: priority,
               status: status,
               canSign: isLocked && lockedByMe,
+            );
+
+            final isWide = MediaQuery.of(context).size.width > 950;
+
+            final rightContentList = [
+              EmployeeInfoCard(applicant: applicant),
+              const SizedBox(height: 20),
+              ...completedStages.map((stage) => StageHistoryCard(
+                    stage: Map<String, dynamic>.from(stage),
+                    buildFileUrl: _buildFileUrl,
+                    onDownloadFile: _downloadFile,
+                  )),
+              if (status != 'منجزة' && status != 'تم الرفض') ...[
+                if (!isLocked) ...[
+                  const LockInfoCard(),
+                  const SizedBox(height: 20),
+                ],
+                if (currentStageWidgets.isNotEmpty) ...[
+                  AbsorbPointer(
+                    absorbing: !(isLocked && lockedByMe),
+                    child: TransactionFormWidget(
+                      widgets: currentStageWidgets,
+                      formName: formName,
+                      formValues: _formValues,
+                      onChanged: (id, value) {
+                        setState(() {
+                          _formValues[id] = value;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                if (loadedState != null && loadedState.loadedTemplates.isNotEmpty) ...[
+                  ...loadedState.loadedTemplates.map((template) {
+                    final templateName = template['name']?.toString() ?? 'قالب';
+                    final templateFilePath = template['file_path']?.toString() ?? template['pdf_path']?.toString() ?? template['template_file']?.toString();
+                    final configJson = template['config_json'] as Map<String, dynamic>? ?? {};
+                    final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+
+                    final templateWidgets = fields.map((w) {
+                      final wMap = w is Map ? Map<String, dynamic>.from(w) : <String, dynamic>{};
+                      final widgetJson = {
+                        'widget_type': wMap['widget_type'] ?? wMap['type'] ?? 'text_field',
+                        'data': wMap['data'] ?? wMap,
+                      };
+                      return DynamicWidgetModel.fromJson(widgetJson);
+                    }).toList();
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: AbsorbPointer(
+                        absorbing: !(isLocked && lockedByMe),
+                        child: TemplateFormCard(
+                          templateName: templateName,
+                          templateFilePath: templateFilePath,
+                          onDownload: templateFilePath != null && templateFilePath.isNotEmpty
+                              ? () => _downloadFile(templateFilePath, templateFilePath.split('/').last)
+                              : null,
+                          widgets: templateWidgets,
+                          formValues: loadedState!.templateFormValues,
+                          onChanged: (id, value) {
+                            _bloc.add(UpdateTemplateFormValue(id, value));
+                          },
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ],
+            ];
+
+            final leftContent = WorkflowTimelineWidget(
+                completedStages: completedStages,
+                currentStage: currentStage,
+                isLocked: isLocked,
+                status: data['status']?.toString());
+
+            final layoutWidget = Expanded(
+              child: isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 7,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 32),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: rightContentList,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 3,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 32),
+                            child: leftContent,
+                          ),
+                        ),
+                      ],
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ...rightContentList,
+                          const SizedBox(height: 20),
+                          leftContent,
+                        ],
+                      ),
+                    ),
             );
 
             return Padding(
@@ -320,7 +467,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       onRelease: () => _bloc
                           .add(ReleaseTransactionEvent(widget.transactionId)),
                       onApprove: () => _showSignatureDialog(
-                          currentStageWidgets, formId, formName, true),
+                          currentStageWidgets, formId, formName, true,
+                          templateIds: templateIds,
+                          loadedTemplates: loadedState?.loadedTemplates ?? [],
+                          templateFormValues: loadedState?.templateFormValues ?? {}),
                       onReject: () => _bloc.add(SubmitTransactionDetailsEvent(
                         taskId: widget.transactionId,
                         widgets: currentStageWidgets,
@@ -328,97 +478,13 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         formId: formId,
                         formName: formName,
                         isApprove: false,
+                        templateIds: templateIds,
+                        loadedTemplates: loadedState?.loadedTemplates ?? [],
+                        templateFormValues: loadedState?.templateFormValues ?? {},
                       )),
                     ),
                     const SizedBox(height: 24),
-
-                    // Main Layout Grid
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isWide = constraints.maxWidth > 950;
-
-                          final rightContentList = [
-                            EmployeeInfoCard(applicant: applicant),
-                            const SizedBox(height: 20),
-                            ...completedStages.map((stage) => StageHistoryCard(
-                                  stage: Map<String, dynamic>.from(stage),
-                                  buildFileUrl: _buildFileUrl,
-                                  onDownloadFile: _downloadFile,
-                                )),
-                            if (isLocked &&
-                                lockedByMe &&
-                                currentStageWidgets.isNotEmpty &&
-                                status != 'منجزة' &&
-                                status != 'تم الرفض') ...[
-                              TransactionFormWidget(
-                                widgets: currentStageWidgets,
-                                formName: formName,
-                                formValues: _formValues,
-                                onChanged: (id, value) {
-                                  setState(() {
-                                    _formValues[id] = value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                            ] else if (!isLocked &&
-                                currentStageWidgets.isNotEmpty &&
-                                status != 'منجزة' &&
-                                status != 'تم الرفض') ...[
-                              const LockInfoCard(),
-                              const SizedBox(height: 20),
-                            ],
-                          ];
-
-                          final leftContent = WorkflowTimelineWidget(
-                              completedStages: completedStages,
-                              currentStage: currentStage,
-                              isLocked: isLocked,
-                              status: data['status']?.toString());
-
-                          return isWide
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 7,
-                                      child: SingleChildScrollView(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 32),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: rightContentList,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    Expanded(
-                                      flex: 3,
-                                      child: SingleChildScrollView(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 32),
-                                        child: leftContent,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : SingleChildScrollView(
-                                  padding: const EdgeInsets.only(bottom: 32),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      ...rightContentList,
-                                      const SizedBox(height: 20),
-                                      leftContent,
-                                    ],
-                                  ),
-                                );
-                        },
-                      ),
-                    ),
+                    layoutWidget,
                   ],
                 ),
               ),

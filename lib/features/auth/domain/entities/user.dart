@@ -10,4 +10,13 @@ class User {
     required this.email,
     required this.phoneNumber,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userName': userName,
+      'email': email,
+      'phoneNumber': phoneNumber,
+    };
+  }
 }

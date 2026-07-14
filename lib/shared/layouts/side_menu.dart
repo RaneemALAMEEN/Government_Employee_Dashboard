@@ -7,6 +7,7 @@ import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
 import '../theme/app_colors.dart';
 import '../../core/storage/secure_storage_service.dart';
+import '../../features/auth/domain/entities/user_role.dart';
 
 class SideMenu extends StatelessWidget {
   final bool isCollapsed;
@@ -31,6 +32,8 @@ class SideMenu extends StatelessWidget {
           LucideIcons.building, 'معاملات الدائرة', '/department-transactions'),
       const _MenuItem(
           LucideIcons.chartNoAxesCombined, 'الإحصائيات', '/statistics'),
+      const _MenuItem(LucideIcons.users, 'الموظفين', '/employees'),
+      const _MenuItem(LucideIcons.network, 'الهيكل التنظيمي', '/organization-hierarchy'),
       const _MenuItem(LucideIcons.messageSquare, 'الشكاوى', '/complaints'),
       const _MenuItem(
           LucideIcons.shieldCheck, 'فحص الوثائق', '/document-quality-checker'),
@@ -77,28 +80,31 @@ class SideMenu extends StatelessWidget {
                         style: AppTextStyles.headlineMedium,
                       ),
                       const SizedBox(height: 7),
-                      Text(
-                        'ريف دمشق',
-                        style: AppTextStyles.bodySmall
-                            .copyWith(color: AppColors.goldDark, height: 1),
-                      ),
-                      const SizedBox(height: 8),
-                      ValueListenableBuilder<String>(
-                        valueListenable:
-                            getIt<SessionService>().activeRoleNotifier,
+                      ValueListenableBuilder<UserRole?>(
+                        valueListenable: getIt<SessionService>().activeRoleNotifier,
                         builder: (context, activeRole, _) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.forestLight.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              activeRole,
-                              style: AppTextStyles.labelSmall
-                                  .copyWith(color: AppColors.forest),
-                            ),
+                          return Column(
+                            children: [
+                              Text(
+                                activeRole?.departmentName ?? 'ريف دمشق',
+                                style: AppTextStyles.bodySmall
+                                    .copyWith(color: AppColors.goldDark, height: 1),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.forestLight.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  activeRole?.roleName ?? '',
+                                  style: AppTextStyles.labelSmall
+                                      .copyWith(color: AppColors.forest),
+                                ),
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -124,7 +130,7 @@ class SideMenu extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'تم تغيير الدور إلى: $newRole',
+                              'تم تغيير الدور إلى: ${newRole?.roleName ?? ""}',
                               textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
                               style: AppTextStyles.bodySmall

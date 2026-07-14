@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/statistics_employee_entity.dart';
 import '../../domain/entities/statistics_process_entity.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/session_service.dart';
 import '../../domain/usecases/get_department_employees_stats.dart';
 import '../../domain/usecases/get_process_definition_stats.dart';
 import 'statistics_event.dart';
@@ -25,8 +27,11 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   ) async {
     emit(const StatisticsLoading());
 
-    final employeesResult = await getDepartmentEmployeesStats();
-    final processesResult = await getProcessDefinitionStats();
+    final departmentId = getIt<SessionService>().activeRoleNotifier.value?.departmentId;
+    final departmentIds = departmentId != null ? [departmentId] : <int>[];
+
+    final employeesResult = await getDepartmentEmployeesStats(departmentIds: departmentIds);
+    final processesResult = await getProcessDefinitionStats(departmentIds: departmentIds);
 
     var isFallback = false;
     String? warningMessage;

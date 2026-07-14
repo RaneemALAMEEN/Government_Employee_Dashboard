@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../../features/auth/data/models/user_model.dart';
+import '../../features/auth/data/models/user_role_model.dart';
 
 class SecureStorageService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -6,6 +11,8 @@ class SecureStorageService {
   static const _tokenKey = "token";
   static const _refreshTokenKey = "refresh_token";
   static const _roleKey = "user_role";
+  static const _rolesListKey = "user_roles_list";
+  static const _userKey = "user_details";
   static const _departmentIdsKey = "department_ids";
 
   // ===== Access token =====
@@ -39,16 +46,62 @@ class SecureStorageService {
   }
 
   // ===== Active User Role =====
-  Future<void> writeRole(String role) async {
-    await _storage.write(key: _roleKey, value: role);
+  Future<void> writeRole(UserRoleModel role) async {
+    await _storage.write(key: _roleKey, value: jsonEncode(role.toJson()));
   }
 
-  Future<String?> readRole() async {
-    return await _storage.read(key: _roleKey);
+  Future<UserRoleModel?> readRole() async {
+    final roleStr = await _storage.read(key: _roleKey);
+    if (roleStr != null && roleStr.isNotEmpty) {
+      return UserRoleModel.fromJson(
+        jsonDecode(roleStr) as Map<String, dynamic>,
+      );
+    }
+    return null;
   }
 
   Future<void> deleteRole() async {
     await _storage.delete(key: _roleKey);
+  }
+
+  // ===== User Roles List =====
+  Future<void> writeRoles(List<UserRoleModel> roles) async {
+    final rolesList = roles.map((e) => e.toJson()).toList();
+    await _storage.write(key: _rolesListKey, value: jsonEncode(rolesList));
+  }
+
+  Future<List<UserRoleModel>?> readRoles() async {
+    final rolesStr = await _storage.read(key: _rolesListKey);
+    if (rolesStr != null && rolesStr.isNotEmpty) {
+      final rolesList = jsonDecode(rolesStr) as List<dynamic>;
+      return rolesList
+          .map((e) => UserRoleModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return null;
+  }
+
+  Future<void> deleteRoles() async {
+    await _storage.delete(key: _rolesListKey);
+  }
+
+  // ===== User Details =====
+  Future<void> writeUser(UserModel user) async {
+    await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
+  }
+
+  Future<UserModel?> readUser() async {
+    final userStr = await _storage.read(key: _userKey);
+    if (userStr != null && userStr.isNotEmpty) {
+      return UserModel.fromJson(
+        jsonDecode(userStr) as Map<String, dynamic>,
+      );
+    }
+    return null;
+  }
+
+  Future<void> deleteUser() async {
+    await _storage.delete(key: _userKey);
   }
 
   // ===== Authorized departments =====
@@ -85,6 +138,8 @@ class SecureStorageService {
     await deleteToken();
     await deleteRefreshToken();
     await deleteRole();
+    await deleteRoles();
+    await deleteUser();
     await deleteDepartmentIds();
   }
 }

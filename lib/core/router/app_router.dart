@@ -26,6 +26,8 @@ import '../../features/internal_transactions/presentation/pages/internal_transac
 import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
 
+import '../../features/document_quality_checker/presentation/pages/document_quality_checker_page.dart';
+import '../../features/organization_hierarchy/presentation/pages/organization_hierarchy_page.dart';
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/splash',
@@ -175,12 +177,17 @@ class AppRouter {
               child: ComingSoonPage(title: 'الشكاوى'),
             ),
           ),
-          // GoRoute(
           //   path: '/document-quality-checker',
           //   pageBuilder: (context, state) => const NoTransitionPage(
           //     child: DocumentQualityCheckerPage(),
           //   ),
           // ),
+          GoRoute(
+            path: '/organization-hierarchy',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: OrganizationHierarchyPage(),
+            ),
+          ),
         ],
       ),
     ],

@@ -14,13 +14,15 @@ class StatisticsRemoteDataSource {
 
   static const _endPoints = EndPoints();
 
-  Future<List<StatisticsEmployeeModel>> getEmployeesByDepartments() async {
-    final departmentIds = await storage.getDepartmentIds();
+  Future<List<StatisticsEmployeeModel>> getEmployeesByDepartments({
+    required List<int> departmentIds,
+  }) async {
+    final departmentIdsQuery = await _resolveDepartmentIdsQuery(departmentIds);
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.employeesByDepartments,
       queryParameters: {
-        if (departmentIds != null) 'department_ids': departmentIds,
+        if (departmentIdsQuery != null) 'department_ids': departmentIdsQuery,
       },
     );
 
@@ -42,10 +44,15 @@ class StatisticsRemoteDataSource {
     );
   }
 
-  Future<List<StatisticsProcessModel>> getProcessDefinitionStats() async {
+  Future<List<StatisticsProcessModel>> getProcessDefinitionStats(
+      {required List<int> departmentIds}) async {
+    final departmentIdsQuery = await _resolveDepartmentIdsQuery(departmentIds);
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.processDefinitionStats,
+      queryParameters: {
+        if (departmentIdsQuery != null) 'department_ids': departmentIdsQuery,
+      },
     );
 
     return result.fold(
@@ -64,5 +71,12 @@ class StatisticsRemoteDataSource {
             .toList();
       },
     );
+  }
+
+  Future<String?> _resolveDepartmentIdsQuery(List<int> departmentIds) async {
+    if (departmentIds.isNotEmpty) {
+      return departmentIds.join(',');
+    }
+    return storage.getDepartmentIds();
   }
 }
