@@ -1,5 +1,6 @@
 import '../../../core/di/injection.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/storage/secure_storage_service.dart';
 import '../data/datasources/statistics_remote_data_source.dart';
 import '../data/repositories/statistics_repository_impl.dart';
 import '../domain/repositories/statistics_repository.dart';
@@ -10,7 +11,10 @@ import '../presentation/bloc/statistics_bloc.dart';
 Future<void> setupStatisticsInjection() async {
   if (!getIt.isRegistered<StatisticsRemoteDataSource>()) {
     getIt.registerLazySingleton<StatisticsRemoteDataSource>(
-      () => StatisticsRemoteDataSource(getIt<ApiService>()),
+      () => StatisticsRemoteDataSource(
+        getIt<ApiService>(),
+        getIt<SecureStorageService>(),
+      ),
     );
   }
 

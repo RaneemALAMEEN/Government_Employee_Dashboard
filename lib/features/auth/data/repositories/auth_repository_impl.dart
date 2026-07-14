@@ -55,6 +55,7 @@ class AuthRepositoryImpl implements AuthRepository {
             token: authResponse.token,
             refreshToken: authResponse.refreshToken,
           );
+          await storage.saveDepartmentIds(authResponse.departmentIds);
 
           return Right(authResponse);
         } catch (_) {

@@ -6,6 +6,7 @@ class SecureStorageService {
   static const _tokenKey = "token";
   static const _refreshTokenKey = "refresh_token";
   static const _roleKey = "user_role";
+  static const _departmentIdsKey = "department_ids";
 
   // ===== Access token =====
   Future<void> saveToken(String token) async {
@@ -50,6 +51,26 @@ class SecureStorageService {
     await _storage.delete(key: _roleKey);
   }
 
+  // ===== Authorized departments =====
+  Future<void> saveDepartmentIds(List<int> departmentIds) async {
+    await _storage.write(
+      key: _departmentIdsKey,
+      value: departmentIds.join(','),
+    );
+  }
+
+  Future<String?> getDepartmentIds() async {
+    final departmentIds = await _storage.read(key: _departmentIdsKey);
+    if (departmentIds == null || departmentIds.trim().isEmpty) {
+      return null;
+    }
+    return departmentIds;
+  }
+
+  Future<void> deleteDepartmentIds() async {
+    await _storage.delete(key: _departmentIdsKey);
+  }
+
   // ===== Both tokens =====
   Future<void> saveTokens({
     required String token,
@@ -64,5 +85,6 @@ class SecureStorageService {
     await deleteToken();
     await deleteRefreshToken();
     await deleteRole();
+    await deleteDepartmentIds();
   }
 }

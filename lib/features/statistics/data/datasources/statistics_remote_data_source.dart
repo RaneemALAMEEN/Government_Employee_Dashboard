@@ -2,20 +2,26 @@ import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../models/statistics_employee_model.dart';
 import '../models/statistics_process_model.dart';
 
 class StatisticsRemoteDataSource {
   final ApiService apiService;
+  final SecureStorageService storage;
 
-  StatisticsRemoteDataSource(this.apiService);
+  StatisticsRemoteDataSource(this.apiService, this.storage);
 
   static const _endPoints = EndPoints();
 
   Future<List<StatisticsEmployeeModel>> getEmployeesByDepartments() async {
+    final departmentIds = await storage.getDepartmentIds();
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.employeesByDepartments,
+      queryParameters: {
+        if (departmentIds != null) 'department_ids': departmentIds,
+      },
     );
 
     return result.fold(
