@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/services/usb_signing_service.dart';
@@ -124,22 +125,15 @@ class InternalTransactionFormBloc
     emit(state.copyWith(templateValues: updatedValues));
   }
 
-  Future<void> _onSubmit(
-    SubmitInternalTransactionForm event,
-    Emitter<InternalTransactionFormState> emit,
-  ) async {
+  String? validateCurrentForm() {
     final form = state.form;
 
     if (form == null) {
-      emit(state.copyWith(errorMessage: 'تعذر قراءة بيانات النموذج'));
-      return;
+      return 'تعذر قراءة بيانات النموذج';
     }
 
     final formValidationError = _validateForm(form, state.formValues);
-    if (formValidationError != null) {
-      emit(state.copyWith(errorMessage: formValidationError));
-      return;
-    }
+    if (formValidationError != null) return formValidationError;
 
     final template = state.template;
     if (template != null) {
@@ -148,10 +142,7 @@ class InternalTransactionFormBloc
         state.templateValues,
       );
 
-      if (templateValidationError != null) {
-        emit(state.copyWith(errorMessage: templateValidationError));
-        return;
-      }
+      if (templateValidationError != null) return templateValidationError;
     }
 
     for (final inlineTemplate in form.templates) {
@@ -160,10 +151,20 @@ class InternalTransactionFormBloc
         state.templateValues,
       );
 
-      if (templateValidationError != null) {
-        emit(state.copyWith(errorMessage: templateValidationError));
-        return;
-      }
+      if (templateValidationError != null) return templateValidationError;
+    }
+
+    return null;
+  }
+
+  Future<void> _onSubmit(
+    SubmitInternalTransactionForm event,
+    Emitter<InternalTransactionFormState> emit,
+  ) async {
+    final validationError = validateCurrentForm();
+    if (validationError != null) {
+      emit(state.copyWith(errorMessage: validationError));
+      return;
     }
 
     emit(
@@ -174,6 +175,9 @@ class InternalTransactionFormBloc
     );
 
     try {
+      final form = state.form!;
+      final template = state.template;
+
       final payloadResult = await _buildSubmitPayload(
         form: form,
         formValues: state.formValues,
@@ -192,6 +196,11 @@ class InternalTransactionFormBloc
       }
 
       final payload = payloadResult.payload!;
+      final uploadedFilesCount = _countUploadedFiles(payload);
+      debugPrint(
+        '[InternalTransactionForm] اكتمل رفع $uploadedFilesCount '
+        'مرفق/مرفقات قبل التوقيع وإرسال المعاملة.',
+      );
 
       final challengeResult = await createSigningChallenge(
         processId: event.processId,
@@ -256,8 +265,14 @@ class InternalTransactionFormBloc
             (completeResponse) {
               final responseData = completeResponse['data'];
               final submittedData = responseData is Map<String, dynamic>
-                  ? responseData
+                  ? Map<String, dynamic>.from(responseData)
                   : <String, dynamic>{};
+              submittedData['uploaded_files_count'] = uploadedFilesCount;
+
+              debugPrint(
+                '[InternalTransactionForm] تم توقيع وإنشاء المعاملة بنجاح، '
+                'وتم ربط $uploadedFilesCount مرفق/مرفقات بها على السيرفر.',
+              );
 
               emit(
                 state.copyWith(
@@ -277,6 +292,31 @@ class InternalTransactionFormBloc
         ),
       );
     }
+  }
+
+  int _countUploadedFiles(Map<String, dynamic> payload) {
+    var count = 0;
+
+    void countWidgets(dynamic widgets) {
+      if (widgets is! List) return;
+      for (final widget in widgets) {
+        if (widget is Map &&
+            widget['widget_type'] == 'file_picker' &&
+            widget['value'] is List) {
+          count += (widget['value'] as List).length;
+        }
+      }
+    }
+
+    countWidgets(payload['widgets']);
+    final templates = payload['templates'];
+    if (templates is List) {
+      for (final template in templates) {
+        if (template is Map) countWidgets(template['widgets']);
+      }
+    }
+
+    return count;
   }
 
   void _onReset(
@@ -371,6 +411,10 @@ class InternalTransactionFormBloc
 
       dynamic finalValue = value;
 
+      if (finalValue is String) {
+        finalValue = _normalizeDigits(finalValue);
+      }
+
       if (widget.widgetType == 'file_picker') {
         final uploadResult = await _uploadFilePickerValue(
           widgetId: id,
@@ -408,8 +452,13 @@ class InternalTransactionFormBloc
     final typeDocId = _parseTypeDocId(widgetData['type_doc_id']);
 
     for (final file in value) {
-      if (file is Map) {
-        uploadedFiles.add(Map<String, dynamic>.from(file));
+      if (file is Map && file['path']?.toString().isNotEmpty == true) {
+        final uploadedFile = Map<String, dynamic>.from(file);
+        uploadedFiles.add({
+          'key': uploadedFile['key']?.toString() ?? widgetId,
+          'path': uploadedFile['path'].toString(),
+          'type_doc_id': uploadedFile['type_doc_id'] ?? typeDocId,
+        });
         continue;
       }
 
@@ -450,10 +499,17 @@ class InternalTransactionFormBloc
       final value = formValues[id];
 
       if (isRequired && _isEmptyValue(value)) {
-        return 'يرجى تعبئة حقل: $label';
+        return _validationFailure(
+          message: 'يرجى تعبئة حقل: $label',
+          id: id,
+          label: label,
+          widgetType: widget.widgetType,
+          value: value,
+          data: widget.data,
+        );
       }
 
-      if (value == null) continue;
+      if (_isEmptyValue(value)) continue;
 
       if (widget.widgetType == 'text_field' && value is String) {
         final error = _validateTextField(
@@ -462,7 +518,16 @@ class InternalTransactionFormBloc
           data: widget.data,
         );
 
-        if (error != null) return error;
+        if (error != null) {
+          return _validationFailure(
+            message: error,
+            id: id,
+            label: label,
+            widgetType: widget.widgetType,
+            value: value,
+            data: widget.data,
+          );
+        }
       }
 
       if (widget.widgetType == 'check_list' && value is List) {
@@ -472,11 +537,38 @@ class InternalTransactionFormBloc
           data: widget.data,
         );
 
-        if (error != null) return error;
+        if (error != null) {
+          return _validationFailure(
+            message: error,
+            id: id,
+            label: label,
+            widgetType: widget.widgetType,
+            value: value,
+            data: widget.data,
+          );
+        }
       }
     }
 
     return null;
+  }
+
+  String _validationFailure({
+    required String message,
+    required String id,
+    required String label,
+    required String widgetType,
+    required dynamic value,
+    required Map<String, dynamic> data,
+  }) {
+    debugPrint(
+      '[InternalTransactionForm] Validation stopped submit: '
+      'message="$message", id="$id", label="$label", '
+      'widgetType="$widgetType", inputType="${data['input_type']}", '
+      'regex="${data['regex']}", required="${data['is_required']}", '
+      'value="$value"',
+    );
+    return message;
   }
 
   String? _validateTextField({
@@ -484,12 +576,17 @@ class InternalTransactionFormBloc
     required String value,
     required Map<String, dynamic> data,
   }) {
-    final trimmedValue = value.trim();
+    final trimmedValue = _normalizeDigits(value).trim();
 
     final minLength = data['min_length'] as int?;
     final maxLength = data['max_length'] as int?;
     final inputType = data['input_type']?.toString();
     final regex = data['regex']?.toString();
+    final isPhoneField = _isPhoneField(
+      label: label,
+      inputType: inputType,
+      regex: regex,
+    );
 
     if (minLength != null && trimmedValue.length < minLength) {
       return 'حقل $label يجب أن يحتوي على $minLength أحرف على الأقل';
@@ -497,6 +594,14 @@ class InternalTransactionFormBloc
 
     if (maxLength != null && trimmedValue.length > maxLength) {
       return 'حقل $label يجب ألا يتجاوز $maxLength حرف';
+    }
+
+    if (isPhoneField) {
+      if (!RegExp(r'^0[59]\d{8}$').hasMatch(trimmedValue)) {
+        return 'قيمة حقل $label غير صحيحة';
+      }
+
+      return null;
     }
 
     if (regex != null && regex.isNotEmpty) {
@@ -522,6 +627,22 @@ class InternalTransactionFormBloc
     return null;
   }
 
+  bool _isPhoneField({
+    required String label,
+    required String? inputType,
+    required String? regex,
+  }) {
+    final normalizedLabel = label.trim();
+    final normalizedRegex = regex?.trim() ?? '';
+
+    return inputType == 'phone' ||
+        inputType == 'phoneNumber' ||
+        normalizedLabel.contains('هاتف') ||
+        normalizedLabel.contains('موبايل') ||
+        normalizedRegex == r'^09\d{8}$' ||
+        normalizedRegex == r'^05\d{8}$';
+  }
+
   String? _validateCheckList({
     required String label,
     required List value,
@@ -545,6 +666,33 @@ class InternalTransactionFormBloc
     return value == null ||
         (value is String && value.trim().isEmpty) ||
         (value is List && value.isEmpty);
+  }
+
+  String _normalizeDigits(String value) {
+    const digits = {
+      '٠': '0',
+      '١': '1',
+      '٢': '2',
+      '٣': '3',
+      '٤': '4',
+      '٥': '5',
+      '٦': '6',
+      '٧': '7',
+      '٨': '8',
+      '٩': '9',
+      '۰': '0',
+      '۱': '1',
+      '۲': '2',
+      '۳': '3',
+      '۴': '4',
+      '۵': '5',
+      '۶': '6',
+      '۷': '7',
+      '۸': '8',
+      '۹': '9',
+    };
+
+    return value.split('').map((char) => digits[char] ?? char).join();
   }
 
   int _parseTypeDocId(dynamic value) {

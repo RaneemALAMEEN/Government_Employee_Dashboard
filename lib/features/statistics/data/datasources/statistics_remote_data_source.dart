@@ -44,14 +44,19 @@ class StatisticsRemoteDataSource {
     );
   }
 
-  Future<List<StatisticsProcessModel>> getProcessDefinitionStats(
-      {required List<int> departmentIds}) async {
+  Future<List<StatisticsProcessModel>> getProcessDefinitionStats({
+    required List<int> departmentIds,
+    String? fromDate,
+    String? toDate,
+  }) async {
     final departmentIdsQuery = await _resolveDepartmentIdsQuery(departmentIds);
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.processDefinitionStats,
       queryParameters: {
         if (departmentIdsQuery != null) 'department_ids': departmentIdsQuery,
+        if (fromDate != null && fromDate.isNotEmpty) 'from_date': fromDate,
+        if (toDate != null && toDate.isNotEmpty) 'to_date': toDate,
       },
     );
 

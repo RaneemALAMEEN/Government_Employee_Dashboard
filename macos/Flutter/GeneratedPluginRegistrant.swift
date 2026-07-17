@@ -10,7 +10,6 @@ import device_info_plus
 import file_picker
 import flutter_local_notifications
 import flutter_secure_storage_macos
-import path_provider_foundation
 import screen_retriever_macos
 import syncfusion_pdfviewer_macos
 import tray_manager
@@ -23,10 +22,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
   FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
   FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
-<<<<<<< HEAD
-=======
-  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
->>>>>>> f4034b6 (save local work before pulling)
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
   SyncfusionFlutterPdfViewerPlugin.register(with: registry.registrar(forPlugin: "SyncfusionFlutterPdfViewerPlugin"))
   TrayManagerPlugin.register(with: registry.registrar(forPlugin: "TrayManagerPlugin"))

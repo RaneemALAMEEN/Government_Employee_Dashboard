@@ -9,8 +9,15 @@ class GetProcessDefinitionStats {
 
   GetProcessDefinitionStats(this.repository);
 
-  Future<Either<Failure, List<StatisticsProcessEntity>>> call(
-      {required List<int> departmentIds}) {
-    return repository.getProcessDefinitionStats(departmentIds: departmentIds);
+  Future<Either<Failure, List<StatisticsProcessEntity>>> call({
+    required List<int> departmentIds,
+    String? fromDate,
+    String? toDate,
+  }) {
+    return repository.getProcessDefinitionStats(
+      departmentIds: departmentIds,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
   }
 }

@@ -2,12 +2,12 @@ import '../../../../shared/theme/app_text_styles.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/internal_transaction_entity.dart';
 import '../bloc/internal_transactions_bloc.dart';
-import '../bloc/internal_transactions_event.dart';
 import '../bloc/internal_transactions_state.dart';
 
 class InternalProcessesTable extends StatelessWidget {
@@ -19,7 +19,7 @@ class InternalProcessesTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<InternalTransactionsBloc, InternalTransactionsState>(
       builder: (context, state) {
-        if (state.loadingTransactions) {
+        if (state.loadingTransactions && state.transactionsPageData == null) {
           return const SizedBox(
             height: 240,
             child: Center(
@@ -60,8 +60,9 @@ class InternalProcessesTable extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final tableWidth = constraints.maxWidth < _minTableWidth
-                  ? _minTableWidth
+              final tableWidth = constraints.maxWidth <
+                      InternalProcessesTable._minTableWidth
+                  ? InternalProcessesTable._minTableWidth
                   : constraints.maxWidth;
 
               return SingleChildScrollView(
@@ -70,19 +71,10 @@ class InternalProcessesTable extends StatelessWidget {
                   width: tableWidth,
                   child: Column(
                     children: [
-                      _Table(items: data.items),
-                      _Pagination(
-                        page: data.page,
-                        totalPages: data.totalPages,
-                        total: data.total,
-                        limit: data.limit,
-                        hasNext: data.hasNext,
-                        hasPrev: data.hasPrev,
-                        onPageChanged: (page) {
-                          context.read<InternalTransactionsBloc>().add(
-                                LoadInternalTransactionsPage(page: page),
-                              );
-                        },
+                      _Table(
+                        items: data.items,
+                        isLoading: state.loadingTransactions,
+                        hasMore: state.hasMoreTransactions,
                       ),
                     ],
                   ),
@@ -97,37 +89,114 @@ class InternalProcessesTable extends StatelessWidget {
 }
 
 class _Table extends StatelessWidget {
-  final List<InternalTransactionEntity> items;
+  static const double _rowHeight = 72;
+  static const double _bodyHeight = _rowHeight * 6;
 
-  const _Table({required this.items});
+  final List<InternalTransactionEntity> items;
+  final bool isLoading;
+  final bool hasMore;
+
+  const _Table({
+    required this.items,
+    required this.isLoading,
+    required this.hasMore,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         const _TableHeader(),
-        if (items.isEmpty)
-          SizedBox(
-            height: 72,
-            child: Center(
-              child: Text(
-                'لا توجد معاملات حالياً',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: AppTextStyles.semiBold,
-                  color: AppColors.goldDark,
-                ),
-              ),
-            ),
-          )
-        else
-          ...items.asMap().entries.map(
-                (entry) => FadeInUp(
-                  duration: const Duration(milliseconds: 350),
-                  delay: Duration(milliseconds: (entry.key % 10) * 50),
-                  child: _TransactionRow(item: entry.value),
-                ),
-              ),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _bodyHeight),
+          child: items.isEmpty && isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.forest),
+                )
+              : items.isEmpty
+                  ? const _EmptyTransactionsState()
+                  : Column(
+                      children: [
+                        ...items.asMap().entries.map(
+                              (entry) => FadeInUp(
+                                duration: const Duration(milliseconds: 350),
+                                delay: Duration(
+                                  milliseconds: (entry.key % 10) * 50,
+                                ),
+                                child: _TransactionRow(item: entry.value),
+                              ),
+                            ),
+                        if (isLoading)
+                          const SizedBox(
+                            height: _rowHeight,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.forest,
+                              ),
+                            ),
+                          )
+                        else if (hasMore)
+                          const SizedBox(
+                            height: 48,
+                            child: Center(
+                              child: Icon(
+                                Icons.keyboard_arrow_down,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 16),
+                      ],
+                    ),
+        ),
       ],
+    );
+  }
+}
+
+class _EmptyTransactionsState extends StatelessWidget {
+  const _EmptyTransactionsState();
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeIn(
+      duration: const Duration(milliseconds: 350),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 34, 24, 18),
+        alignment: Alignment.center,
+        child: ZoomIn(
+          duration: const Duration(milliseconds: 450),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/vectors/waiting.svg',
+                width: 78,
+                height: 78,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'لا توجد معاملات داخلية حالياً',
+                style: AppTextStyles.titleMedium,
+              ),
+              const SizedBox(height: 5),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 72),
+                child: Text(
+                  'عند إنشاء معاملة داخلية جديدة ستظهر هنا مع مرحلتها الحالية ونسبة الإنجاز.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.charcoal.withValues(alpha: 0.60),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -470,6 +539,7 @@ class _Pagination extends StatelessWidget {
   final int totalPages;
   final int total;
   final int limit;
+  final int itemCount;
   final bool hasNext;
   final bool hasPrev;
   final ValueChanged<int> onPageChanged;
@@ -479,6 +549,7 @@ class _Pagination extends StatelessWidget {
     required this.totalPages,
     required this.total,
     required this.limit,
+    required this.itemCount,
     required this.hasNext,
     required this.hasPrev,
     required this.onPageChanged,
@@ -486,7 +557,7 @@ class _Pagination extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (total == 0) {
+    if (total == 0 && itemCount == 0) {
       return Container(
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -501,8 +572,16 @@ class _Pagination extends StatelessWidget {
       );
     }
 
+    final canGoPrev = hasPrev || page > 1;
+    final canGoNext = hasNext || itemCount >= limit;
+    final discoveredTotalPages = canGoNext ? page + 1 : page;
+    final displayTotalPages = totalPages > discoveredTotalPages
+        ? totalPages
+        : discoveredTotalPages;
+    final minimumTotal = ((page - 1) * limit) + itemCount;
+    final displayTotal = total > minimumTotal ? total : minimumTotal;
     final start = ((page - 1) * limit) + 1;
-    final end = (page * limit).clamp(0, total);
+    final end = minimumTotal;
 
     return Container(
       height: 64,
@@ -512,7 +591,7 @@ class _Pagination extends StatelessWidget {
         textDirection: TextDirection.rtl,
         children: [
           Text(
-            'عرض $start–$end من $total معاملة',
+            'عرض $start–$end من $displayTotal معاملة',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.charcoal.withValues(alpha: 0.6),
             ),
@@ -520,12 +599,12 @@ class _Pagination extends StatelessWidget {
           const Spacer(),
           _PageButton(
             icon: Icons.chevron_right,
-            enabled: hasPrev,
+            enabled: canGoPrev,
             onTap: () => onPageChanged(page - 1),
           ),
           const SizedBox(width: 8),
           ...List.generate(
-            totalPages,
+            displayTotalPages,
             (index) {
               final pageNumber = index + 1;
               return Padding(
@@ -541,7 +620,7 @@ class _Pagination extends StatelessWidget {
           const SizedBox(width: 8),
           _PageButton(
             icon: Icons.chevron_left,
-            enabled: hasNext,
+            enabled: canGoNext,
             onTap: () => onPageChanged(page + 1),
           ),
         ],
@@ -574,10 +653,13 @@ class _PageButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: AppColors.gold.withValues(alpha: 0.15)),
         ),
-        child: Icon(
-          icon,
-          color: enabled ? AppColors.charcoal : AppColors.gold,
-          size: 18,
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Icon(
+            icon,
+            color: enabled ? AppColors.charcoal : AppColors.gold,
+            size: 18,
+          ),
         ),
       ),
     );

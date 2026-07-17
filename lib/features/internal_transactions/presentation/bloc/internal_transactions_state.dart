@@ -6,6 +6,7 @@ import '../../domain/entities/internal_transactions_page_entity.dart';
 class InternalTransactionsState extends Equatable {
   final bool loadingCounts;
   final bool loadingTransactions;
+  final bool hasMoreTransactions;
   final String? errorMessage;
   final InternalTransactionCountsEntity counts;
   final InternalTransactionsPageEntity? transactionsPageData;
@@ -13,6 +14,7 @@ class InternalTransactionsState extends Equatable {
   const InternalTransactionsState({
     required this.loadingCounts,
     required this.loadingTransactions,
+    required this.hasMoreTransactions,
     required this.counts,
     this.errorMessage,
     this.transactionsPageData,
@@ -22,6 +24,7 @@ class InternalTransactionsState extends Equatable {
     return const InternalTransactionsState(
       loadingCounts: true,
       loadingTransactions: true,
+      hasMoreTransactions: true,
       counts: InternalTransactionCountsEntity(
         total: 0,
         inProgress: 0,
@@ -33,6 +36,7 @@ class InternalTransactionsState extends Equatable {
   InternalTransactionsState copyWith({
     bool? loadingCounts,
     bool? loadingTransactions,
+    bool? hasMoreTransactions,
     String? errorMessage,
     bool clearError = false,
     InternalTransactionCountsEntity? counts,
@@ -41,6 +45,7 @@ class InternalTransactionsState extends Equatable {
     return InternalTransactionsState(
       loadingCounts: loadingCounts ?? this.loadingCounts,
       loadingTransactions: loadingTransactions ?? this.loadingTransactions,
+      hasMoreTransactions: hasMoreTransactions ?? this.hasMoreTransactions,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       counts: counts ?? this.counts,
       transactionsPageData: transactionsPageData ?? this.transactionsPageData,
@@ -51,6 +56,7 @@ class InternalTransactionsState extends Equatable {
   List<Object?> get props => [
         loadingCounts,
         loadingTransactions,
+        hasMoreTransactions,
         errorMessage,
         counts,
         transactionsPageData,

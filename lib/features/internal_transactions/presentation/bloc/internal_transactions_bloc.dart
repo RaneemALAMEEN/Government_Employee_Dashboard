@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/usecases/get_my_transaction_counts_usecase.dart';
 import '../../domain/usecases/get_my_transactions_usecase.dart';
+import '../../domain/entities/internal_transactions_page_entity.dart';
 import 'internal_transactions_event.dart';
 import 'internal_transactions_state.dart';
 
@@ -10,7 +11,7 @@ class InternalTransactionsBloc
   final GetMyTransactionCountsUseCase getMyTransactionCounts;
   final GetMyTransactionsUseCase getMyTransactions;
 
-  static const int _limit = 10;
+  static const int _limit = 6;
 
   InternalTransactionsBloc({
     required this.getMyTransactionCounts,
@@ -18,6 +19,7 @@ class InternalTransactionsBloc
   }) : super(InternalTransactionsState.initial()) {
     on<LoadInternalTransactionsOverview>(_onLoadOverview);
     on<LoadInternalTransactionsPage>(_onLoadPage);
+    on<LoadMoreInternalTransactions>(_onLoadMore);
   }
 
   Future<void> _onLoadOverview(
@@ -33,6 +35,7 @@ class InternalTransactionsBloc
     );
 
     final countsResult = await getMyTransactionCounts();
+    if (emit.isDone) return;
 
     countsResult.fold(
       (failure) {
@@ -53,25 +56,66 @@ class InternalTransactionsBloc
       },
     );
 
-    add(const LoadInternalTransactionsPage(page: 1));
+    await _loadTransactionsPage(
+      page: 1,
+      status: null,
+      emit: emit,
+      clearError: false,
+    );
   }
 
   Future<void> _onLoadPage(
     LoadInternalTransactionsPage event,
     Emitter<InternalTransactionsState> emit,
   ) async {
+    await _loadTransactionsPage(
+      page: event.page,
+      status: event.status,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onLoadMore(
+    LoadMoreInternalTransactions event,
+    Emitter<InternalTransactionsState> emit,
+  ) async {
+    final currentData = state.transactionsPageData;
+    if (currentData == null ||
+        state.loadingTransactions ||
+        !state.hasMoreTransactions) {
+      return;
+    }
+
+    await _loadTransactionsPage(
+      page: currentData.page + 1,
+      status: null,
+      emit: emit,
+      append: true,
+    );
+  }
+
+  Future<void> _loadTransactionsPage({
+    required int page,
+    required String? status,
+    required Emitter<InternalTransactionsState> emit,
+    bool clearError = true,
+    bool append = false,
+  }) async {
+    if (emit.isDone) return;
+
     emit(
       state.copyWith(
         loadingTransactions: true,
-        clearError: true,
+        clearError: clearError,
       ),
     );
 
     final result = await getMyTransactions(
-      page: event.page,
+      page: page,
       limit: _limit,
-      status: event.status,
+      status: status,
     );
+    if (emit.isDone) return;
 
     result.fold(
       (failure) {
@@ -83,10 +127,24 @@ class InternalTransactionsBloc
         );
       },
       (pageData) {
+        final currentItems = state.transactionsPageData?.items ?? const [];
+        final resultData = append
+            ? InternalTransactionsPageEntity(
+                items: [...currentItems, ...pageData.items],
+                page: page,
+                limit: pageData.limit,
+                total: pageData.total,
+                totalPages: pageData.totalPages,
+                hasNext: pageData.hasNext,
+                hasPrev: pageData.hasPrev,
+              )
+            : pageData;
+
         emit(
           state.copyWith(
             loadingTransactions: false,
-            transactionsPageData: pageData,
+            hasMoreTransactions: pageData.items.length >= _limit,
+            transactionsPageData: resultData,
           ),
         );
       },

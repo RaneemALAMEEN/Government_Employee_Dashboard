@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter/foundation.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/enums/api_method.dart';
@@ -65,6 +66,12 @@ class InternalTransactionsRemoteDataSource {
     required int typeDocId,
     required String key,
   }) async {
+    debugPrint(
+      '[TransactionAttachment] بدء الرفع إلى '
+      '${_endPoints.uploadTransactionFile} | '
+      'key=$key | type_doc_id=$typeDocId | file=$filePath',
+    );
+
     final formData = dio.FormData.fromMap({
       'file': await dio.MultipartFile.fromFile(filePath),
       'type_doc_id': typeDocId,
@@ -80,8 +87,31 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        final data = response['data'] as Map<String, dynamic>? ?? {};
-        return data;
+        if (response is! Map) {
+          throw const ServerException('استجابة رفع الملف غير صالحة');
+        }
+
+        final responseMap = Map<String, dynamic>.from(response);
+        final nestedData = responseMap['data'];
+        final uploadedFile = nestedData is Map
+            ? Map<String, dynamic>.from(nestedData)
+            : responseMap;
+        final uploadedPath = uploadedFile['path']?.toString();
+
+        if (uploadedPath == null || uploadedPath.isEmpty) {
+          throw const ServerException('لم يُرجع الخادم مسار الملف المرفوع');
+        }
+
+        debugPrint(
+          '[TransactionAttachment] تم الرفع إلى السيرفر بنجاح | '
+          'key=$key | type_doc_id=$typeDocId | path=$uploadedPath',
+        );
+
+        return {
+          'key': uploadedFile['key']?.toString() ?? key,
+          'path': uploadedPath,
+          'type_doc_id': uploadedFile['type_doc_id'] ?? typeDocId,
+        };
       },
     );
   }

@@ -18,11 +18,15 @@ class StatisticsLoaded extends StatisticsState {
   final List<StatisticsProcessEntity> processes;
   final bool isFallback;
   final String? warningMessage;
+  final String? processFromDate;
+  final String? processToDate;
 
   const StatisticsLoaded({
     required this.employees,
     required this.processes,
     this.isFallback = false,
     this.warningMessage,
+    this.processFromDate,
+    this.processToDate,
   });
 }

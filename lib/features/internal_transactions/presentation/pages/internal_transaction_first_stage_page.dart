@@ -9,6 +9,8 @@ import '../../domain/entities/internal_transaction_first_stage_entity.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_event.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_state.dart';
+import '../../../my_transactions/presentation/pages/image_viewer_page.dart';
+import '../../../my_transactions/presentation/pages/pdf_viewer_page.dart';
 
 class InternalTransactionFirstStagePage extends StatelessWidget {
   final int transactionId;
@@ -240,6 +242,8 @@ class _ReadOnlyWidgetTile extends StatelessWidget {
                     .whereType<Map>()
                     .map(
                       (file) => _FileTile(
+                        name: file['original_name']?.toString() ?? '',
+                        mimeType: file['mime_type']?.toString() ?? '',
                         url: file['url']?.toString() ?? '',
                         path: file['path']?.toString() ?? '',
                       ),
@@ -300,7 +304,12 @@ class _TemplateTile extends StatelessWidget {
           ),
           if (template.generatedPdfPath.isNotEmpty) ...[
             const SizedBox(height: 10),
-            _FileTile(path: template.generatedPdfPath, url: ''),
+            _FileTile(
+              name: '',
+              mimeType: 'application/pdf',
+              path: template.generatedPdfPath,
+              url: '',
+            ),
           ],
           if (template.value.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -437,49 +446,152 @@ class _InfoTile extends StatelessWidget {
 }
 
 class _FileTile extends StatelessWidget {
+  final String name;
+  final String mimeType;
   final String url;
   final String path;
 
   const _FileTile({
+    required this.name,
+    required this.mimeType,
     required this.url,
     required this.path,
   });
 
   @override
   Widget build(BuildContext context) {
-    final text = url.isNotEmpty ? url : path;
+    final fileUrl = _buildFileUrl(url.isNotEmpty ? url : path);
+    final text = _fileDisplayName(name: name, path: path, url: url);
+    final isPdf = _isPdfFile(name: text, mimeType: mimeType, url: fileUrl);
+    final isImage = _isImageFile(name: text, mimeType: mimeType, url: fileUrl);
+    final canOpen = fileUrl.isNotEmpty && (isPdf || isImage);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            LucideIcons.paperclip,
-            color: AppColors.forest,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text.isEmpty ? 'ملف مرفق' : text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.charcoalDark,
-                fontWeight: AppTextStyles.medium,
+    return InkWell(
+      onTap: canOpen
+          ? () {
+              if (isPdf) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PdfViewerPage(
+                      fileUrl: fileUrl,
+                      title: text,
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ImageViewerPage(
+                    fileUrl: fileUrl,
+                    title: text,
+                  ),
+                ),
+              );
+            }
+          : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isPdf ? LucideIcons.fileText : LucideIcons.paperclip,
+              color: AppColors.forest,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text.isEmpty ? 'ملف مرفق' : text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.charcoalDark,
+                  fontWeight: AppTextStyles.medium,
+                ),
               ),
             ),
-          ),
-        ],
+            if (canOpen) ...[
+              const SizedBox(width: 8),
+              const Icon(
+                LucideIcons.eye,
+                color: AppColors.goldDark,
+                size: 17,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
+}
+
+String _fileDisplayName({
+  required String name,
+  required String path,
+  required String url,
+}) {
+  if (name.trim().isNotEmpty) return name.trim();
+
+  final source = path.trim().isNotEmpty ? path.trim() : url.trim();
+  if (source.isEmpty) return '';
+
+  final normalized = source.split('?').first;
+  final parts = normalized.split('/');
+
+  return parts.lastWhere(
+    (part) => part.trim().isNotEmpty,
+    orElse: () => normalized,
+  );
+}
+
+String _buildFileUrl(String pathOrUrl) {
+  final trimmed = pathOrUrl.trim();
+  if (trimmed.isEmpty) return '';
+  if (trimmed.startsWith('http')) return trimmed;
+  if (trimmed.startsWith('/')) {
+    return 'https://dev-education-directorate.abukm.com$trimmed';
+  }
+  return 'https://dev-education-directorate.abukm.com/$trimmed';
+}
+
+bool _isPdfFile({
+  required String name,
+  required String mimeType,
+  required String url,
+}) {
+  final lowerName = name.toLowerCase();
+  final lowerMime = mimeType.toLowerCase();
+  final lowerUrl = url.toLowerCase();
+
+  return lowerMime.contains('pdf') ||
+      lowerName.endsWith('.pdf') ||
+      lowerUrl.endsWith('.pdf');
+}
+
+bool _isImageFile({
+  required String name,
+  required String mimeType,
+  required String url,
+}) {
+  final lowerName = name.toLowerCase();
+  final lowerMime = mimeType.toLowerCase();
+  final lowerUrl = url.toLowerCase();
+  const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+
+  return lowerMime.startsWith('image/') ||
+      imageExtensions.any(
+        (extension) =>
+            lowerName.endsWith(extension) || lowerUrl.endsWith(extension),
+      );
 }
 
 class _TransactionPill extends StatelessWidget {

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../bloc/internal_transactions_bloc.dart';
+import '../bloc/internal_transactions_event.dart';
 import '../bloc/internal_transactions_state.dart';
 import '../widgets/internal_processes_table.dart';
 import '../widgets/internal_stats_section.dart';
@@ -14,11 +15,23 @@ class InternalTransactionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.axis == Axis.vertical &&
+            notification.metrics.extentAfter < 200) {
+          final bloc = context.read<InternalTransactionsBloc>();
+          if (!bloc.state.loadingTransactions &&
+              bloc.state.hasMoreTransactions) {
+            bloc.add(const LoadMoreInternalTransactions());
+          }
+        }
+        return false;
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           FadeInDown(
             duration: const Duration(milliseconds: 400),
             child: const _Header(),
@@ -55,7 +68,8 @@ class InternalTransactionsPage extends StatelessWidget {
             delay: const Duration(milliseconds: 200),
             child: const InternalProcessesTable(),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

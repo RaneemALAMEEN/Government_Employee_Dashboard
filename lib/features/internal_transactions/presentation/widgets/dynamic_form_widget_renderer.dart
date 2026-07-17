@@ -217,15 +217,18 @@ class _RadioGroupWidget extends StatelessWidget {
         filled: true,
         fillColor: Colors.white,
       ),
-      child: Column(
-        children: widgetEntity.options
-            .map((option) => RadioListTile<String>(
-                  value: option.key,
-                  groupValue: value as String?,
-                  onChanged: onChanged,
-                  title: Text(option.value, textAlign: TextAlign.right),
-                ))
-            .toList(),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          children: widgetEntity.options
+              .map((option) => RadioListTile<String>(
+                    value: option.key,
+                    groupValue: value as String?,
+                    onChanged: onChanged,
+                    title: Text(option.value, textAlign: TextAlign.right),
+                  ))
+              .toList(),
+        ),
       ),
     );
   }
@@ -260,26 +263,29 @@ class _CheckListWidget extends StatelessWidget {
         filled: true,
         fillColor: Colors.white,
       ),
-      child: Column(
-        children: widgetEntity.options.map((option) {
-          final checked = selected.contains(option.key);
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          children: widgetEntity.options.map((option) {
+            final checked = selected.contains(option.key);
 
-          return CheckboxListTile(
-            value: checked,
-            onChanged: (isChecked) {
-              final updated = [...selected];
+            return CheckboxListTile(
+              value: checked,
+              onChanged: (isChecked) {
+                final updated = [...selected];
 
-              if (isChecked == true) {
-                updated.add(option.key);
-              } else {
-                updated.remove(option.key);
-              }
+                if (isChecked == true) {
+                  updated.add(option.key);
+                } else {
+                  updated.remove(option.key);
+                }
 
-              onChanged(updated);
-            },
-            title: Text(option.value, textAlign: TextAlign.right),
-          );
-        }).toList(),
+                onChanged(updated);
+              },
+              title: Text(option.value, textAlign: TextAlign.right),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

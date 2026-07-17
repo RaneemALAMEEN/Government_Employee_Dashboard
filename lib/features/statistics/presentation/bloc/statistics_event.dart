@@ -9,3 +9,13 @@ class LoadStatistics extends StatisticsEvent {
 class RefreshStatistics extends StatisticsEvent {
   const RefreshStatistics();
 }
+
+class ApplyProcessDateFilter extends StatisticsEvent {
+  final String? fromDate;
+  final String? toDate;
+
+  const ApplyProcessDateFilter({
+    required this.fromDate,
+    required this.toDate,
+  });
+}

@@ -24,3 +24,7 @@ class LoadInternalTransactionsPage extends InternalTransactionsEvent {
   @override
   List<Object?> get props => [page, status];
 }
+
+class LoadMoreInternalTransactions extends InternalTransactionsEvent {
+  const LoadMoreInternalTransactions();
+}

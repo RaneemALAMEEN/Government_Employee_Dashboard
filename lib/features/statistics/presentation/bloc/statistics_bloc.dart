@@ -12,6 +12,8 @@ import 'statistics_state.dart';
 class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   final GetDepartmentEmployeesStats getDepartmentEmployeesStats;
   final GetProcessDefinitionStats getProcessDefinitionStats;
+  String? _processFromDate;
+  String? _processToDate;
 
   StatisticsBloc({
     required this.getDepartmentEmployeesStats,
@@ -19,6 +21,16 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   }) : super(const StatisticsInitial()) {
     on<LoadStatistics>(_onLoadStatistics);
     on<RefreshStatistics>(_onLoadStatistics);
+    on<ApplyProcessDateFilter>(_onApplyProcessDateFilter);
+  }
+
+  void _onApplyProcessDateFilter(
+    ApplyProcessDateFilter event,
+    Emitter<StatisticsState> emit,
+  ) {
+    _processFromDate = event.fromDate;
+    _processToDate = event.toDate;
+    add(const LoadStatistics());
   }
 
   Future<void> _onLoadStatistics(
@@ -27,11 +39,17 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   ) async {
     emit(const StatisticsLoading());
 
-    final departmentId = getIt<SessionService>().activeRoleNotifier.value?.departmentId;
+    final departmentId =
+        getIt<SessionService>().activeRoleNotifier.value?.departmentId;
     final departmentIds = departmentId != null ? [departmentId] : <int>[];
 
-    final employeesResult = await getDepartmentEmployeesStats(departmentIds: departmentIds);
-    final processesResult = await getProcessDefinitionStats(departmentIds: departmentIds);
+    final employeesResult =
+        await getDepartmentEmployeesStats(departmentIds: departmentIds);
+    final processesResult = await getProcessDefinitionStats(
+      departmentIds: departmentIds,
+      fromDate: _processFromDate,
+      toDate: _processToDate,
+    );
 
     var isFallback = false;
     String? warningMessage;
@@ -60,6 +78,8 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         processes: processes,
         isFallback: isFallback,
         warningMessage: warningMessage,
+        processFromDate: _processFromDate,
+        processToDate: _processToDate,
       ),
     );
   }

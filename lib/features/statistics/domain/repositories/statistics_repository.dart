@@ -9,5 +9,9 @@ abstract class StatisticsRepository {
       getEmployeesByDepartments({required List<int> departmentIds});
 
   Future<Either<Failure, List<StatisticsProcessEntity>>>
-      getProcessDefinitionStats({required List<int> departmentIds});
+      getProcessDefinitionStats({
+    required List<int> departmentIds,
+    String? fromDate,
+    String? toDate,
+  });
 }

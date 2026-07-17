@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:flutter/foundation.dart';
 
 import '../enums/api_method.dart';
 import '../errors/failures.dart';
@@ -31,7 +32,7 @@ class ApiService {
       final fullUrl = endPoint.startsWith('http')
           ? endPoint
           : '${_dio.options.baseUrl}$endPoint';
-      print('Executing API: [${method.value}] $fullUrl');
+      debugPrint('Executing API: [${method.value}] $fullUrl');
 
       // Per-request options only — never mutate the shared Dio's global
       // options/headers, since every feature reuses the same instance.
@@ -52,7 +53,8 @@ class ApiService {
       return Left(_mapResponse(response.statusCode, response.data));
     } on dio.DioException catch (e) {
       return Left(_mapDioException(e));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Unexpected API error: $e');
       return const Left(
         ServerFailure("حدث خطأ غير متوقع، يرجى المحاولة لاحقًا."),
       );
@@ -60,6 +62,14 @@ class ApiService {
   }
 
   Failure _mapDioException(dio.DioException error) {
+    debugPrint(
+      'DioException details: '
+      'type=${error.type}, '
+      'message=${error.message}, '
+      'error=${error.error}, '
+      'status=${error.response?.statusCode}',
+    );
+
     switch (error.type) {
       case dio.DioExceptionType.connectionTimeout:
       case dio.DioExceptionType.sendTimeout:
@@ -84,8 +94,9 @@ class ApiService {
   /// Maps a non-2xx status code to a [Failure], preferring the server-provided
   /// message (`message` or `error`) when the body is a map.
   Failure _mapResponse(int? statusCode, dynamic data) {
-    final serverMessage =
-        data is Map ? (data['message'] ?? data['error'])?.toString() : null;
+    final serverMessage = data is Map
+        ? (data['message'] ?? data['error'] ?? data['detail'])?.toString()
+        : null;
 
     switch (statusCode) {
       case 400:
@@ -102,10 +113,23 @@ class ApiService {
         return const ServerFailure("طريقة الطلب غير مسموح بها.");
       case 500:
         return const ServerFailure("حدث خطأ في الخادم، يرجى المحاولة لاحقًا.");
+      case 502:
+      case 503:
+      case 504:
+        return ServerFailure(_gatewayFailureMessage(data, serverMessage));
       default:
         return ServerFailure(
           serverMessage ?? "حدث خطأ في الخادم، يرجى المحاولة لاحقًا.",
         );
     }
+  }
+
+  String _gatewayFailureMessage(dynamic data, String? fallbackMessage) {
+    final retryAfter = data is Map ? data['retry_after']?.toString() : null;
+    final retryText = retryAfter != null && retryAfter.isNotEmpty
+        ? " يرجى المحاولة بعد $retryAfter ثانية."
+        : " يرجى المحاولة بعد قليل.";
+
+    return "الخادم غير متاح مؤقتًا.$retryText";
   }
 }

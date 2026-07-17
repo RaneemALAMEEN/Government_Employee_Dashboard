@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart' as dio;
 import 'package:file_picker/file_picker.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sfpdf;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -45,6 +49,13 @@ class _InternalTransactionFormPageState
   }
 
   Future<void> _submit() async {
+    final validationError =
+        context.read<InternalTransactionFormBloc>().validateCurrentForm();
+    if (validationError != null) {
+      _showSnackBar(validationError);
+      return;
+    }
+
     final keysDirectoryPath = await _pickKeysDirectory();
     if (keysDirectoryPath == null) return;
 
@@ -73,10 +84,23 @@ class _InternalTransactionFormPageState
     return BlocConsumer<InternalTransactionFormBloc,
         InternalTransactionFormState>(
       listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage &&
-          current.errorMessage != null,
+          (previous.errorMessage != current.errorMessage &&
+              current.errorMessage != null) ||
+          (previous.submittedTransaction == null &&
+              current.submittedTransaction != null),
       listener: (context, state) {
-        _showSnackBar(state.errorMessage!);
+        if (state.errorMessage != null) {
+          _showSnackBar(state.errorMessage!);
+          return;
+        }
+
+        final uploadedCount =
+            state.submittedTransaction?['uploaded_files_count'] as int? ?? 0;
+        _showSnackBar(
+          uploadedCount > 0
+              ? 'تم توقيع وإنشاء المعاملة ورفع $uploadedCount مرفق/مرفقات إلى السيرفر بنجاح'
+              : 'تم توقيع وإنشاء المعاملة بنجاح',
+        );
       },
       builder: (context, state) {
         if (state.loading) {
@@ -440,23 +464,7 @@ class _TemplateInfo extends StatelessWidget {
                         ? const Center(
                             child: Text('لا يوجد ملف لعرضه'),
                           )
-                        : SfPdfViewer.network(
-                            _pdfUrl,
-                            canShowScrollHead: true,
-                            canShowScrollStatus: true,
-                            onDocumentLoadFailed: (details) {
-                              debugPrint('PDF ERROR: ${details.description}');
-                              debugPrint('PDF DETAILS: ${details.error}');
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'فشل تحميل القالب: ${details.description}',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                        : _ReadOnlyPdfViewer(url: _pdfUrl),
                   ),
                 ],
               ),
@@ -535,6 +543,71 @@ class _TemplateInfo extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ReadOnlyPdfViewer extends StatelessWidget {
+  final String url;
+
+  const _ReadOnlyPdfViewer({required this.url});
+
+  Future<Uint8List> _loadReadOnlyBytes() async {
+    final response = await dio.Dio().get<List<int>>(
+      url,
+      options: dio.Options(responseType: dio.ResponseType.bytes),
+    );
+    final sourceBytes = Uint8List.fromList(response.data ?? const <int>[]);
+
+    try {
+      final document = sfpdf.PdfDocument(inputBytes: sourceBytes);
+      final fields = document.form.fields;
+      for (var i = 0; i < fields.count; i++) {
+        fields[i].flatten();
+      }
+      final bytes = Uint8List.fromList(await document.save());
+      document.dispose();
+      return bytes;
+    } catch (_) {
+      final document = sfpdf.PdfDocument(inputBytes: sourceBytes);
+      document.form.fields.clear();
+      final bytes = Uint8List.fromList(await document.save());
+      document.dispose();
+      return bytes;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List>(
+      future: _loadReadOnlyBytes(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.forest),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          return Center(
+            child: Text(
+              'تعذر تحميل القالب',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.umber,
+                fontWeight: AppTextStyles.semiBold,
+              ),
+            ),
+          );
+        }
+
+        return SfPdfViewer.memory(
+          snapshot.data!,
+          canShowScrollHead: true,
+          canShowScrollStatus: true,
+          enableTextSelection: false,
+          interactionMode: PdfInteractionMode.pan,
+        );
+      },
     );
   }
 }

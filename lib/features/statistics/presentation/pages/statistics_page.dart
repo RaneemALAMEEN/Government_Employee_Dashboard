@@ -95,7 +95,11 @@ class _StatisticsViewState extends State<_StatisticsView>
                         controller: _tabController,
                         children: [
                           _EmployeeStatsView(employees: loaded.employees),
-                          _TransactionStatsView(processes: loaded.processes),
+                          _TransactionStatsView(
+                            processes: loaded.processes,
+                            fromDate: loaded.processFromDate,
+                            toDate: loaded.processToDate,
+                          ),
                         ],
                       ),
                     ),
@@ -307,8 +311,14 @@ class _EmployeeStatsView extends StatelessWidget {
 
 class _TransactionStatsView extends StatefulWidget {
   final List<StatisticsProcessEntity> processes;
+  final String? fromDate;
+  final String? toDate;
 
-  const _TransactionStatsView({required this.processes});
+  const _TransactionStatsView({
+    required this.processes,
+    required this.fromDate,
+    required this.toDate,
+  });
 
   @override
   State<_TransactionStatsView> createState() => _TransactionStatsViewState();
@@ -321,6 +331,46 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
     setState(() {
       _activeFilter = _activeFilter == filter ? null : filter;
     });
+  }
+
+  Future<void> _pickDateRange(BuildContext context) async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 5);
+    final lastDate = DateTime(now.year + 1, 12, 31);
+    final initialDateRange = widget.fromDate != null && widget.toDate != null
+        ? DateTimeRange(
+            start: DateTime.parse(widget.fromDate!),
+            end: DateTime.parse(widget.toDate!),
+          )
+        : null;
+
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: initialDateRange,
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (range == null || !context.mounted) return;
+
+    context.read<StatisticsBloc>().add(
+          ApplyProcessDateFilter(
+            fromDate: _dateQueryValue(range.start),
+            toDate: _dateQueryValue(range.end),
+          ),
+        );
+  }
+
+  void _clearDateRange(BuildContext context) {
+    context.read<StatisticsBloc>().add(
+          const ApplyProcessDateFilter(fromDate: null, toDate: null),
+        );
   }
 
   @override
@@ -342,6 +392,15 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _ProcessDateFilterBar(
+            fromDate: widget.fromDate,
+            toDate: widget.toDate,
+            onPickRange: () => _pickDateRange(context),
+            onClearRange: widget.fromDate == null && widget.toDate == null
+                ? null
+                : () => _clearDateRange(context),
+          ),
+          const SizedBox(height: 16),
           _MetricsGrid(
             cards: [
               _Metric('بانتظار الاستلام', '$pending', LucideIcons.inbox,
@@ -404,6 +463,64 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
         _ProcessMetricFilter.rejected => process.rejected > 0,
       };
     }).toList();
+  }
+}
+
+class _ProcessDateFilterBar extends StatelessWidget {
+  final String? fromDate;
+  final String? toDate;
+  final VoidCallback onPickRange;
+  final VoidCallback? onClearRange;
+
+  const _ProcessDateFilterBar({
+    required this.fromDate,
+    required this.toDate,
+    required this.onPickRange,
+    required this.onClearRange,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasRange = fromDate != null && toDate != null;
+    final label =
+        hasRange ? 'الفترة: $fromDate - $toDate' : 'اختيار فترة الإحصائيات';
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          OutlinedButton.icon(
+            onPressed: onPickRange,
+            icon: const Icon(LucideIcons.calendarDays, size: 17),
+            label: Text(label),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.forest,
+              side: BorderSide(color: AppColors.gold.withValues(alpha: 0.42)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          if (hasRange)
+            IconButton(
+              onPressed: onClearRange,
+              tooltip: 'مسح الفترة',
+              icon: const Icon(LucideIcons.x, size: 18),
+              style: IconButton.styleFrom(
+                foregroundColor: AppColors.umber,
+                backgroundColor: AppColors.umber.withValues(alpha: 0.08),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -533,6 +650,12 @@ String _filterLabel(_ProcessMetricFilter filter) {
     _ProcessMetricFilter.completed => 'منجزة',
     _ProcessMetricFilter.rejected => 'مرفوضة',
   };
+}
+
+String _dateQueryValue(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
 }
 
 enum _ProcessMetricFilter {
