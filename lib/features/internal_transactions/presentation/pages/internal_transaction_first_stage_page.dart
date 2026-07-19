@@ -1,10 +1,14 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/internal_transaction_first_stage_entity.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_event.dart';
@@ -54,6 +58,25 @@ class InternalTransactionFirstStagePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/internal-transactions'),
+                    icon: const Icon(LucideIcons.arrowRight, size: 18),
+                    label: const Text('العودة للمعاملات'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.forest,
+                      side: BorderSide(
+                        color: AppColors.gold.withValues(alpha: 0.35),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 FadeInDown(
                   duration: const Duration(milliseconds: 350),
                   child: _Header(details: details),
@@ -468,8 +491,24 @@ class _FileTile extends StatelessWidget {
 
     return InkWell(
       onTap: canOpen
-          ? () {
+          ? () async {
               if (isPdf) {
+                if (kIsWeb || defaultTargetPlatform == TargetPlatform.windows) {
+                  final opened = await launchUrl(
+                    Uri.parse(fileUrl),
+                    mode: LaunchMode.externalApplication,
+                    webOnlyWindowName: '_blank',
+                  );
+                  if (!opened && context.mounted) {
+                    AppSnackBar.show(
+                      context,
+                      message: 'تعذر فتح ملف PDF',
+                      isError: true,
+                    );
+                  }
+                  return;
+                }
+
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PdfViewerPage(

@@ -1,17 +1,29 @@
 import '../../domain/entities/org_node_entity.dart';
 
-abstract class OrgHierarchyState {}
+abstract class OrgHierarchyState {
+  const OrgHierarchyState();
+}
 
-class OrgHierarchyInitial extends OrgHierarchyState {}
+class OrgHierarchyInitial extends OrgHierarchyState {
+  const OrgHierarchyInitial();
+}
 
-class OrgHierarchyLoading extends OrgHierarchyState {}
+class OrgHierarchyLoading extends OrgHierarchyState {
+  const OrgHierarchyLoading();
+}
 
 class OrgHierarchyLoaded extends OrgHierarchyState {
+  final int organizationId;
   final List<OrgNodeEntity> nodes;
-  OrgHierarchyLoaded(this.nodes);
+
+  const OrgHierarchyLoaded({
+    required this.organizationId,
+    required this.nodes,
+  });
 }
 
 class OrgHierarchyFailure extends OrgHierarchyState {
   final String message;
-  OrgHierarchyFailure(this.message);
+
+  const OrgHierarchyFailure(this.message);
 }

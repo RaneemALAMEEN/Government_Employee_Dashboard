@@ -1,22 +1,23 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart' as dio;
-import 'package:file_picker/file_picker.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sfpdf;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../my_transactions/presentation/widgets/secure_signature_dialog.dart';
 import '../../domain/entities/document_template_entity.dart';
 import '../../domain/entities/dynamic_form_entity.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_event.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_state.dart';
 import '../widgets/dynamic_form_widget_renderer.dart';
-import '../widgets/pin_dialog.dart';
 import '../widgets/transaction_success_summary.dart';
 
 class InternalTransactionFormPage extends StatefulWidget {
@@ -34,17 +35,13 @@ class InternalTransactionFormPage extends StatefulWidget {
 
 class _InternalTransactionFormPageState
     extends State<InternalTransactionFormPage> {
-  Future<String?> _pickKeysDirectory() {
-    return FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'اختاري مجلد مفاتيح الموظف من الفلاشة',
-    );
-  }
-
-  Future<String?> _showPinDialog() {
-    return showDialog<String>(
+  Future<Map<String, String>?> _showSignatureDialog() {
+    return showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const PinDialog(),
+      builder: (_) => SecureSignatureDialog(
+        transactionNumber: widget.processId.toString(),
+      ),
     );
   }
 
@@ -52,15 +49,19 @@ class _InternalTransactionFormPageState
     final validationError =
         context.read<InternalTransactionFormBloc>().validateCurrentForm();
     if (validationError != null) {
-      _showSnackBar(validationError);
+      _showSnackBar(validationError, isError: true);
       return;
     }
 
-    final keysDirectoryPath = await _pickKeysDirectory();
-    if (keysDirectoryPath == null) return;
-
-    final pin = await _showPinDialog();
-    if (pin == null || pin.isEmpty) return;
+    final signatureData = await _showSignatureDialog();
+    final keysDirectoryPath = signatureData?['keysDirectoryPath'];
+    final pin = signatureData?['pin'];
+    if (keysDirectoryPath == null ||
+        keysDirectoryPath.isEmpty ||
+        pin == null ||
+        pin.isEmpty) {
+      return;
+    }
 
     if (!mounted) return;
 
@@ -73,9 +74,11 @@ class _InternalTransactionFormPageState
         );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  void _showSnackBar(String message, {bool isError = false}) {
+    AppSnackBar.show(
+      context,
+      message: message,
+      isError: isError,
     );
   }
 
@@ -90,7 +93,7 @@ class _InternalTransactionFormPageState
               current.submittedTransaction != null),
       listener: (context, state) {
         if (state.errorMessage != null) {
-          _showSnackBar(state.errorMessage!);
+          _showSnackBar(state.errorMessage!, isError: true);
           return;
         }
 
@@ -125,6 +128,7 @@ class _InternalTransactionFormPageState
               context.read<InternalTransactionFormBloc>().add(
                     const ResetInternalTransactionForm(),
                   );
+              context.go('/internal-transactions');
             },
           );
         }
@@ -147,6 +151,20 @@ class _InternalTransactionFormPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: IconButton.outlined(
+                      onPressed: () =>
+                          context.go('/create-internal-transaction'),
+                      tooltip: 'العودة لاختيار المعاملة',
+                      icon: const Icon(Icons.arrow_forward),
+                      color: AppColors.forest,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 FadeInDown(
                   duration: const Duration(milliseconds: 400),
                   child: _FormHeader(
@@ -558,22 +576,24 @@ class _ReadOnlyPdfViewer extends StatelessWidget {
       options: dio.Options(responseType: dio.ResponseType.bytes),
     );
     final sourceBytes = Uint8List.fromList(response.data ?? const <int>[]);
+    if (sourceBytes.isEmpty) {
+      throw const FormatException('Empty PDF template response');
+    }
 
+    sfpdf.PdfDocument? document;
     try {
-      final document = sfpdf.PdfDocument(inputBytes: sourceBytes);
-      final fields = document.form.fields;
+      final parsedDocument = sfpdf.PdfDocument(inputBytes: sourceBytes);
+      document = parsedDocument;
+      final fields = parsedDocument.form.fields;
       for (var i = 0; i < fields.count; i++) {
         fields[i].flatten();
       }
-      final bytes = Uint8List.fromList(await document.save());
-      document.dispose();
+      final bytes = Uint8List.fromList(await parsedDocument.save());
       return bytes;
     } catch (_) {
-      final document = sfpdf.PdfDocument(inputBytes: sourceBytes);
-      document.form.fields.clear();
-      final bytes = Uint8List.fromList(await document.save());
-      document.dispose();
-      return bytes;
+      return sourceBytes;
+    } finally {
+      document?.dispose();
     }
   }
 

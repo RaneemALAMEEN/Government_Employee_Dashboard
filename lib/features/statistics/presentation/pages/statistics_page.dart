@@ -7,6 +7,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/statistics_employee_entity.dart';
 import '../../domain/entities/statistics_process_entity.dart';
 import '../bloc/statistics_bloc.dart';
@@ -50,9 +51,24 @@ class _StatisticsViewState extends State<_StatisticsView>
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: SingleChildScrollView(
+    return BlocListener<StatisticsBloc, StatisticsState>(
+      listenWhen: (previous, current) =>
+          current is StatisticsLoaded &&
+          current.isFallback &&
+          (previous is! StatisticsLoaded || !previous.isFallback),
+      listener: (context, state) {
+        final loaded = state as StatisticsLoaded;
+        AppSnackBar.show(
+          context,
+          message: loaded.warningMessage ??
+              'تعذر تحميل الإحصائيات من الخادم، يتم عرض بيانات تجريبية مؤقتة.',
+          isError: true,
+          title: 'تعذر تحميل الإحصائيات',
+        );
+      },
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,13 +98,6 @@ class _StatisticsViewState extends State<_StatisticsView>
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (loaded.isFallback) ...[
-                      _WarningBanner(
-                        message: loaded.warningMessage ??
-                            'تعذر تحميل الإحصائيات من الخادم، يتم عرض بيانات تجريبية مؤقتة.',
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     SizedBox(
                       height: 760,
                       child: TabBarView(
@@ -108,6 +117,7 @@ class _StatisticsViewState extends State<_StatisticsView>
               },
             ),
           ],
+        ),
         ),
       ),
     );
@@ -982,39 +992,6 @@ class _Insight extends StatelessWidget {
           Icon(icon, color: color, size: 20),
           const SizedBox(width: 10),
           Expanded(child: _TitleSubtitle(title: title, subtitle: text)),
-        ],
-      ),
-    );
-  }
-}
-
-class _WarningBanner extends StatelessWidget {
-  final String message;
-
-  const _WarningBanner({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.goldLight.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(LucideIcons.info, color: AppColors.goldDark, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.goldDark,
-                fontWeight: AppTextStyles.medium,
-              ),
-            ),
-          ),
         ],
       ),
     );

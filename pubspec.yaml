@@ -57,6 +57,7 @@ dependencies:
   stream_transform: ^2.1.1
   image: ^4.5.3
   desktop_drop: ^0.5.0
+  url_launcher: ^6.3.2
 
 
   # ===== نظام إشعارات Push على سطح مكتب Windows (بدون FCM) =====

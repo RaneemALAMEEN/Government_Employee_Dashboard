@@ -29,7 +29,8 @@ class AnalysisResultsWidget extends StatelessWidget {
           children: [
             Text(
               'تفاصيل التحليل',
-              style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoalDark),
+              style: AppTextStyles.titleMedium
+                  .copyWith(color: AppColors.charcoalDark),
             ),
             const SizedBox(height: 20),
 
@@ -212,7 +213,8 @@ class _AnalysisCheck extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),

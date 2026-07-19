@@ -126,15 +126,25 @@ class _BackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerRight,
-      child: TextButton.icon(
+      child: TextButton(
         onPressed: () => context.go('/internal-transactions'),
-        icon: const Icon(Icons.arrow_forward, size: 18),
-        label: const Text('العودة لمركز المعاملات'),
         style: TextButton.styleFrom(
           foregroundColor: AppColors.forest,
           textStyle: AppTextStyles.bodyMedium.copyWith(
             fontWeight: AppTextStyles.bold,
           ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          textDirection: TextDirection.rtl,
+          children: [
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Icon(Icons.arrow_forward, size: 18),
+            ),
+            SizedBox(width: 8),
+            Text('العودة لمركز المعاملات'),
+          ],
         ),
       ),
     );

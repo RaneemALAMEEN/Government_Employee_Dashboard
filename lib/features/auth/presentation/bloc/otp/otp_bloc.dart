@@ -23,11 +23,11 @@ class OtpBloc extends Bloc<OtpEvent, OtpState> {
       otp: event.otp,
     );
 
-    result.fold(
-      (failure) => emit(OtpFailure(failure.message)),
-      (_) {
-        getIt<SessionService>().loadSession();
-        emit(const OtpSuccess());
+    await result.fold<Future<void>>(
+      (failure) async => emit(OtpFailure(failure.message)),
+      (_) async {
+        await getIt<SessionService>().loadSession();
+        if (!emit.isDone) emit(const OtpSuccess());
       },
     );
   }

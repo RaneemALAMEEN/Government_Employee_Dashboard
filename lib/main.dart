@@ -21,6 +21,7 @@ import 'features/employees/di/injection.dart';
 import 'features/employees/presentation/bloc/employees_bloc.dart';
 import 'features/employees/presentation/bloc/employees_event.dart';
 import 'features/my_transactions/di/injection.dart';
+import 'features/organization_hierarchy/di/injection.dart';
 import 'features/my_transactions/presentation/bloc/my_transactions_bloc.dart';
 import 'features/my_transactions/presentation/bloc/my_transactions_event.dart';
 import 'features/statistics/di/injection.dart';
@@ -102,6 +103,7 @@ Future<void> main() async {
   await setupDepartmentTransactionsInjection();
   await setupEmployeesInjection();
   await setupStatisticsInjection();
+  await setupOrganizationHierarchyInjection(getIt);
 
   // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق
   // → (3) فتح اتصال الـ socket. الاتصال يبقى حيًّا في الـ tray عند "إغلاق"

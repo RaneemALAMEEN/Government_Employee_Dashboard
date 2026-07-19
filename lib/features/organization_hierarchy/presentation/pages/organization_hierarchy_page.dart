@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
-import '../../data/datasources/mock_org_data_source.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/org_node_entity.dart';
 import '../bloc/org_hierarchy_bloc.dart';
 import '../bloc/org_hierarchy_event.dart';
@@ -17,7 +18,7 @@ class OrganizationHierarchyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => OrgHierarchyBloc(MockOrgDataSource())..add(LoadOrgHierarchy()),
+      create: (_) => getIt<OrgHierarchyBloc>()..add(const LoadOrgHierarchy()),
       child: const _OrganizationHierarchyView(),
     );
   }
@@ -51,7 +52,9 @@ class _OrganizationHierarchyView extends StatelessWidget {
                   border: Border.all(color: AppColors.gold, width: 2),
                 ),
                 child: Icon(
-                  node.type == OrgNodeType.employee ? LucideIcons.user : LucideIcons.building,
+                  node.type == OrgNodeType.employee
+                      ? LucideIcons.user
+                      : LucideIcons.building,
                   size: 40,
                   color: AppColors.goldDark,
                 ),
@@ -59,29 +62,35 @@ class _OrganizationHierarchyView extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 node.title,
-                style: AppTextStyles.headlineLarge.copyWith(color: AppColors.charcoalDark),
+                style: AppTextStyles.headlineLarge
+                    .copyWith(color: AppColors.charcoalDark),
                 textAlign: TextAlign.center,
               ),
               if (node.subtitle != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   node.subtitle!,
-                  style: AppTextStyles.titleMedium.copyWith(color: AppColors.charcoal.withOpacity(0.7)),
+                  style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.charcoal.withValues(alpha: 0.7)),
                   textAlign: TextAlign.center,
                 ),
               ],
-              if (node.role != null) ...[
+              if (node.employee != null) ...[
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.forestLight.withOpacity(0.1),
+                    color: AppColors.forestLight.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.forest.withOpacity(0.3)),
+                    border: Border.all(
+                        color: AppColors.forest.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    'المنصب: ${node.role}',
-                    style: AppTextStyles.labelLarge.copyWith(color: AppColors.forest, fontWeight: AppTextStyles.bold),
+                    'اسم المستخدم: ${node.employee!.userName}',
+                    style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.forest,
+                        fontWeight: AppTextStyles.bold),
                   ),
                 ),
               ],
@@ -94,7 +103,8 @@ class _OrganizationHierarchyView extends StatelessWidget {
                     backgroundColor: AppColors.charcoalDark,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('إغلاق', style: AppTextStyles.titleSmall),
                 ),
@@ -109,11 +119,23 @@ class _OrganizationHierarchyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // assuming it's inside main dashboard
-      body: BlocBuilder<OrgHierarchyBloc, OrgHierarchyState>(
+      backgroundColor:
+          Colors.transparent, // assuming it's inside main dashboard
+      body: BlocConsumer<OrgHierarchyBloc, OrgHierarchyState>(
+        listenWhen: (previous, current) => current is OrgHierarchyFailure,
+        listener: (context, state) {
+          final failure = state as OrgHierarchyFailure;
+          AppSnackBar.show(
+            context,
+            message: failure.message,
+            isError: true,
+            title: 'تعذر تحميل الهيكل التنظيمي',
+          );
+        },
         builder: (context, state) {
           if (state is OrgHierarchyLoading || state is OrgHierarchyInitial) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.forest));
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.forest));
           }
 
           if (state is OrgHierarchyFailure) {
@@ -124,9 +146,13 @@ class _OrganizationHierarchyView extends StatelessWidget {
                   Text(state.message, style: AppTextStyles.titleMedium),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => context.read<OrgHierarchyBloc>().add(LoadOrgHierarchy()),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.forest),
-                    child: const Text('إعادة المحاولة', style: TextStyle(color: Colors.white)),
+                    onPressed: () => context
+                        .read<OrgHierarchyBloc>()
+                        .add(const LoadOrgHierarchy()),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.forest),
+                    child: const Text('إعادة المحاولة',
+                        style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
@@ -153,7 +179,8 @@ class _OrganizationHierarchyView extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             'هيكلية الأقسام والشعب والموظفين في المديرية',
-                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.goldDark),
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(color: AppColors.goldDark),
                           ),
                         ],
                       ),
@@ -168,20 +195,56 @@ class _OrganizationHierarchyView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.charcoal.withOpacity(0.05),
+                              color: AppColors.charcoal.withValues(alpha: 0.05),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
                             )
                           ],
                         ),
-                        child: Column(
-                          children: state.nodes
-                              .map((node) => OrgNodeWidget(
-                                    node: node,
-                                    onNodeTap: (n) => _showNodeDetails(context, n),
-                                  ))
-                              .toList(),
-                        ),
+                        child: state.nodes.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 48),
+                                child: Center(
+                                  child: Text(
+                                    'لا توجد أقسام مرتبطة بهذه المؤسسة.',
+                                    style: AppTextStyles.titleMedium,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: state.nodes
+                                    .map((node) => OrgNodeWidget(
+                                          key: ValueKey(node.id),
+                                          node: node,
+                                          onNodeTap: (n) =>
+                                              _showNodeDetails(context, n),
+                                          onLoadChildren: (node) {
+                                            if (node.type == OrgNodeType.role &&
+                                                node.departmentId != null &&
+                                                node.roleId != null) {
+                                              context
+                                                  .read<OrgHierarchyBloc>()
+                                                  .add(
+                                                    LoadRoleEmployees(
+                                                      departmentId:
+                                                          node.departmentId!,
+                                                      roleId: node.roleId!,
+                                                    ),
+                                                  );
+                                            } else if (node.departmentId !=
+                                                null) {
+                                              context
+                                                  .read<OrgHierarchyBloc>()
+                                                  .add(
+                                                    LoadDepartmentRoles(
+                                                      node.departmentId!,
+                                                    ),
+                                                  );
+                                            }
+                                          },
+                                        ))
+                                    .toList(),
+                              ),
                       ),
                     ),
                   ],

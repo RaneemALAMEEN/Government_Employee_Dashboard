@@ -40,6 +40,11 @@ class EndPoints {
       'api/transaction/$transactionId/first-stage';
   String get employeesByDepartments => 'api/employees/by-departments';
   String get processDefinitionStats => 'api/process_definitions/stats';
+  String departmentLeaves(int organizationId) =>
+      'api/department/by-organization/$organizationId/leaves/';
+  String rolesByDepartment(int departmentId) =>
+      'api/role/by-department/$departmentId/';
+  String get employeesByOrgDepartmentRole => 'api/employees/by-org-dept-role/';
 }
 
 /// Base API configuration. The base url is read from the loaded environment
