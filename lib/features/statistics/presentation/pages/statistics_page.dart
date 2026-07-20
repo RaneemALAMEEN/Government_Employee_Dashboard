@@ -69,55 +69,56 @@ class _StatisticsViewState extends State<_StatisticsView>
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FadeInDown(
-              duration: const Duration(milliseconds: 400),
-              child: const _Header(),
-            ),
-            const SizedBox(height: 22),
-            FadeInUp(
-              duration: const Duration(milliseconds: 400),
-              delay: const Duration(milliseconds: 100),
-              child: _Tabs(controller: _tabController),
-            ),
-            const SizedBox(height: 22),
-            BlocBuilder<StatisticsBloc, StatisticsState>(
-              builder: (context, state) {
-                if (state is StatisticsLoading || state is StatisticsInitial) {
-                  return const SizedBox(
-                    height: 620,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
+          padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FadeInDown(
+                duration: const Duration(milliseconds: 400),
+                child: const _Header(),
+              ),
+              const SizedBox(height: 22),
+              FadeInUp(
+                duration: const Duration(milliseconds: 400),
+                delay: const Duration(milliseconds: 100),
+                child: _Tabs(controller: _tabController),
+              ),
+              const SizedBox(height: 22),
+              BlocBuilder<StatisticsBloc, StatisticsState>(
+                builder: (context, state) {
+                  if (state is StatisticsLoading ||
+                      state is StatisticsInitial) {
+                    return const SizedBox(
+                      height: 620,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
 
-                final loaded = state as StatisticsLoaded;
+                  final loaded = state as StatisticsLoaded;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      height: 760,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _EmployeeStatsView(employees: loaded.employees),
-                          _TransactionStatsView(
-                            processes: loaded.processes,
-                            fromDate: loaded.processFromDate,
-                            toDate: loaded.processToDate,
-                          ),
-                        ],
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        height: 760,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _EmployeeStatsView(employees: loaded.employees),
+                            _TransactionStatsView(
+                              processes: loaded.processes,
+                              fromDate: loaded.processFromDate,
+                              toDate: loaded.processToDate,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -441,16 +442,17 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
                   ? 'حالة العمليات حسب تعريف المعاملة'
                   : 'تصفية حسب: ${_filterLabel(_activeFilter!)}',
               icon: LucideIcons.workflow,
+              expandChild: true,
               child: visibleProcesses.isEmpty
                   ? const _EmptyState(text: 'لا توجد معاملات ضمن هذا التصنيف')
-                  : Column(
-                      children: visibleProcesses.asMap().entries.map((entry) {
-                        return FadeInUp(
-                          duration: const Duration(milliseconds: 320),
-                          delay: Duration(milliseconds: entry.key * 45),
-                          child: _ProcessRow(process: entry.value),
-                        );
-                      }).toList(),
+                  : ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: visibleProcesses.length,
+                      itemBuilder: (context, index) => FadeInUp(
+                        duration: const Duration(milliseconds: 320),
+                        delay: Duration(milliseconds: index * 45),
+                        child: _ProcessRow(process: visibleProcesses[index]),
+                      ),
                     ),
             ),
           ),
@@ -684,7 +686,18 @@ class _EmployeeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
-      onTap: () => context.go('/employees/${employee.id}'),
+      onTap: () {
+        final employeeId = employee.employeeId;
+        if (employeeId == null) {
+          AppSnackBar.show(
+            context,
+            message: 'لم يُرجع الخادم employee_id لهذا الموظف',
+            isError: true,
+          );
+          return;
+        }
+        context.push('/statistics/employees/$employeeId');
+      },
       child: _DataRowShell(
         child: Row(
           children: [
@@ -817,12 +830,14 @@ class _Panel extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Widget child;
+  final bool expandChild;
 
   const _Panel({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.child,
+    this.expandChild = false,
   });
 
   @override
@@ -841,7 +856,7 @@ class _Panel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          child,
+          if (expandChild) Expanded(child: child) else child,
         ],
       ),
     );

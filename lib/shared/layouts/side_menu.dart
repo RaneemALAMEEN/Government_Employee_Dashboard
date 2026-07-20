@@ -30,6 +30,8 @@ class SideMenu extends StatelessWidget {
           LucideIcons.inbox, 'المعاملات الداخلية', '/internal-transactions'),
       const _MenuItem(
           LucideIcons.building, 'معاملات الدائرة', '/department-transactions'),
+      const _MenuItem(LucideIcons.workflow, 'إدارة معاملات المديرية',
+          '/directorate-process-management'),
       const _MenuItem(
           LucideIcons.chartNoAxesCombined, 'الإحصائيات', '/statistics'),
       const _MenuItem(LucideIcons.users, 'الموظفين', '/employees'),

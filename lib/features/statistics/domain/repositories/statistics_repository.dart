@@ -2,9 +2,14 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../entities/statistics_employee_entity.dart';
+import '../entities/statistics_employee_details_entity.dart';
 import '../entities/statistics_process_entity.dart';
 
 abstract class StatisticsRepository {
+  Future<Either<Failure, StatisticsEmployeeDetailsEntity>> getEmployeeDetails({
+    required int employeeId,
+  });
+
   Future<Either<Failure, List<StatisticsEmployeeEntity>>>
       getEmployeesByDepartments({required List<int> departmentIds});
 

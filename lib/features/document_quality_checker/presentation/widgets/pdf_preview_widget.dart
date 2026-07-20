@@ -20,7 +20,7 @@
 //     required this.totalPages,
 //     required this.analyzedPages,
 //   });
-// // 
+// //
 //   @override
 //   State<PdfPreviewWidget> createState() => _PdfPreviewWidgetState();
 // }

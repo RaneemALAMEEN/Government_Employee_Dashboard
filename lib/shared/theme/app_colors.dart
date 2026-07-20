@@ -20,4 +20,15 @@ class AppColors {
   static const forest = Color(0xFF054239);
   static const forestLight = Color(0xFF428177);
   static const forestDark = Color(0xFF002623);
+
+  // Semantic aliases for shared feature UI. These reference the existing
+  // project palette and do not introduce additional colors.
+  static const background = goldLight;
+  static const surface = white;
+  static const border = gold;
+  static const primary = forest;
+  static const lightPrimary = goldLight;
+  static const textPrimary = charcoalDark;
+  static const textSecondary = charcoal;
+  static const error = umber;
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/presentation/bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
@@ -13,9 +14,15 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
+import '../../features/directorate_process_management/presentation/bloc/directorate_process_bloc.dart';
+import '../../features/directorate_process_management/presentation/bloc/directorate_process_event.dart';
+import '../../features/directorate_process_management/presentation/pages/directorate_process_management_page.dart';
 import '../../features/employees/presentation/pages/employee_detail_page.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/statistics/presentation/pages/statistics_page.dart';
+import '../../features/statistics/presentation/pages/statistics_employee_details_page.dart';
+import '../../features/statistics/presentation/bloc/statistics_employee_details_bloc.dart';
+import '../../features/statistics/presentation/bloc/statistics_employee_details_event.dart';
 import '../../features/my_transactions/presentation/pages/my_transactions_page.dart';
 import '../../features/my_transactions/presentation/pages/transaction_details_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
@@ -26,8 +33,8 @@ import '../../features/internal_transactions/presentation/pages/internal_transac
 import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
 
-import '../../features/document_quality_checker/presentation/pages/document_quality_checker_page.dart';
 import '../../features/organization_hierarchy/presentation/pages/organization_hierarchy_page.dart';
+
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/splash',
@@ -145,6 +152,25 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: '/directorate-process-management',
+            pageBuilder: (context, state) => CustomTransitionPage(
+              transitionDuration: const Duration(milliseconds: 260),
+              child: BlocProvider(
+                create: (_) => getIt<DirectorateProcessBloc>()
+                  ..add(const LoadTransactionTypes()),
+                child: const DirectorateProcessManagementPage(),
+              ),
+              transitionsBuilder: (context, animation, secondary, child) =>
+                  FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+                child: child,
+              ),
+            ),
+          ),
+          GoRoute(
             path: '/drafts',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ComingSoonPage(title: 'مسوداتي'),
@@ -155,6 +181,22 @@ class AppRouter {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: StatisticsPage(),
             ),
+          ),
+          GoRoute(
+            path: '/statistics/employees/:employeeId',
+            pageBuilder: (context, state) {
+              final employeeId =
+                  int.tryParse(state.pathParameters['employeeId'] ?? '') ?? 0;
+              return NoTransitionPage(
+                child: BlocProvider(
+                  create: (_) => getIt<StatisticsEmployeeDetailsBloc>()
+                    ..add(LoadEmployeeDetails(employeeId: employeeId)),
+                  child: StatisticsEmployeeDetailsPage(
+                    employeeId: employeeId,
+                  ),
+                ),
+              );
+            },
           ),
           GoRoute(
             path: '/employees',

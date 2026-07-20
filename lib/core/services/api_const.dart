@@ -28,6 +28,8 @@ class EndPoints {
 
   String processDefinitionsAuth(int typeProcessId) =>
       'api/process_definitions/auth/$typeProcessId';
+  String adminProcessDefinitionsByType(int typeProcessId) =>
+      'api/process_definitions/admin/type/$typeProcessId';
   String get uploadTransactionFile => '/api/transaction/files/upload';
   String stageConfig(int processId) => 'api/stage_config/config/$processId';
   String signingChallenge(int processId) =>
@@ -39,6 +41,7 @@ class EndPoints {
   String firstStageTransaction(int transactionId) =>
       'api/transaction/$transactionId/first-stage';
   String get employeesByDepartments => 'api/employees/by-departments';
+  String employeeDetails(int employeeId) => 'api/employees/$employeeId';
   String get processDefinitionStats => 'api/process_definitions/stats';
   String departmentLeaves(int organizationId) =>
       'api/department/by-organization/$organizationId/leaves/';

@@ -14,6 +14,7 @@ import 'features/auth/di/injection.dart';
 import 'features/dashboard/di/injection.dart';
 import 'features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'features/directorate_process_management/di/injection.dart';
 import 'features/department_transactions/di/injection.dart';
 import 'features/department_transactions/presentation/bloc/dept_tx_bloc.dart';
 import 'features/department_transactions/presentation/bloc/dept_tx_event.dart';
@@ -103,6 +104,7 @@ Future<void> main() async {
   await setupDepartmentTransactionsInjection();
   await setupEmployeesInjection();
   await setupStatisticsInjection();
+  await setupDirectorateProcessManagementInjection();
   await setupOrganizationHierarchyInjection(getIt);
 
   // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق
