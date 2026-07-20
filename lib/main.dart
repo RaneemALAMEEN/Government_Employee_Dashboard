@@ -18,9 +18,6 @@ import 'features/directorate_process_management/di/injection.dart';
 import 'features/department_transactions/di/injection.dart';
 import 'features/department_transactions/presentation/bloc/dept_tx_bloc.dart';
 import 'features/department_transactions/presentation/bloc/dept_tx_event.dart';
-import 'features/employees/di/injection.dart';
-import 'features/employees/presentation/bloc/employees_bloc.dart';
-import 'features/employees/presentation/bloc/employees_event.dart';
 import 'features/my_transactions/di/injection.dart';
 import 'features/organization_hierarchy/di/injection.dart';
 import 'features/my_transactions/presentation/bloc/my_transactions_bloc.dart';
@@ -102,7 +99,6 @@ Future<void> main() async {
   await setupDashboardInjection();
   await setupMyTransactionsInjection();
   await setupDepartmentTransactionsInjection();
-  await setupEmployeesInjection();
   await setupStatisticsInjection();
   await setupDirectorateProcessManagementInjection();
   await setupOrganizationHierarchyInjection(getIt);
@@ -155,9 +151,6 @@ class GovernmentEmployeeApp extends StatelessWidget {
         ),
         BlocProvider<DeptTxBloc>(
           create: (_) => getIt<DeptTxBloc>()..add(const LoadDeptTx()),
-        ),
-        BlocProvider<EmployeesBloc>(
-          create: (_) => getIt<EmployeesBloc>()..add(const LoadEmployees()),
         ),
       ],
       child: MaterialApp.router(

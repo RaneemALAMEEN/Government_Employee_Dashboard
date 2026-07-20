@@ -34,8 +34,8 @@ class SideMenu extends StatelessWidget {
           '/directorate-process-management'),
       const _MenuItem(
           LucideIcons.chartNoAxesCombined, 'الإحصائيات', '/statistics'),
-      const _MenuItem(LucideIcons.users, 'الموظفين', '/employees'),
-      const _MenuItem(LucideIcons.network, 'الهيكل التنظيمي', '/organization-hierarchy'),
+      const _MenuItem(
+          LucideIcons.network, 'الهيكل التنظيمي', '/organization-hierarchy'),
       const _MenuItem(LucideIcons.messageSquare, 'الشكاوى', '/complaints'),
       const _MenuItem(
           LucideIcons.shieldCheck, 'فحص الوثائق', '/document-quality-checker'),
@@ -77,27 +77,30 @@ class SideMenu extends StatelessWidget {
                     ),
                     if (!isCollapsed) ...[
                       const SizedBox(height: 11),
-                      Text(
+                      const Text(
                         'مديرية التربية',
                         style: AppTextStyles.headlineMedium,
                       ),
                       const SizedBox(height: 7),
                       ValueListenableBuilder<UserRole?>(
-                        valueListenable: getIt<SessionService>().activeRoleNotifier,
+                        valueListenable:
+                            getIt<SessionService>().activeRoleNotifier,
                         builder: (context, activeRole, _) {
                           return Column(
                             children: [
                               Text(
                                 activeRole?.departmentName ?? 'ريف دمشق',
-                                style: AppTextStyles.bodySmall
-                                    .copyWith(color: AppColors.goldDark, height: 1),
+                                style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.goldDark, height: 1),
                               ),
                               const SizedBox(height: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.forestLight.withOpacity(0.12),
+                                  color: AppColors.forestLight.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -123,7 +126,9 @@ class SideMenu extends StatelessWidget {
                     }),
                     const Spacer(),
                     Container(
-                        height: 1, color: AppColors.charcoal.withOpacity(0.18)),
+                      height: 1,
+                      color: AppColors.charcoal.withValues(alpha: 0.18),
+                    ),
                     GestureDetector(
                       onTap: () {
                         getIt<SessionService>().cycleRole();

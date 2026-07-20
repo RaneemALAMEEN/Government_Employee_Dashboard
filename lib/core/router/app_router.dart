@@ -17,8 +17,6 @@ import '../../features/department_transactions/presentation/pages/department_tra
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_bloc.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_event.dart';
 import '../../features/directorate_process_management/presentation/pages/directorate_process_management_page.dart';
-import '../../features/employees/presentation/pages/employee_detail_page.dart';
-import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/statistics/presentation/pages/statistics_page.dart';
 import '../../features/statistics/presentation/pages/statistics_employee_details_page.dart';
 import '../../features/statistics/presentation/bloc/statistics_employee_details_bloc.dart';
@@ -195,21 +193,6 @@ class AppRouter {
                     employeeId: employeeId,
                   ),
                 ),
-              );
-            },
-          ),
-          GoRoute(
-            path: '/employees',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmployeesPage(),
-            ),
-          ),
-          GoRoute(
-            path: '/employees/:id',
-            pageBuilder: (context, state) {
-              final id = state.pathParameters['id'] ?? '';
-              return NoTransitionPage(
-                child: EmployeeDetailPage(employeeId: id),
               );
             },
           ),
