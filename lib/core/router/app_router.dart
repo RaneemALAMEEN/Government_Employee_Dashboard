@@ -16,7 +16,11 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_bloc.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_event.dart';
+import '../../features/directorate_process_management/presentation/bloc/directorate_complaints_bloc.dart';
 import '../../features/directorate_process_management/presentation/pages/directorate_process_management_page.dart';
+import '../../features/directorate_process_management/presentation/bloc/process_details_bloc.dart';
+import '../../features/directorate_process_management/presentation/bloc/process_details_event.dart';
+import '../../features/directorate_process_management/presentation/pages/process_details_page.dart';
 import '../../features/statistics/presentation/pages/statistics_page.dart';
 import '../../features/statistics/presentation/pages/statistics_employee_details_page.dart';
 import '../../features/statistics/presentation/bloc/statistics_employee_details_bloc.dart';
@@ -32,6 +36,9 @@ import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
 
 import '../../features/organization_hierarchy/presentation/pages/organization_hierarchy_page.dart';
+import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
+import '../../features/notifications/presentation/bloc/notifications_event.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -67,7 +74,11 @@ class AppRouter {
       ShellRoute(
         pageBuilder: (context, state, child) {
           return NoTransitionPage(
-            child: AppShell(child: child),
+            child: BlocProvider(
+              create: (_) =>
+                  getIt<NotificationsBloc>()..add(const LoadNotifications()),
+              child: AppShell(child: child),
+            ),
           );
         },
         routes: [
@@ -75,6 +86,12 @@ class AppRouter {
             path: '/dashboard',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: DashboardPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/notifications',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: NotificationsPage(),
             ),
           ),
           GoRoute(
@@ -153,9 +170,16 @@ class AppRouter {
             path: '/directorate-process-management',
             pageBuilder: (context, state) => CustomTransitionPage(
               transitionDuration: const Duration(milliseconds: 260),
-              child: BlocProvider(
-                create: (_) => getIt<DirectorateProcessBloc>()
-                  ..add(const LoadTransactionTypes()),
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) => getIt<DirectorateProcessBloc>()
+                      ..add(const LoadTransactionTypes()),
+                  ),
+                  BlocProvider(
+                    create: (_) => getIt<DirectorateComplaintsBloc>(),
+                  ),
+                ],
                 child: const DirectorateProcessManagementPage(),
               ),
               transitionsBuilder: (context, animation, secondary, child) =>
@@ -167,6 +191,20 @@ class AppRouter {
                 child: child,
               ),
             ),
+          ),
+          GoRoute(
+            path: '/directorate-process-management/process/:processId',
+            pageBuilder: (context, state) {
+              final processId =
+                  int.tryParse(state.pathParameters['processId'] ?? '') ?? 0;
+              return NoTransitionPage(
+                child: BlocProvider(
+                  create: (_) => getIt<ProcessDetailsBloc>()
+                    ..add(LoadProcessDetails(processId: processId)),
+                  child: ProcessDetailsPage(processId: processId),
+                ),
+              );
+            },
           ),
           GoRoute(
             path: '/drafts',

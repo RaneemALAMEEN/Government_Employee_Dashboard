@@ -30,6 +30,10 @@ class EndPoints {
       'api/process_definitions/auth/$typeProcessId';
   String adminProcessDefinitionsByType(int typeProcessId) =>
       'api/process_definitions/admin/type/$typeProcessId';
+  String get adminComplaintProcessDefinitions =>
+      'api/process_definitions/admin/complaints';
+  String processDefinitionDetails(int processId) =>
+      'api/process_definitions/$processId/details';
   String get uploadTransactionFile => '/api/transaction/files/upload';
   String stageConfig(int processId) => 'api/stage_config/config/$processId';
   String signingChallenge(int processId) =>
@@ -48,6 +52,7 @@ class EndPoints {
   String rolesByDepartment(int departmentId) =>
       'api/role/by-department/$departmentId/';
   String get employeesByOrgDepartmentRole => 'api/employees/by-org-dept-role/';
+  String get myNotifications => 'api/notifications/my';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

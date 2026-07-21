@@ -387,8 +387,7 @@ class _InfoItem {
 class _LegacyPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InkWell(
-        onTap: () =>
-            context.canPop() ? context.pop() : context.go('/statistics'),
+        onTap: context.canPop() ? () => context.pop() : null,
         borderRadius: BorderRadius.circular(6),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -402,7 +401,7 @@ class _LegacyPageHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'العودة إلى الإحصائيات',
+                'العودة',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,

@@ -147,6 +147,70 @@ class DirectorateManagementHeader extends StatelessWidget {
   }
 }
 
+class DirectorateComplaintsHeader extends StatelessWidget {
+  final int total;
+
+  const DirectorateComplaintsHeader({super.key, required this.total});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.border.withValues(alpha: .48),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary.withValues(alpha: .035),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.lightPrimary,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: const Icon(
+                LucideIcons.messageSquareText,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'الشكاوى',
+                    style: AppTextStyles.headlineLarge.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'إجمالي الشكاوى: $total',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
 class _HeaderStatCard extends StatelessWidget {
   final double width;
   final String label;
@@ -278,7 +342,12 @@ class DirectorateHeader extends StatelessWidget {
 
 class DirectorateSearchBar extends StatefulWidget {
   final ValueChanged<String> onChanged;
-  const DirectorateSearchBar({super.key, required this.onChanged});
+  final String hintText;
+  const DirectorateSearchBar({
+    super.key,
+    required this.onChanged,
+    this.hintText = 'ابحث بالاسم أو الكود...',
+  });
 
   @override
   State<DirectorateSearchBar> createState() => _DirectorateSearchBarState();
@@ -377,7 +446,7 @@ class _DirectorateSearchBarState extends State<DirectorateSearchBar> {
           onChanged: widget.onChanged,
           style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
-            hintText: 'ابحث بالاسم أو الكود...',
+            hintText: widget.hintText,
             hintStyle: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.charcoal.withValues(alpha: .45),
             ),
@@ -519,96 +588,183 @@ class _TransactionTypeCardState extends State<TransactionTypeCard> {
       );
 }
 
-class ProcessDefinitionCard extends StatelessWidget {
+class ProcessDefinitionCard extends StatefulWidget {
   final ProcessDefinitionEntity item;
-  const ProcessDefinitionCard({super.key, required this.item});
+  final VoidCallback onTap;
+  final String subtitle;
+
+  const ProcessDefinitionCard({
+    super.key,
+    required this.item,
+    required this.onTap,
+    this.subtitle = 'تعريف سير المعاملة ومراحلها',
+  });
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
-              AppColors.white,
-              AppColors.goldLight.withValues(alpha: .68),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.gold.withValues(alpha: .34),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.charcoalDark.withValues(alpha: .05),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.goldLight,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(LucideIcons.fileCog,
-                    color: AppColors.forest, size: 21),
+  State<ProcessDefinitionCard> createState() => _ProcessDefinitionCardState();
+}
+
+class _ProcessDefinitionCardState extends State<ProcessDefinitionCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: AnimatedScale(
+          scale: _hovered ? 1.02 : 1,
+          duration: const Duration(milliseconds: 170),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 170),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _hovered
+                    ? AppColors.primary.withValues(alpha: .48)
+                    : AppColors.border.withValues(alpha: .30),
               ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.titleMedium),
-                    const SizedBox(height: 5),
-                    Text(item.code,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textDirection: TextDirection.ltr,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.goldDark,
-                        )),
-                  ],
-                ),
-              ),
-            ]),
-            const Spacer(),
-            Wrap(
-              spacing: 7,
-              runSpacing: 7,
-              children: [
-                _ProcessChip(
-                  text: _priorityLabel(item.priority),
-                  color: _priorityColor(item.priority),
-                  icon: LucideIcons.flag,
-                ),
-                _ProcessChip(
-                  text: _deploymentLabel(item.deploymentStatus),
-                  color: item.deploymentStatus.toLowerCase() == 'deployed'
-                      ? AppColors.forest
-                      : AppColors.goldDark,
-                ),
-                _ProcessChip(
-                  text: _approvalLabel(item.approvalStatus),
-                  color: _approvalColor(item.approvalStatus),
-                ),
-                _ProcessChip(
-                  text: item.isActive ? 'فعّال' : 'غير فعّال',
-                  color: item.isActive ? AppColors.forest : AppColors.charcoal,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.textPrimary.withValues(
+                    alpha: _hovered ? .12 : .045,
+                  ),
+                  blurRadius: _hovered ? 24 : 12,
+                  offset: Offset(0, _hovered ? 10 : 4),
                 ),
               ],
             ),
-          ],
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: widget.onTap,
+                borderRadius: BorderRadius.circular(16),
+                splashColor: AppColors.primary.withValues(alpha: .08),
+                hoverColor: AppColors.primary.withValues(alpha: .025),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AnimatedRotation(
+                            turns: _hovered ? .025 : 0,
+                            duration: const Duration(milliseconds: 170),
+                            child: AnimatedScale(
+                              scale: _hovered ? 1.08 : 1,
+                              duration: const Duration(milliseconds: 170),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 170),
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _hovered
+                                      ? AppColors.primary.withValues(alpha: .11)
+                                      : AppColors.lightPrimary,
+                                  borderRadius: BorderRadius.circular(11),
+                                ),
+                                child: const Icon(
+                                  LucideIcons.fileCog,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.item.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.titleMedium,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  widget.subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _ProcessChip(
+                            text: _priorityLabel(widget.item.priority),
+                            color: _priorityColor(widget.item.priority),
+                            icon: LucideIcons.flag,
+                          ),
+                          _ProcessChip(
+                            text: _deploymentLabel(
+                              widget.item.deploymentStatus,
+                            ),
+                            color: widget.item.deploymentStatus.toLowerCase() ==
+                                    'deployed'
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                          _ProcessChip(
+                            text: _approvalLabel(widget.item.approvalStatus),
+                            color: _approvalColor(widget.item.approvalStatus),
+                          ),
+                          _ProcessChip(
+                            text: widget.item.isActive ? 'فعّال' : 'غير فعّال',
+                            color: widget.item.isActive
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            'عرض التفاصيل',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          AnimatedSlide(
+                            offset:
+                                _hovered ? const Offset(-.18, 0) : Offset.zero,
+                            duration: const Duration(milliseconds: 170),
+                            child: const Icon(
+                              LucideIcons.arrowLeft,
+                              color: AppColors.primary,
+                              size: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       );
 
@@ -628,13 +784,13 @@ class ProcessDefinitionCard extends StatelessWidget {
   Color _approvalColor(String value) {
     switch (value.toUpperCase()) {
       case 'APPROVED':
-        return AppColors.forest;
+        return AppColors.primary;
       case 'PENDING':
         return AppColors.goldDark;
       case 'REJECTED':
-        return AppColors.umber;
+        return AppColors.error;
       default:
-        return AppColors.charcoal;
+        return AppColors.textSecondary;
     }
   }
 
@@ -658,7 +814,7 @@ class ProcessDefinitionCard extends StatelessWidget {
       case 3:
         return 'مرتفعة';
       default:
-        return 'الأولوية: $priority';
+        return 'أولوية $priority';
     }
   }
 
@@ -669,9 +825,9 @@ class ProcessDefinitionCard extends StatelessWidget {
       case 2:
         return AppColors.goldDark;
       case 3:
-        return AppColors.umber;
+        return AppColors.error;
       default:
-        return AppColors.charcoal;
+        return AppColors.textSecondary;
     }
   }
 }

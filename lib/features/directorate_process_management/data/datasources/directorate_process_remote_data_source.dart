@@ -4,6 +4,7 @@ import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
+import '../models/process_details_model.dart';
 import '../models/process_definitions_response_model.dart';
 import '../models/transaction_type_model.dart';
 
@@ -58,6 +59,50 @@ class DirectorateProcessRemoteDataSource {
           Map<String, dynamic>.from(response),
           requestedPage: page,
           requestedLimit: limit,
+        );
+      },
+    );
+  }
+
+  Future<ProcessDefinitionsResponseModel> getComplaintProcessDefinitions({
+    required int page,
+    required int limit,
+  }) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.adminComplaintProcessDefinitions,
+      queryParameters: {'page': page, 'limit': limit},
+    );
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) {
+        if (response is! Map) {
+          throw const ServerException('استجابة الشكاوى غير صالحة');
+        }
+        return ProcessDefinitionsResponseModel.fromJson(
+          Map<String, dynamic>.from(response),
+          requestedPage: page,
+          requestedLimit: limit,
+        );
+      },
+    );
+  }
+
+  Future<ProcessDetailsModel> getProcessDetails({
+    required int processId,
+  }) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.processDefinitionDetails(processId),
+    );
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) {
+        if (response is! Map) {
+          throw const ServerException('استجابة تفاصيل العملية غير صالحة');
+        }
+        return ProcessDetailsModel.fromJson(
+          Map<String, dynamic>.from(response),
         );
       },
     );

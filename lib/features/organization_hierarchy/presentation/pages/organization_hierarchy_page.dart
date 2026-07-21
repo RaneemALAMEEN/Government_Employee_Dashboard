@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -26,6 +27,27 @@ class OrganizationHierarchyPage extends StatelessWidget {
 
 class _OrganizationHierarchyView extends StatelessWidget {
   const _OrganizationHierarchyView();
+
+  void _handleNodeTap(BuildContext context, OrgNodeEntity node) {
+    final employee = node.employee;
+    if (node.type != OrgNodeType.employee || employee == null) {
+      _showNodeDetails(context, node);
+      return;
+    }
+
+    // This is mapped exclusively from items[].user.id in the hierarchy API.
+    final employeeId = employee.userId;
+    if (employeeId <= 0) {
+      AppSnackBar.show(
+        context,
+        message: 'تعذر تحديد معرّف الموظف',
+        isError: true,
+      );
+      return;
+    }
+
+    context.push('/statistics/employees/$employeeId');
+  }
 
   void _showNodeDetails(BuildContext context, OrgNodeEntity node) {
     showDialog(
@@ -216,8 +238,8 @@ class _OrganizationHierarchyView extends StatelessWidget {
                                     .map((node) => OrgNodeWidget(
                                           key: ValueKey(node.id),
                                           node: node,
-                                          onNodeTap: (n) =>
-                                              _showNodeDetails(context, n),
+                                          onNodeTap: (node) =>
+                                              _handleNodeTap(context, node),
                                           onLoadChildren: (node) {
                                             if (node.type == OrgNodeType.role &&
                                                 node.departmentId != null &&

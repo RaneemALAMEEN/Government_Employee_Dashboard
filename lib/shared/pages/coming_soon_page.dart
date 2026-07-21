@@ -56,18 +56,22 @@ class ComingSoonPage extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.headlineMedium.copyWith(fontSize: 22, height: 1.2),
+                    style: AppTextStyles.headlineMedium
+                        .copyWith(fontSize: 22, height: 1.2),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'قريباً جداً',
-                    style: AppTextStyles.titleMedium.copyWith(color: AppColors.goldDark),
+                    style: AppTextStyles.titleMedium
+                        .copyWith(color: AppColors.goldDark),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'هذه الصفحة قيد التطوير حالياً، ونعمل بجد لإتاحتها لكم في أقرب وقت لتوفير تجربة مستخدم متكاملة ورائعة.',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.65), height: 1.5),
+                    style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.charcoal.withOpacity(0.65),
+                        height: 1.5),
                   ),
                 ],
               ),
