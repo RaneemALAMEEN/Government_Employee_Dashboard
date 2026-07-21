@@ -282,18 +282,25 @@ class _SideMenuTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.clip,
-                          style: AppTextStyles.bodyLarge.copyWith(
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: isSelected
-                                  ? AppColors.forest
-                                  : AppColors.charcoalDark,
-                              height: 1),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              item.title,
+                              maxLines: 1,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: isSelected
+                                    ? AppColors.forest
+                                    : AppColors.charcoalDark,
+                                height: 1,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       if (isSelected)

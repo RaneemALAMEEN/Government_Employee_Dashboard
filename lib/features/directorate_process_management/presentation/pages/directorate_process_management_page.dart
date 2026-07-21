@@ -61,68 +61,41 @@ class _DirectorateProcessManagementPageState
                 ),
                 const SizedBox(height: 18),
                 Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
+                  child: IndexedStack(
+                    index: _selectedTab.index,
+                    sizing: StackFit.expand,
                     children: [
-                      _TabLayer(
-                        active: _selectedTab == _ManagementTab.transactions,
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          switchInCurve: Curves.easeOutCubic,
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween(
-                                begin: const Offset(0, .025),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOutCubic,
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween(
+                              begin: const Offset(0, .025),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
                           ),
-                          child: state.view == DirectorateView.types
-                              ? _TypesView(
-                                  key: const ValueKey('types'),
-                                  state: state,
-                                )
-                              : _DefinitionsView(
-                                  key: ValueKey(
-                                    'definitions-${state.selectedTypeId}',
-                                  ),
-                                  state: state,
-                                ),
                         ),
+                        child: state.view == DirectorateView.types
+                            ? _TypesView(
+                                key: const ValueKey('types'),
+                                state: state,
+                              )
+                            : _DefinitionsView(
+                                key: ValueKey(
+                                  'definitions-${state.selectedTypeId}',
+                                ),
+                                state: state,
+                              ),
                       ),
-                      _TabLayer(
-                        active: _selectedTab == _ManagementTab.complaints,
-                        child: const _ComplaintsView(),
-                      ),
+                      const _ComplaintsView(),
                     ],
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      );
-}
-
-class _TabLayer extends StatelessWidget {
-  final bool active;
-  final Widget child;
-
-  const _TabLayer({required this.active, required this.child});
-
-  @override
-  Widget build(BuildContext context) => IgnorePointer(
-        ignoring: !active,
-        child: TickerMode(
-          enabled: active,
-          child: AnimatedOpacity(
-            opacity: active ? 1 : 0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            child: child,
           ),
         ),
       );

@@ -60,7 +60,7 @@ class DirectorateManagementHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'إدارة معاملات المديرية',
+                      'إدارة المعاملات',
                       style: AppTextStyles.headlineLarge.copyWith(
                         color: AppColors.textPrimary,
                       ),
@@ -191,7 +191,7 @@ class DirectorateComplaintsHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'الشكاوى',
+                    'إدارة الشكاوى',
                     style: AppTextStyles.headlineLarge.copyWith(
                       color: AppColors.textPrimary,
                     ),
