@@ -145,10 +145,21 @@ class _DepartmentTransactionsViewState
                                   ? Column(
                                       children: [
                                         DeptTxStatsCard(
-                                          value: '${state.totalCount}',
-                                          label:
-                                              'الإجمالي (${state.statusFilter})',
-                                          valueColor: AppColors.charcoalDark,
+                                          value: '${state.activeCount}',
+                                          label: 'المعاملات النشطة',
+                                          valueColor: AppColors.goldDark,
+                                        ),
+                                        const SizedBox(height: gap),
+                                        DeptTxStatsCard(
+                                          value: '${state.completedCount}',
+                                          label: 'المنجزة (آخر 30 يوم)',
+                                          valueColor: AppColors.forest,
+                                        ),
+                                        const SizedBox(height: gap),
+                                        DeptTxStatsCard(
+                                          value: '${state.rejectedCount}',
+                                          label: 'المرفوضة (آخر 30 يوم)',
+                                          valueColor: AppColors.primary,
                                         ),
                                       ],
                                     )
@@ -157,18 +168,27 @@ class _DepartmentTransactionsViewState
                                       children: [
                                         Expanded(
                                           child: DeptTxStatsCard(
-                                            value: '${state.totalCount}',
-                                            label:
-                                                'الإجمالي (${state.statusFilter})',
-                                            valueColor: AppColors.charcoalDark,
+                                            value: '${state.activeCount}',
+                                            label: 'المعاملات النشطة',
+                                            valueColor: AppColors.goldDark,
                                           ),
                                         ),
                                         const SizedBox(width: gap),
-                                        const Spacer(),
+                                        Expanded(
+                                          child: DeptTxStatsCard(
+                                            value: '${state.completedCount}',
+                                            label: 'المنجزة (آخر 30 يوم)',
+                                            valueColor: AppColors.forest,
+                                          ),
+                                        ),
                                         const SizedBox(width: gap),
-                                        const Spacer(),
-                                        const SizedBox(width: gap),
-                                        const Spacer(),
+                                        Expanded(
+                                          child: DeptTxStatsCard(
+                                            value: '${state.rejectedCount}',
+                                            label: 'المرفوضة (آخر 30 يوم)',
+                                            valueColor: AppColors.primary,
+                                          ),
+                                        ),
                                       ],
                                     ))
                               : const SizedBox.shrink()),
@@ -180,7 +200,8 @@ class _DepartmentTransactionsViewState
                       duration: const Duration(milliseconds: 450),
                       delay: const Duration(milliseconds: 140),
                       child: IgnorePointer(
-                        ignoring: state is DeptTxLoading || state is DeptTxInitial,
+                        ignoring:
+                            state is DeptTxLoading || state is DeptTxInitial,
                         child: DeptTxFilterBar(
                           activeStatusFilter: statusFilter,
                           searchQuery: searchQuery,
@@ -192,8 +213,8 @@ class _DepartmentTransactionsViewState
                                 .add(FilterDeptTxByStatus(filter));
                           },
                           onDateRangeChanged: (from, to) {
-                            context.read<DeptTxBloc>().add(FilterDeptTxByDate(
-                                fromDate: from, toDate: to));
+                            context.read<DeptTxBloc>().add(
+                                FilterDeptTxByDate(fromDate: from, toDate: to));
                           },
                           onSearchChanged: (query) {
                             context.read<DeptTxBloc>().add(SearchDeptTx(query));

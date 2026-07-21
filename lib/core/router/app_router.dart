@@ -108,8 +108,9 @@ class AppRouter {
             path: '/my-transactions/:id',
             pageBuilder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
+              final status = state.extra as String?;
               return NoTransitionPage(
-                child: TransactionDetailsPage(transactionId: id),
+                child: TransactionDetailsPage(transactionId: id, status: status),
               );
             },
           ),

@@ -2,6 +2,7 @@ import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
@@ -89,20 +90,40 @@ class _MyTransactionsPageState extends State<MyTransactionsPage> {
                     // Header Title Section (ثابت)
                     FadeInDown(
                       duration: const Duration(milliseconds: 400),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'معاملاتي',
-                            textAlign: TextAlign.right,
-                            style: AppTextStyles.displayMedium,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'معاملاتي',
+                                textAlign: TextAlign.right,
+                                style: AppTextStyles.displayMedium,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'المعاملات الموجهة إليك — $awaitingCount بانتظار الاستلام',
+                                textAlign: TextAlign.right,
+                                style: AppTextStyles.bodySmall
+                                    .copyWith(color: AppColors.goldDark),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'المعاملات الموجهة إليك — $awaitingCount بانتظار الاستلام',
-                            textAlign: TextAlign.right,
-                            style: AppTextStyles.bodySmall
-                                .copyWith(color: AppColors.goldDark),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                context.read<MyTransactionsBloc>().add(const LoadMyTransactions());
+                              },
+                              icon: const Icon(LucideIcons.refreshCw, color: AppColors.forest),
+                              tooltip: 'تحديث البيانات',
+                            ),
                           ),
                         ],
                       ),

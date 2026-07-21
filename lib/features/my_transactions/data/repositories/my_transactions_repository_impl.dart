@@ -30,6 +30,7 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
         final List<MyTransactionEntity> items = [];
         String? nextCursor;
         bool hasNext = false;
+        int totalCount = 0;
 
         if (data is Map && data['data'] != null) {
           final dataMap = data['data'];
@@ -50,21 +51,35 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
             final pagination = dataMap['pagination'];
             nextCursor = pagination['next_cursor'] as String?;
             hasNext = pagination['has_next'] as bool? ?? false;
+            
+            final totalRaw = pagination['total'] ?? pagination['total_items'];
+            if (totalRaw != null) {
+              totalCount = int.tryParse(totalRaw.toString()) ?? 0;
+            }
           }
         }
-
         return Right(MyTransactionsPaginatedResult(
           items: items,
           nextCursor: nextCursor,
           hasNext: hasNext,
+          totalCount: totalCount,
         ));
       },
     );
   }
 
   @override
-  Future<Either<Failure, Map<String, dynamic>>> getTaskDetails({required String taskId}) async {
+  Future<Either<Failure, Map<String, dynamic>>> getTaskDetails(
+      {required String taskId}) async {
     final result = await remoteDataSource.getTaskDetails(taskId: taskId);
+    return result.map((r) => r as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getTransactionCertificate(
+      {required String taskId}) async {
+    final result =
+        await remoteDataSource.getTransactionCertificate(taskId: taskId);
     return result.map((r) => r as Map<String, dynamic>);
   }
 
@@ -120,7 +135,8 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
     );
     return result.map((r) {
       if (r is Map) {
-         return r['data'] as Map<String, dynamic>? ?? Map<String, dynamic>.from(r);
+        return r['data'] as Map<String, dynamic>? ??
+            Map<String, dynamic>.from(r);
       }
       return <String, dynamic>{};
     });
@@ -130,7 +146,8 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
   Future<Either<Failure, Map<String, dynamic>>> getDocumentTemplate({
     required int templateId,
   }) async {
-    final result = await remoteDataSource.getDocumentTemplate(templateId: templateId);
+    final result =
+        await remoteDataSource.getDocumentTemplate(templateId: templateId);
     return result.map((r) => r as Map<String, dynamic>);
   }
 }

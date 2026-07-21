@@ -35,10 +35,12 @@ import 'transaction_details/widgets/workflow_timeline_widget.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final String transactionId;
+  final String? status;
 
   const TransactionDetailsPage({
     Key? key,
     required this.transactionId,
+    this.status,
   }) : super(key: key);
 
   @override
@@ -53,7 +55,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   void initState() {
     super.initState();
     _bloc = getIt<TransactionDetailsBloc>();
-    _bloc.add(LoadTransactionDetails(widget.transactionId));
+    _bloc.add(LoadTransactionDetails(widget.transactionId, status: widget.status));
   }
 
   @override
@@ -385,6 +387,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             final rightContentList = [
               EmployeeInfoCard(applicant: applicant),
               const SizedBox(height: 20),
+              if (data['final_document'] != null) ...[
+                _buildFinalDocumentCard(data['final_document'] as Map<String, dynamic>),
+                const SizedBox(height: 20),
+              ],
               ...completedStages.map((stage) => StageHistoryCard(
                     stage: Map<String, dynamic>.from(stage),
                     buildFileUrl: _buildFileUrl,
@@ -556,6 +562,92 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinalDocumentCard(Map<String, dynamic> finalDoc) {
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      delay: const Duration(milliseconds: 100),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forestLight.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(LucideIcons.fileCheck,
+                      color: AppColors.forest, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'الوثيقة النهائية (الشهادة)',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: AppTextStyles.bold, color: AppColors.forest),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'تم إصدار الشهادة بنجاح. يمكنك عرضها وتحميلها أدناه.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final url = finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                      if (url.isNotEmpty) {
+                        final fullUrl = _buildFileUrl(url);
+                        context.push('/pdf-viewer', extra: fullUrl);
+                      }
+                    },
+                    icon: const Icon(LucideIcons.eye),
+                    label: const Text('عرض الوثيقة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: AppColors.charcoal,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final url = finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                      final originalName = finalDoc['original_name'] ?? 'certificate.pdf';
+                      if (url.isNotEmpty) {
+                        _downloadFile(url, originalName);
+                      }
+                    },
+                    icon: const Icon(LucideIcons.download),
+                    label: const Text('تحميل الوثيقة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.forest,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

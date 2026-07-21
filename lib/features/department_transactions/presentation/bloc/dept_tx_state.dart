@@ -20,6 +20,11 @@ class DeptTxLoaded extends DeptTxState {
   
   // Stats
   final int totalCount;
+  final int completedCount;
+  final int rejectedCount;
+  final int activeCount;
+  final int inProgressCount;
+  final int pendingPickupCount;
 
   const DeptTxLoaded({
     required this.transactions,
@@ -31,6 +36,11 @@ class DeptTxLoaded extends DeptTxState {
     required this.hasReachedMax,
     this.isFetchingMore = false,
     required this.totalCount,
+    this.completedCount = 0,
+    this.rejectedCount = 0,
+    this.activeCount = 0,
+    this.inProgressCount = 0,
+    this.pendingPickupCount = 0,
   });
 
   DeptTxLoaded copyWith({
@@ -43,6 +53,11 @@ class DeptTxLoaded extends DeptTxState {
     bool? hasReachedMax,
     bool? isFetchingMore,
     int? totalCount,
+    int? completedCount,
+    int? rejectedCount,
+    int? activeCount,
+    int? inProgressCount,
+    int? pendingPickupCount,
   }) {
     return DeptTxLoaded(
       transactions: transactions ?? this.transactions,
@@ -54,6 +69,11 @@ class DeptTxLoaded extends DeptTxState {
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       totalCount: totalCount ?? this.totalCount,
+      completedCount: completedCount ?? this.completedCount,
+      rejectedCount: rejectedCount ?? this.rejectedCount,
+      activeCount: activeCount ?? this.activeCount,
+      inProgressCount: inProgressCount ?? this.inProgressCount,
+      pendingPickupCount: pendingPickupCount ?? this.pendingPickupCount,
     );
   }
 }

@@ -39,6 +39,15 @@ class MyTransactionsRemoteDataSource {
     );
   }
 
+  Future<Either<Failure, dynamic>> getTransactionCertificate({
+    required String taskId,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/$taskId/certificate',
+    );
+  }
+
   Future<Either<Failure, dynamic>> pickupTask({
     required String taskId,
   }) {

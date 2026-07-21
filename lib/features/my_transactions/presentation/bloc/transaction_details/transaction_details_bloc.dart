@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/repositories/my_transactions_repository.dart';
 import '../../../domain/usecases/get_task_details.dart';
+import '../../../domain/usecases/get_transaction_certificate.dart';
 import '../../../domain/usecases/pickup_task.dart';
 import '../../../domain/usecases/release_task.dart';
 import '../../../domain/usecases/submit_transaction.dart';
@@ -10,6 +11,7 @@ import 'transaction_details_state.dart';
 
 class TransactionDetailsBloc extends Bloc<TransactionDetailsEvent, TransactionDetailsState> {
   final GetTaskDetails getTaskDetails;
+  final GetTransactionCertificate getTransactionCertificate;
   final PickupTask pickupTask;
   final ReleaseTask releaseTask;
   final SubmitTransaction submitTransaction;
@@ -17,6 +19,7 @@ class TransactionDetailsBloc extends Bloc<TransactionDetailsEvent, TransactionDe
 
   TransactionDetailsBloc({
     required this.getTaskDetails,
+    required this.getTransactionCertificate,
     required this.pickupTask,
     required this.releaseTask,
     required this.submitTransaction,
@@ -34,12 +37,35 @@ class TransactionDetailsBloc extends Bloc<TransactionDetailsEvent, TransactionDe
     Emitter<TransactionDetailsState> emit,
   ) async {
     emit(TransactionDetailsLoading());
-    final result = await getTaskDetails(taskId: event.taskId);
+    
+    final isCompletedOrRejected = event.status == 'منجزة' || event.status == 'تم الرفض' || event.status == 'completed' || event.status == 'rejected';
+
+    final result = isCompletedOrRejected
+        ? await getTransactionCertificate(taskId: event.taskId)
+        : await getTaskDetails(taskId: event.taskId);
     
     await result.fold(
       (failure) async => emit(TransactionDetailsFailure(failure.message)),
       (response) async {
-        final taskData = response['data'] as Map<String, dynamic>? ?? {};
+        final rawData = response['data'] as Map<String, dynamic>? ?? {};
+        final taskData = Map<String, dynamic>.from(rawData);
+
+        if (isCompletedOrRejected) {
+           taskData['process_definition_name'] = taskData['process_name'];
+           
+           final history = taskData['transaction_history'] as Map<String, dynamic>? ?? {};
+           final historyData = history['data'] as Map<String, dynamic>? ?? {};
+           final applicant = historyData['applicant'] as Map<String, dynamic>? ?? {};
+           
+           taskData['applicant'] = {
+             'first_name': applicant['first_name_employee'] ?? applicant['first_name'],
+             'last_name': applicant['last_name_employee'] ?? applicant['last_name'],
+             'national_id': applicant['national_id_employee'] ?? applicant['national_id'],
+             'phone_number': applicant['phone_number_employee'] ?? applicant['phone_number'],
+           };
+           
+           taskData['status'] = (event.status == 'منجزة' || event.status == 'completed') ? 'completed' : 'rejected'; 
+        }
         
         final formValues = <String, dynamic>{};
         final currentStage = taskData['currentStage'] as Map<String, dynamic>?;

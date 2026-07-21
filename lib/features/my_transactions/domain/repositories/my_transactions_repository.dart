@@ -12,6 +12,8 @@ abstract class MyTransactionsRepository {
   
   Future<Either<Failure, Map<String, dynamic>>> getTaskDetails({required String taskId});
   
+  Future<Either<Failure, Map<String, dynamic>>> getTransactionCertificate({required String taskId});
+  
   Future<Either<Failure, dynamic>> pickupTask({required String taskId});
   
   Future<Either<Failure, dynamic>> releaseTask({required String taskId});

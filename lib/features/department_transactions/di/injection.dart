@@ -4,6 +4,7 @@ import '../../department_transactions/data/datasources/department_transactions_r
 import '../../department_transactions/data/repositories/department_transactions_repository_impl.dart';
 import '../../department_transactions/domain/repositories/department_transactions_repository.dart';
 import '../../department_transactions/domain/usecases/get_department_transactions.dart';
+import '../../department_transactions/domain/usecases/get_department_stats.dart';
 import '../../department_transactions/presentation/bloc/dept_tx_bloc.dart';
 import '../../department_transactions/presentation/bloc/certificate_details/department_certificate_bloc.dart';
 
@@ -26,9 +27,18 @@ Future<void> setupDepartmentTransactionsInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetDepartmentStats>()) {
+    getIt.registerLazySingleton<GetDepartmentStats>(
+      () => GetDepartmentStats(getIt<DepartmentTransactionsRepository>()),
+    );
+  }
+
   if (!getIt.isRegistered<DeptTxBloc>()) {
     getIt.registerFactory<DeptTxBloc>(
-      () => DeptTxBloc(getIt<GetDepartmentTransactions>()),
+      () => DeptTxBloc(
+        getIt<GetDepartmentTransactions>(),
+        getIt<GetDepartmentStats>(),
+      ),
     );
   }
 

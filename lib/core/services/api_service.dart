@@ -112,14 +112,14 @@ class ApiService {
       case 405:
         return const ServerFailure("طريقة الطلب غير مسموح بها.");
       case 500:
-        return const ServerFailure("حدث خطأ في الخادم، يرجى المحاولة لاحقًا.");
+        return const ServerFailure("حدث خطأ تقني، يرجى المحاولة لاحقًا.");
       case 502:
       case 503:
       case 504:
         return ServerFailure(_gatewayFailureMessage(data, serverMessage));
       default:
         return ServerFailure(
-          serverMessage ?? "حدث خطأ في الخادم، يرجى المحاولة لاحقًا.",
+          serverMessage ?? "حدث خطأ تقني، يرجى المحاولة لاحقًا.",
         );
     }
   }

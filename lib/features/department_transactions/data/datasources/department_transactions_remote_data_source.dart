@@ -71,4 +71,28 @@ class DepartmentTransactionsRemoteDataSource {
       endPoint: 'api/transaction/$transactionId/certificate',
     );
   }
+
+  Future<Either<Failure, dynamic>> getCompletedStatsLastMonth({required String departmentIds}) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/workflow/tasks/stats/completed-last-month',
+      queryParameters: {'department_ids': departmentIds},
+    );
+  }
+
+  Future<Either<Failure, dynamic>> getRejectedStatsLastMonth({required String departmentIds}) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/workflow/tasks/stats/rejected-last-month',
+      queryParameters: {'department_ids': departmentIds},
+    );
+  }
+
+  Future<Either<Failure, dynamic>> getActiveStats({required String departmentIds}) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/workflow/tasks/stats/active',
+      queryParameters: {'department_ids': departmentIds},
+    );
+  }
 }
