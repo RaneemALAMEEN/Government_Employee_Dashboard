@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/enums/api_method.dart';
@@ -26,7 +28,7 @@ class DocumentVerificationRemoteDataSource {
           : ServerException(failure.message),
       (response) {
         if (kDebugMode) {
-          debugPrint('[DocumentVerification] Full response: $response');
+          _debugPrettyResponse(response);
         }
         if (response is! Map) {
           throw const ServerException('استجابة التحقق من الوثيقة غير صالحة');
@@ -36,5 +38,19 @@ class DocumentVerificationRemoteDataSource {
         );
       },
     );
+  }
+
+  void _debugPrettyResponse(dynamic response) {
+    const encoder = JsonEncoder.withIndent('  ');
+    String output;
+    try {
+      output = encoder.convert(response);
+    } catch (_) {
+      output = response.toString();
+    }
+    debugPrint('[DocumentVerification] Full response:');
+    for (final line in output.split('\n')) {
+      debugPrint(line, wrapWidth: 140);
+    }
   }
 }

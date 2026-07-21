@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/document_verification_entity.dart';
+import 'transaction_history_renderer.dart';
 
 class VerificationPageHeader extends StatelessWidget {
   const VerificationPageHeader({super.key});
@@ -427,8 +428,6 @@ class VerificationResult extends StatelessWidget {
               final second = Column(
                 children: [
                   _SignersCard(signers: data.signers),
-                  const SizedBox(height: 14),
-                  _FinalDocumentCard(document: data.finalDocument),
                 ],
               );
               if (constraints.maxWidth < 850) {
@@ -446,6 +445,10 @@ class VerificationResult extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 14),
+          TransactionHistoryTimeline(history: data.transactionHistory),
+          const SizedBox(height: 14),
+          _FinalDocumentCard(document: data.finalDocument),
         ],
       );
 }
