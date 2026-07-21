@@ -11,6 +11,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/my_transaction_entity.dart';
 import '../../../internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import '../../../internal_transactions/data/models/dynamic_widget_model.dart';
@@ -84,10 +86,20 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'فشل تحميل الملف. قد يكون تالفاً أو غير موجود على الخادم.';
+        if (e is DioException) {
+          if (e.response?.statusCode == 404) {
+            errorMessage = 'هناك مشكلة في هذا الملف ولا يمكن عرضه أو تنزيله ، يرجى التواصل مع من أرفقه لإعادة إرفاقه مرة أخرى';
+          } else {
+            errorMessage = 'حدث خطأ في الاتصال بالخادم عند محاولة تحميل الملف.';
+          }
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل تحميل الملف: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.umber,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -181,31 +193,85 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             }
           },
           builder: (context, state) {
+// ... (in builder)
             if (state is TransactionDetailsInitial ||
                 state is TransactionDetailsLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.forest),
+              final isWide = MediaQuery.of(context).size.width > 950;
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.go('/my-transactions'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              LucideIcons.arrowRight,
+                              color: AppColors.charcoal,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'العودة للمعاملات',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                  fontWeight: AppTextStyles.medium,
+                                  color: AppColors.charcoal.withOpacity(0.8)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const CustomSkeletonLoader(width: double.infinity, height: 110),
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: isWide
+                            ? const Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 7,
+                                    child: Column(
+                                      children: [
+                                        CustomSkeletonLoader(width: double.infinity, height: 120),
+                                        SizedBox(height: 20),
+                                        CustomSkeletonLoader(width: double.infinity, height: 250),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 24),
+                                  Expanded(
+                                    flex: 3,
+                                    child: CustomSkeletonLoader(width: double.infinity, height: 400),
+                                  ),
+                                ],
+                              )
+                            : const SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    CustomSkeletonLoader(width: double.infinity, height: 120),
+                                    SizedBox(height: 20),
+                                    CustomSkeletonLoader(width: double.infinity, height: 250),
+                                    SizedBox(height: 20),
+                                    CustomSkeletonLoader(width: double.infinity, height: 400),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
 
             if (state is TransactionDetailsFailure &&
                 _bloc.state is! TransactionDetailsLoaded) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      state.message,
-                      style: AppTextStyles.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _bloc
-                          .add(LoadTransactionDetails(widget.transactionId)),
-                      child: const Text('إعادة المحاولة'),
-                    ),
-                  ],
-                ),
+              return AppErrorWidget(
+                onRetry: () => _bloc
+                    .add(LoadTransactionDetails(widget.transactionId)),
               );
             }
 

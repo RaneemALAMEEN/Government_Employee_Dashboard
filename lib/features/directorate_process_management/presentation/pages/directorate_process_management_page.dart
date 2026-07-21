@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../bloc/directorate_complaints_bloc.dart';
 import '../bloc/directorate_complaints_event.dart';
@@ -214,9 +215,7 @@ class _TypesView extends StatelessWidget {
           else if (state.errorMessage != null)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: DirectorateMessageState(
-                isError: true,
-                message: state.errorMessage!,
+              child: AppErrorWidget(
                 onRetry: () => context
                     .read<DirectorateProcessBloc>()
                     .add(const RetryCurrentRequest()),
@@ -353,9 +352,7 @@ class _DefinitionsViewState extends State<_DefinitionsView> {
           else if (state.errorMessage != null && state.items.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: DirectorateMessageState(
-                isError: true,
-                message: state.errorMessage!,
+              child: AppErrorWidget(
                 onRetry: () => context
                     .read<DirectorateProcessBloc>()
                     .add(const RetryCurrentRequest()),

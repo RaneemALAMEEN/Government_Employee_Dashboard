@@ -65,4 +65,15 @@ class DepartmentTransactionsRepositoryImpl implements DepartmentTransactionsRepo
       'pagination': <String, dynamic>{},
     };
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getTransactionCertificate(String transactionId) async {
+    final result = await remoteDataSource.getTransactionCertificate(transactionId);
+    return result.map((data) {
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return <String, dynamic>{};
+    });
+  }
 }

@@ -1,9 +1,14 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/my_transaction_entity.dart';
+import '../entities/my_transactions_paginated_result.dart';
 
 abstract class MyTransactionsRepository {
-  Future<List<MyTransactionEntity>> getMyTransactions();
+  Future<Either<Failure, MyTransactionsPaginatedResult>> getMyTransactions({
+    required String status,
+    String? cursor,
+    int limit = 6,
+  });
   
   Future<Either<Failure, Map<String, dynamic>>> getTaskDetails({required String taskId});
   

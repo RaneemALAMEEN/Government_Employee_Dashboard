@@ -6,7 +6,9 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/org_node_entity.dart';
 import '../bloc/org_hierarchy_bloc.dart';
 import '../bloc/org_hierarchy_event.dart';
@@ -155,29 +157,49 @@ class _OrganizationHierarchyView extends StatelessWidget {
           );
         },
         builder: (context, state) {
+// ... (in builder)
           if (state is OrgHierarchyLoading || state is OrgHierarchyInitial) {
-            return const Center(
-                child: CircularProgressIndicator(color: AppColors.forest));
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 400),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'الهيكل التنظيمي',
+                            style: AppTextStyles.displayMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'هيكلية الأقسام والشعب والموظفين في المديرية',
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(color: AppColors.goldDark),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const ListSkeletonLoader(
+                      itemCount: 5,
+                      itemHeight: 80,
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (state is OrgHierarchyFailure) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(state.message, style: AppTextStyles.titleMedium),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => context
-                        .read<OrgHierarchyBloc>()
-                        .add(const LoadOrgHierarchy()),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.forest),
-                    child: const Text('إعادة المحاولة',
-                        style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              ),
+            return AppErrorWidget(
+              onRetry: () => context
+                  .read<OrgHierarchyBloc>()
+                  .add(const LoadOrgHierarchy()),
             );
           }
 

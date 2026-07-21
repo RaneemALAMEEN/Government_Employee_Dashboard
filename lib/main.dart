@@ -156,6 +156,7 @@ class GovernmentEmployeeApp extends StatelessWidget {
         BlocProvider<DeptTxBloc>(
           create: (_) => getIt<DeptTxBloc>()..add(const LoadDeptTx()),
         ),
+        
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

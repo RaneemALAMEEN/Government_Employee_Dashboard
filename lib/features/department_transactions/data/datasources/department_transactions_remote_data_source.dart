@@ -64,4 +64,11 @@ class DepartmentTransactionsRemoteDataSource {
       queryParameters: queryParams,
     );
   }
+
+  Future<Either<Failure, dynamic>> getTransactionCertificate(String transactionId) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/$transactionId/certificate',
+    );
+  }
 }

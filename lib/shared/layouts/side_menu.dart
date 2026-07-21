@@ -34,8 +34,9 @@ class SideMenu extends StatelessWidget {
           '/directorate-process-management'),
       const _MenuItem(
           LucideIcons.chartNoAxesCombined, 'الإحصائيات', '/statistics'),
-      const _MenuItem(
-          LucideIcons.network, 'الهيكل التنظيمي', '/organization-hierarchy'),
+      //const _MenuItem(LucideIcons.users, 'الموظفين', '/employees'),
+      const _MenuItem(LucideIcons.network, 'الهيكل التنظيمي', '/organization-hierarchy'),
+      const _MenuItem(LucideIcons.messageSquare, 'الشكاوى', '/complaints'),
       const _MenuItem(
           LucideIcons.shieldCheck, 'فحص الوثائق', '/document-quality-checker'),
     ];

@@ -13,6 +13,8 @@ class MyTransactionModel extends MyTransactionEntity {
     required super.canSign,
     super.decision,
     super.completedAt,
+    super.processName,
+    super.progressPercent,
   });
 
   factory MyTransactionModel.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,8 @@ class MyTransactionModel extends MyTransactionEntity {
       canSign: canSign,
       decision: json['decision'] as String?,
       completedAt: json['completed_at'] as String?,
+      processName: json['process_name'] as String? ?? '',
+      progressPercent: json['progress_percent'] as int? ?? 0,
     );
   }
 }

@@ -1,9 +1,17 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:government_employee_dashboard/features/directorate_process_management/domain/entities/process_definition_entity.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
-import '../../domain/entities/process_definition_entity.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../bloc/directorate_process_bloc.dart';
+import '../bloc/directorate_process_event.dart';
 import '../../domain/entities/transaction_type_entity.dart';
 
 class DirectorateManagementHeader extends StatelessWidget {
@@ -866,29 +874,8 @@ class _ProcessChip extends StatelessWidget {
       );
 }
 
-class DirectorateSkeletonGrid extends StatefulWidget {
+class DirectorateSkeletonGrid extends StatelessWidget {
   const DirectorateSkeletonGrid({super.key});
-  @override
-  State<DirectorateSkeletonGrid> createState() =>
-      _DirectorateSkeletonGridState();
-}
-
-class _DirectorateSkeletonGridState extends State<DirectorateSkeletonGrid>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -908,26 +895,10 @@ class _DirectorateSkeletonGridState extends State<DirectorateSkeletonGrid>
               mainAxisExtent: 218,
             ),
             itemCount: 8,
-            itemBuilder: (_, __) => AnimatedBuilder(
-              animation: _controller,
-              builder: (_, child) => ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  begin: Alignment(-1.5 + _controller.value * 3, 0),
-                  end: Alignment(-.5 + _controller.value * 3, 0),
-                  colors: [
-                    AppColors.gold.withValues(alpha: .28),
-                    AppColors.white.withValues(alpha: .86),
-                    AppColors.gold.withValues(alpha: .28),
-                  ],
-                ).createShader(bounds),
-                blendMode: BlendMode.srcATop,
-                child: child,
-              ),
-              child: Container(
-                  decoration: BoxDecoration(
-                color: AppColors.gold.withValues(alpha: .24),
-                borderRadius: BorderRadius.circular(22),
-              )),
+            itemBuilder: (_, __) => const CustomSkeletonLoader(
+              width: double.infinity,
+              height: double.infinity,
+              borderRadius: 22,
             ),
           );
         },

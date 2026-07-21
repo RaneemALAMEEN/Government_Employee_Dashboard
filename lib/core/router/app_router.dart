@@ -12,8 +12,9 @@ import '../../features/internal_transactions/presentation/bloc/internal_transact
 import '../../features/internal_transactions/presentation/bloc/internal_transactions_event.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
-import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/internal_transactions/presentation/pages/internal_transaction_first_stage_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
+import '../../features/department_transactions/presentation/pages/department_transaction_details_page.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_bloc.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_event.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_complaints_bloc.dart';
@@ -21,6 +22,7 @@ import '../../features/directorate_process_management/presentation/pages/directo
 import '../../features/directorate_process_management/presentation/bloc/process_details_bloc.dart';
 import '../../features/directorate_process_management/presentation/bloc/process_details_event.dart';
 import '../../features/directorate_process_management/presentation/pages/process_details_page.dart';
+import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/statistics/presentation/pages/statistics_page.dart';
 import '../../features/statistics/presentation/pages/statistics_employee_details_page.dart';
 import '../../features/statistics/presentation/bloc/statistics_employee_details_bloc.dart';
@@ -169,6 +171,17 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: '/department-transaction-details/:id',
+            pageBuilder: (context, state) {
+              final transactionId = state.pathParameters['id'] ?? '';
+              return NoTransitionPage(
+                child: DepartmentTransactionDetailsPage(
+                  transactionId: transactionId,
+                ),
+              );
+            },
+          ),
+          GoRoute(
             path: '/directorate-process-management',
             pageBuilder: (context, state) => CustomTransitionPage(
               transitionDuration: const Duration(milliseconds: 260),
@@ -236,6 +249,7 @@ class AppRouter {
               );
             },
           ),
+          
           GoRoute(
             path: '/complaints',
             pageBuilder: (context, state) => const NoTransitionPage(

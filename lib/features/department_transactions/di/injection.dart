@@ -5,6 +5,7 @@ import '../../department_transactions/data/repositories/department_transactions_
 import '../../department_transactions/domain/repositories/department_transactions_repository.dart';
 import '../../department_transactions/domain/usecases/get_department_transactions.dart';
 import '../../department_transactions/presentation/bloc/dept_tx_bloc.dart';
+import '../../department_transactions/presentation/bloc/certificate_details/department_certificate_bloc.dart';
 
 Future<void> setupDepartmentTransactionsInjection() async {
   if (!getIt.isRegistered<DepartmentTransactionsRemoteDataSource>()) {
@@ -28,6 +29,12 @@ Future<void> setupDepartmentTransactionsInjection() async {
   if (!getIt.isRegistered<DeptTxBloc>()) {
     getIt.registerFactory<DeptTxBloc>(
       () => DeptTxBloc(getIt<GetDepartmentTransactions>()),
+    );
+  }
+
+  if (!getIt.isRegistered<DepartmentCertificateBloc>()) {
+    getIt.registerFactory<DepartmentCertificateBloc>(
+      () => DepartmentCertificateBloc(repository: getIt<DepartmentTransactionsRepository>()),
     );
   }
 }
