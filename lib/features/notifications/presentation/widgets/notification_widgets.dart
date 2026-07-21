@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/notification_entity.dart';
 import '../bloc/notifications_bloc.dart';
 import '../bloc/notifications_event.dart';
@@ -12,11 +14,13 @@ import '../bloc/notifications_state.dart';
 class NotificationCard extends StatefulWidget {
   final NotificationEntity notification;
   final VoidCallback onTap;
+  final bool isMarkingRead;
 
   const NotificationCard({
     super.key,
     required this.notification,
     required this.onTap,
+    this.isMarkingRead = false,
   });
 
   @override
@@ -122,7 +126,14 @@ class _NotificationCardState extends State<NotificationCard> {
                       ],
                     ),
                   ),
-                  if (!item.isRead) ...[
+                  if (widget.isMarkingRead) ...[
+                    const SizedBox(width: 10),
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ] else if (!item.isRead) ...[
                     const SizedBox(width: 10),
                     Container(
                       width: 7,
@@ -267,6 +278,8 @@ class QuickNotificationsPanel extends StatelessWidget {
                             final item = recent[index];
                             return _QuickNotificationTile(
                               notification: item,
+                              isMarkingRead:
+                                  state.markingReadNotificationId == item.id,
                               onTap: () => onNotificationTap(item),
                             );
                           },
@@ -296,10 +309,12 @@ class QuickNotificationsPanel extends StatelessWidget {
 class _QuickNotificationTile extends StatelessWidget {
   final NotificationEntity notification;
   final VoidCallback onTap;
+  final bool isMarkingRead;
 
   const _QuickNotificationTile({
     required this.notification,
     required this.onTap,
+    required this.isMarkingRead,
   });
 
   @override
@@ -348,12 +363,19 @@ class _QuickNotificationTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              formatRelativeNotificationTime(notification.createdAt),
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
+            if (isMarkingRead)
+              const SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Text(
+                formatRelativeNotificationTime(notification.createdAt),
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -472,7 +494,7 @@ Future<void> showNotificationDetailsDialog(
 ) =>
     showDialog<void>(
       context: context,
-      builder: (_) => Directionality(
+      builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: AppColors.surface,
@@ -505,13 +527,59 @@ Future<void> showNotificationDetailsDialog(
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('إغلاق'),
             ),
           ],
         ),
       ),
     );
+
+Future<void> handleNotificationTap(
+  BuildContext context,
+  NotificationEntity notification, {
+  VoidCallback? beforeOpeningDetails,
+}) async {
+  if (kDebugMode) {
+    debugPrint(
+      '[Notifications] tapped notification id=${notification.id}, '
+      'isRead=${notification.isRead}',
+    );
+  }
+  final bloc = context.read<NotificationsBloc>();
+  var itemToOpen = notification;
+
+  if (!notification.isRead) {
+    if (bloc.state.markingReadNotificationId != null) return;
+    bloc.add(MarkNotificationAsRead(notificationId: notification.id));
+
+    final result = await bloc.stream.firstWhere(
+      (state) =>
+          state.markingReadNotificationId == null &&
+          (state.items.any(
+                (item) => item.id == notification.id && item.isRead,
+              ) ||
+              state.markReadErrorNotificationId == notification.id),
+    );
+    if (!context.mounted) return;
+    if (result.markReadErrorNotificationId == notification.id) {
+      AppSnackBar.show(
+        context,
+        message: 'تعذر تعليم الإشعار كمقروء',
+        isError: true,
+      );
+      return;
+    }
+    itemToOpen = result.items.firstWhere(
+      (item) => item.id == notification.id,
+      orElse: () => notification.copyWith(isRead: true),
+    );
+  }
+
+  beforeOpeningDetails?.call();
+  if (!context.mounted) return;
+  await showNotificationDetailsDialog(context, itemToOpen);
+}
 
 IconData notificationTypeIcon(String type) {
   switch (type.toLowerCase()) {

@@ -9,4 +9,6 @@ abstract class NotificationsRepository {
     String? cursor,
     bool unreadOnly = false,
   });
+
+  Future<Either<Failure, Unit>> markNotificationAsRead(int notificationId);
 }

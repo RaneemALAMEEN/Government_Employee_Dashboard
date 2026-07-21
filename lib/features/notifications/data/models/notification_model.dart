@@ -7,6 +7,7 @@ class NotificationModel extends NotificationEntity {
     required super.message,
     required super.type,
     required super.isRead,
+    super.readAt,
     required super.createdAt,
   });
 
@@ -17,6 +18,7 @@ class NotificationModel extends NotificationEntity {
         message: json['message']?.toString().trim() ?? '',
         type: json['type']?.toString().trim() ?? '',
         isRead: _asBool(json['is_read']),
+        readAt: DateTime.tryParse(json['read_at']?.toString() ?? ''),
         createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
       );
 }

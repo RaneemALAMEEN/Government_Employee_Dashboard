@@ -18,6 +18,7 @@ import 'features/directorate_process_management/di/injection.dart';
 import 'features/department_transactions/di/injection.dart';
 import 'features/department_transactions/presentation/bloc/dept_tx_bloc.dart';
 import 'features/department_transactions/presentation/bloc/dept_tx_event.dart';
+import 'features/document_verification/di/injection.dart';
 import 'features/my_transactions/di/injection.dart';
 import 'features/notifications/di/injection.dart';
 import 'features/organization_hierarchy/di/injection.dart';
@@ -104,6 +105,7 @@ Future<void> main() async {
   await setupDirectorateProcessManagementInjection();
   await setupOrganizationHierarchyInjection(getIt);
   await setupNotificationsInjection();
+  await setupDocumentVerificationInjection();
 
   // ترتيب طبقات الإشعارات: (1) تهيئة العرض → (2) شريط النظام واعتراض الإغلاق
   // → (3) فتح اتصال الـ socket. الاتصال يبقى حيًّا في الـ tray عند "إغلاق"

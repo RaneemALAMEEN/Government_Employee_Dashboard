@@ -130,7 +130,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           ),
                           child: NotificationCard(
                             notification: notification,
-                            onTap: () => showNotificationDetailsDialog(
+                            isMarkingRead: state.markingReadNotificationId ==
+                                notification.id,
+                            onTap: () => handleNotificationTap(
                               context,
                               notification,
                             ),

@@ -4,6 +4,7 @@ import '../data/datasources/notifications_remote_data_source.dart';
 import '../data/repositories/notifications_repository_impl.dart';
 import '../domain/repositories/notifications_repository.dart';
 import '../domain/usecases/get_my_notifications.dart';
+import '../domain/usecases/mark_notification_as_read.dart' as usecase;
 import '../presentation/bloc/notifications_bloc.dart';
 
 Future<void> setupNotificationsInjection() async {
@@ -24,10 +25,16 @@ Future<void> setupNotificationsInjection() async {
       () => GetMyNotifications(getIt<NotificationsRepository>()),
     );
   }
+  if (!getIt.isRegistered<usecase.MarkNotificationAsRead>()) {
+    getIt.registerLazySingleton(
+      () => usecase.MarkNotificationAsRead(getIt<NotificationsRepository>()),
+    );
+  }
   if (!getIt.isRegistered<NotificationsBloc>()) {
     getIt.registerFactory(
       () => NotificationsBloc(
         getMyNotifications: getIt<GetMyNotifications>(),
+        markNotificationAsRead: getIt<usecase.MarkNotificationAsRead>(),
       ),
     );
   }

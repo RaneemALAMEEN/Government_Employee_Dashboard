@@ -53,6 +53,9 @@ class EndPoints {
       'api/role/by-department/$departmentId/';
   String get employeesByOrgDepartmentRole => 'api/employees/by-org-dept-role/';
   String get myNotifications => 'api/notifications/my';
+  String markNotificationAsRead(int notificationId) =>
+      'api/notifications/$notificationId/read';
+  String get verifyDocumentDetails => 'api/verify/document/details';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

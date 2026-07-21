@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/usecases/get_my_notifications.dart';
+import '../../domain/usecases/mark_notification_as_read.dart' as usecase;
 import 'notifications_event.dart';
 import 'notifications_state.dart';
 
@@ -8,16 +10,20 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   static const int limit = 10;
 
   final GetMyNotifications getMyNotifications;
+  final usecase.MarkNotificationAsRead markNotificationAsRead;
   final Set<String> _requestedCursors = <String>{};
   int _generation = 0;
 
-  NotificationsBloc({required this.getMyNotifications})
-      : super(const NotificationsState()) {
+  NotificationsBloc({
+    required this.getMyNotifications,
+    required this.markNotificationAsRead,
+  }) : super(const NotificationsState()) {
     on<LoadNotifications>(_loadInitial);
     on<LoadMoreNotifications>(_loadMore);
     on<ChangeNotificationFilter>(_changeFilter);
     on<RetryLoadMoreNotifications>(_retryMore);
     on<RetryNotifications>(_retryInitial);
+    on<MarkNotificationAsRead>(_markAsRead);
   }
 
   Future<void> _loadInitial(
@@ -139,5 +145,92 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     if (state.items.isEmpty) {
       add(LoadNotifications(unreadOnly: state.unreadOnly));
     }
+  }
+
+  Future<void> _markAsRead(
+    MarkNotificationAsRead event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    final itemIndex =
+        state.items.indexWhere((item) => item.id == event.notificationId);
+    if (itemIndex < 0) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Notifications] mark-as-read skipped: notification '
+          '${event.notificationId} is not present in the shared state',
+        );
+      }
+      return;
+    }
+    if (state.items[itemIndex].isRead) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Notifications] mark-as-read skipped: notification '
+          '${event.notificationId} is already read',
+        );
+      }
+      return;
+    }
+    if (state.markingReadNotificationId != null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Notifications] mark-as-read skipped: another request is active',
+        );
+      }
+      return;
+    }
+
+    emit(state.copyWith(
+      markingReadNotificationId: event.notificationId,
+      markReadErrorNotificationId: null,
+    ));
+    if (kDebugMode) {
+      debugPrint(
+        '[Notifications] marking notification ${event.notificationId} as read',
+      );
+    }
+    final result = await markNotificationAsRead(event.notificationId);
+    result.fold(
+      (failure) {
+        if (kDebugMode) {
+          debugPrint(
+            '[Notifications] failed to mark notification '
+            '${event.notificationId} as read: ${failure.message}',
+          );
+        }
+        emit(state.copyWith(
+          markingReadNotificationId: null,
+          markReadErrorNotificationId: event.notificationId,
+        ));
+      },
+      (_) {
+        final updatedItems = state.items
+            .map(
+              (item) => item.id == event.notificationId
+                  ? item.copyWith(isRead: true, readAt: DateTime.now())
+                  : item,
+            )
+            .toList(growable: false);
+        final updatedUnreadCount =
+            state.unreadCount > 0 ? state.unreadCount - 1 : 0;
+        emit(state.copyWith(
+          items: updatedItems,
+          unreadCount: updatedUnreadCount,
+          markingReadNotificationId: null,
+          markReadErrorNotificationId: null,
+        ));
+        if (kDebugMode) {
+          debugPrint(
+            '[Notifications] notification ${event.notificationId} '
+            'marked as read successfully',
+          );
+          debugPrint(
+            '[Notifications] local state after update: '
+            'isRead=${updatedItems.firstWhere((item) => item.id == event.notificationId).isRead}, '
+            'unreadCount=$updatedUnreadCount',
+          );
+        }
+      },
+    );
   }
 }

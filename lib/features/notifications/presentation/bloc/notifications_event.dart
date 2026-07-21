@@ -36,3 +36,12 @@ class RetryLoadMoreNotifications extends NotificationsEvent {
 class RetryNotifications extends NotificationsEvent {
   const RetryNotifications();
 }
+
+class MarkNotificationAsRead extends NotificationsEvent {
+  final int notificationId;
+
+  const MarkNotificationAsRead({required this.notificationId});
+
+  @override
+  List<Object?> get props => [notificationId];
+}

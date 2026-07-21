@@ -6,7 +6,6 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
-import '../../features/notifications/domain/entities/notification_entity.dart';
 import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
 import '../../features/notifications/presentation/bloc/notifications_state.dart';
 import '../../features/notifications/presentation/widgets/notification_widgets.dart';
@@ -174,8 +173,11 @@ class _NotificationButtonState extends State<_NotificationButton> {
                     context.push('/notifications');
                   },
                   onNotificationTap: (notification) {
-                    _closePanel();
-                    _showDetails(notification);
+                    handleNotificationTap(
+                      context,
+                      notification,
+                      beforeOpeningDetails: _closePanel,
+                    );
                   },
                 ),
               ),
@@ -185,10 +187,6 @@ class _NotificationButtonState extends State<_NotificationButton> {
       ),
     );
     Overlay.of(context).insert(_overlayEntry!);
-  }
-
-  void _showDetails(NotificationEntity notification) {
-    showNotificationDetailsDialog(context, notification);
   }
 
   @override

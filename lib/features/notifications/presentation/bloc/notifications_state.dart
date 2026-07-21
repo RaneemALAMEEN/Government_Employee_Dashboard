@@ -14,6 +14,8 @@ class NotificationsState extends Equatable {
   final int unreadCount;
   final String? errorMessage;
   final String? loadMoreError;
+  final int? markingReadNotificationId;
+  final int? markReadErrorNotificationId;
 
   const NotificationsState({
     this.items = const [],
@@ -25,6 +27,8 @@ class NotificationsState extends Equatable {
     this.unreadCount = 0,
     this.errorMessage,
     this.loadMoreError,
+    this.markingReadNotificationId,
+    this.markReadErrorNotificationId,
   });
 
   NotificationsState copyWith({
@@ -37,6 +41,8 @@ class NotificationsState extends Equatable {
     int? unreadCount,
     Object? errorMessage = _unsetNotificationValue,
     Object? loadMoreError = _unsetNotificationValue,
+    Object? markingReadNotificationId = _unsetNotificationValue,
+    Object? markReadErrorNotificationId = _unsetNotificationValue,
   }) =>
       NotificationsState(
         items: items ?? this.items,
@@ -54,6 +60,14 @@ class NotificationsState extends Equatable {
         loadMoreError: identical(loadMoreError, _unsetNotificationValue)
             ? this.loadMoreError
             : loadMoreError as String?,
+        markingReadNotificationId:
+            identical(markingReadNotificationId, _unsetNotificationValue)
+                ? this.markingReadNotificationId
+                : markingReadNotificationId as int?,
+        markReadErrorNotificationId:
+            identical(markReadErrorNotificationId, _unsetNotificationValue)
+                ? this.markReadErrorNotificationId
+                : markReadErrorNotificationId as int?,
       );
 
   @override
@@ -67,5 +81,7 @@ class NotificationsState extends Equatable {
         unreadCount,
         errorMessage,
         loadMoreError,
+        markingReadNotificationId,
+        markReadErrorNotificationId,
       ];
 }

@@ -36,6 +36,8 @@ import '../../shared/layouts/app_shell.dart';
 import '../../shared/pages/coming_soon_page.dart';
 
 import '../../features/organization_hierarchy/presentation/pages/organization_hierarchy_page.dart';
+import '../../features/document_verification/presentation/bloc/document_verification_bloc.dart';
+import '../../features/document_verification/presentation/pages/document_verification_page.dart';
 import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
 import '../../features/notifications/presentation/bloc/notifications_event.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -240,11 +242,15 @@ class AppRouter {
               child: ComingSoonPage(title: 'الشكاوى'),
             ),
           ),
-          //   path: '/document-quality-checker',
-          //   pageBuilder: (context, state) => const NoTransitionPage(
-          //     child: DocumentQualityCheckerPage(),
-          //   ),
-          // ),
+          GoRoute(
+            path: '/document-quality-checker',
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider(
+                create: (_) => getIt<DocumentVerificationBloc>(),
+                child: const DocumentVerificationPage(),
+              ),
+            ),
+          ),
           GoRoute(
             path: '/organization-hierarchy',
             pageBuilder: (context, state) => const NoTransitionPage(
