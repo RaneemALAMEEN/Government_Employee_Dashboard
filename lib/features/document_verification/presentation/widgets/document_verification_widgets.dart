@@ -4,6 +4,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../my_transactions/presentation/pages/pdf_viewer_page.dart';
 import '../../domain/entities/document_verification_entity.dart';
@@ -296,13 +297,10 @@ class VerificationSkeleton extends StatelessWidget {
         ),
       );
 
-  static Widget _skeleton({required double width}) => Container(
+  static Widget _skeleton({required double width}) => CustomSkeletonLoader(
         width: width,
         height: 20,
-        decoration: BoxDecoration(
-          color: AppColors.border.withValues(alpha: .18),
-          borderRadius: BorderRadius.circular(8),
-        ),
+        borderRadius: 8,
       );
 }
 

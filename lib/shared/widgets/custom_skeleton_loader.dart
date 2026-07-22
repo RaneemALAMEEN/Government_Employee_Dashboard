@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../theme/app_colors.dart';
+
 class CustomSkeletonLoader extends StatelessWidget {
   final double width;
   final double height;
@@ -20,13 +22,13 @@ class CustomSkeletonLoader extends StatelessWidget {
     return Padding(
       padding: margin ?? EdgeInsets.zero,
       child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+        baseColor: AppColors.gold.withValues(alpha: 0.28),
+        highlightColor: AppColors.white.withValues(alpha: 0.86),
         child: Container(
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.gold.withValues(alpha: 0.24),
             borderRadius: BorderRadius.circular(borderRadius),
           ),
         ),
