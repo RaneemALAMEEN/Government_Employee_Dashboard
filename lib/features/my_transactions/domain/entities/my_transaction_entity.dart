@@ -6,10 +6,12 @@ class MyTransactionEntity {
   final String department;
   final String date;
   final String priority; // 'عالية', 'عادية', 'منخفضة'
-  final String status;   // 'بانتظار توقيعي', 'منجزة', 'تم الرفض'
+  final String status;   // 'بانتظار الاستلام', 'قيد التنفيذ', 'منجزة', 'تم الرفض'
   final bool canSign;
   final String? decision; // 'approve', 'reject' etc.
   final String? completedAt;
+  final String processName; // اسم المعاملة (process_name)
+  final int progressPercent; // نسبة الإنجاز (progress_percent)
 
   const MyTransactionEntity({
     required this.idTask,
@@ -23,6 +25,8 @@ class MyTransactionEntity {
     required this.canSign,
     this.decision,
     this.completedAt,
+    this.processName = '',
+    this.progressPercent = 0,
   });
 
   MyTransactionEntity copyWith({
@@ -37,6 +41,8 @@ class MyTransactionEntity {
     bool? canSign,
     String? decision,
     String? completedAt,
+    String? processName,
+    int? progressPercent,
   }) {
     return MyTransactionEntity(
       idTask: idTask ?? this.idTask,
@@ -50,6 +56,8 @@ class MyTransactionEntity {
       canSign: canSign ?? this.canSign,
       decision: decision ?? this.decision,
       completedAt: completedAt ?? this.completedAt,
+      processName: processName ?? this.processName,
+      progressPercent: progressPercent ?? this.progressPercent,
     );
   }
 }

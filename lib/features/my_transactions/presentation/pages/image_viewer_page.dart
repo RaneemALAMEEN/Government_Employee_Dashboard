@@ -19,7 +19,8 @@ class ImageViewerPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           title,
-          style: AppTextStyles.titleMedium.copyWith(fontWeight: AppTextStyles.bold, color: Colors.white),
+          style: AppTextStyles.titleMedium
+              .copyWith(fontWeight: AppTextStyles.bold, color: Colors.white),
         ),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -52,11 +53,19 @@ class ImageViewerPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: Colors.white54, size: 48),
+                      const Icon(Icons.broken_image,
+                          color: Colors.white54, size: 64),
                       const SizedBox(height: 16),
                       Text(
-                        'تعذر تحميل الصورة',
-                        style: AppTextStyles.titleMedium.copyWith(color: Colors.white54),
+                        'عذراً، فشل تحميل الصورة',
+                        style: AppTextStyles.titleMedium
+                            .copyWith(color: Colors.white),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'الصورة غير موجودة أو تالفة.',
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(color: Colors.white54),
                       ),
                     ],
                   ),

@@ -14,6 +14,8 @@ class MyTxTable extends StatefulWidget {
   final ValueChanged<String> onReject;
   final String activeFilter;
   final String searchQuery;
+  final bool isLoadingMore;
+  final bool hasMore;
 
   const MyTxTable({
     super.key,
@@ -22,6 +24,8 @@ class MyTxTable extends StatefulWidget {
     required this.onReject,
     required this.activeFilter,
     required this.searchQuery,
+    this.isLoadingMore = false,
+    this.hasMore = false,
   });
 
   @override
@@ -43,8 +47,23 @@ class _MyTxTableState extends State<MyTxTable> {
     super.dispose();
   }
 
+  /// تصفية المعاملات حسب البحث المحلي
+  List<MyTransactionEntity> _getFilteredTransactions() {
+    if (widget.searchQuery.isEmpty) return widget.transactions;
+    final lowerQuery = widget.searchQuery.toLowerCase();
+    return widget.transactions.where((tx) {
+      return tx.number.toLowerCase().contains(lowerQuery) ||
+          tx.applicant.toLowerCase().contains(lowerQuery) ||
+          tx.type.toLowerCase().contains(lowerQuery) ||
+          tx.department.toLowerCase().contains(lowerQuery) ||
+          tx.processName.toLowerCase().contains(lowerQuery);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filteredTransactions = _getFilteredTransactions();
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -61,20 +80,20 @@ class _MyTxTableState extends State<MyTxTable> {
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          const double minTableWidth = 900;
+          const double minTableWidth = 1050;
           final double availableWidth = constraints.maxWidth;
 
           final Widget tableContent = Column(
             children: [
               const _TableHeader(),
-              if (widget.transactions.isEmpty)
+              if (filteredTransactions.isEmpty)
                 _buildEmptyState(widget.activeFilter)
               else
                 ListView.separated(
                   shrinkWrap: true,
                   padding: EdgeInsets.zero,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: widget.transactions.length,
+                  itemCount: filteredTransactions.length,
                   separatorBuilder: (_, __) => Container(
                     height: 1,
                     color: AppColors.gold.withOpacity(0.18),
@@ -84,12 +103,40 @@ class _MyTxTableState extends State<MyTxTable> {
                       duration: const Duration(milliseconds: 350),
                       delay: Duration(milliseconds: index * 50),
                       child: _TransactionRow(
-                        tx: widget.transactions[index],
+                        tx: filteredTransactions[index],
                         onSign: widget.onSign,
                         onReject: widget.onReject,
                       ),
                     );
                   },
+                ),
+              // Loading more indicator
+              if (widget.isLoadingMore)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: AppColors.forest,
+                      ),
+                    ),
+                  ),
+                ),
+              // "No more data" indicator
+              if (!widget.hasMore && filteredTransactions.isNotEmpty && !widget.isLoadingMore)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: Text(
+                      'تم عرض جميع المعاملات',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.charcoal.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
                 ),
             ],
           );
@@ -207,14 +254,15 @@ class _TableHeader extends StatelessWidget {
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderText('رقم المعاملة', flex: 18),
-          _HeaderText('النوع', flex: 16),
-          _HeaderText('مقدم الطلب', flex: 17),
-          _HeaderText('الدائرة', flex: 17),
-          _HeaderText('التاريخ', flex: 13),
-          _HeaderText('الأولوية', flex: 11),
-          _HeaderText('الحالة', flex: 13),
-          _HeaderText('إجراء', flex: 19),
+          _HeaderText('رقم المعاملة', flex: 16),
+          _HeaderText('اسم المعاملة', flex: 14),
+          _HeaderText('النوع', flex: 12),
+          _HeaderText('مقدم الطلب', flex: 14),
+          _HeaderText('الدائرة', flex: 13),
+          _HeaderText('التاريخ', flex: 10),
+          _HeaderText('الأولوية', flex: 9),
+          _HeaderText('الحالة', flex: 11),
+          _HeaderText('إجراء', flex: 11),
         ],
       ),
     );
@@ -246,7 +294,7 @@ class _TransactionRow extends StatelessWidget {
           children: [
             // Transaction Number
             Expanded(
-              flex: 18,
+              flex: 16,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -273,32 +321,34 @@ class _TransactionRow extends StatelessWidget {
                 ],
               ),
             ),
+            // Process Name (اسم المعاملة)
+            _CellText(tx.processName, flex: 14),
             // Type
-            _CellText(tx.type, flex: 16),
+            _CellText(tx.type, flex: 12),
             // Applicant
-            _CellText(tx.applicant, flex: 17),
+            _CellText(tx.applicant, flex: 14),
             // Department
-            _CellText(tx.department, flex: 17),
+            _CellText(tx.department, flex: 13),
             // Date
             _CellText(
                 (tx.status == 'منجزة' || tx.status == 'تم الرفض') && tx.completedAt != null
                     ? tx.completedAt!
                     : tx.date,
-                flex: 13,
+                flex: 10,
                 color: AppColors.charcoal.withOpacity(0.70)),
             // Priority
             Expanded(
-              flex: 11,
+              flex: 9,
               child: Center(child: _PriorityBadge(priority: tx.priority)),
             ),
             // Status
             Expanded(
-              flex: 13,
+              flex: 11,
               child: Center(child: _StatusBadge(tx: tx)),
             ),
             // Actions
             Expanded(
-              flex: 19,
+              flex: 11,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -307,7 +357,7 @@ class _TransactionRow extends StatelessWidget {
                     icon: LucideIcons.eye,
                     tooltip: 'عرض التفاصيل',
                     onTap: () {
-                      context.go('/my-transactions/${tx.idTask}');
+                      context.go('/my-transactions/${tx.idTask}', extra: tx.status);
                     },
                   ),
                 ],

@@ -4,7 +4,11 @@ abstract class TransactionDetailsEvent {}
 
 class LoadTransactionDetails extends TransactionDetailsEvent {
   final String taskId;
-  LoadTransactionDetails(this.taskId);
+  final String? status;
+
+  LoadTransactionDetails(this.taskId, {this.status});
+
+  List<Object?> get props => [taskId, status];
 }
 
 class PickupTransactionEvent extends TransactionDetailsEvent {

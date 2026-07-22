@@ -5,6 +5,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
 import '../../domain/entities/statistics_employee_details_entity.dart';
 import '../bloc/statistics_employee_details_bloc.dart';
 import '../bloc/statistics_employee_details_event.dart';
@@ -53,8 +54,7 @@ class StatisticsEmployeeDetailsPage extends StatelessWidget {
       return const _EmployeeDetailsSkeleton();
     }
     if (state is EmployeeDetailsError) {
-      return _EmployeeDetailsError(
-        message: state.message,
+      return AppErrorWidget(
         onRetry: () => context
             .read<StatisticsEmployeeDetailsBloc>()
             .add(LoadEmployeeDetails(employeeId: employeeId)),

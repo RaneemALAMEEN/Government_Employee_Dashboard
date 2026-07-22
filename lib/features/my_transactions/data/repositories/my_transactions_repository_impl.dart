@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:government_employee_dashboard/core/errors/failures.dart';
 
 import '../../domain/entities/my_transaction_entity.dart';
+import '../../domain/entities/my_transactions_paginated_result.dart';
 import '../../domain/repositories/my_transactions_repository.dart';
 import '../datasources/my_transactions_remote_data_source.dart';
 import '../models/my_transaction_model.dart';
@@ -12,46 +13,73 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
   MyTransactionsRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<List<MyTransactionEntity>> getMyTransactions() async {
-    final results = await Future.wait([
-      remoteDataSource.getPendingPickupTasks(limit: 50),
-      remoteDataSource.getInProgressTasks(limit: 50),
-      remoteDataSource.getTasks(status: 'completed', limit: 50),
-      remoteDataSource.getTasks(status: 'rejected', limit: 50),
-    ]);
+  Future<Either<Failure, MyTransactionsPaginatedResult>> getMyTransactions({
+    required String status,
+    String? cursor,
+    int limit = 6,
+  }) async {
+    final result = await remoteDataSource.getTasks(
+      status: status,
+      cursor: cursor,
+      limit: limit,
+    );
 
-    final List<MyTransactionEntity> mergedList = [];
-    final Set<String> numbers = {};
+    return result.fold(
+      (failure) => Left(failure),
+      (data) {
+        final List<MyTransactionEntity> items = [];
+        String? nextCursor;
+        bool hasNext = false;
+        int totalCount = 0;
 
-    for (final result in results) {
-      result.fold(
-        (failure) {
-          throw Exception(failure.message);
-        },
-        (data) {
-          if (data is Map && data['data'] != null && data['data']['items'] is List) {
-            final itemsList = data['data']['items'] as List;
+        if (data is Map && data['data'] != null) {
+          final dataMap = data['data'];
+
+          // Parse items
+          if (dataMap['items'] is List) {
+            final itemsList = dataMap['items'] as List;
             for (final item in itemsList) {
               if (item is Map) {
-                // Cast to Map<String, dynamic> safely
                 final mapItem = Map<String, dynamic>.from(item);
-                final model = MyTransactionModel.fromJson(mapItem);
-                if (!numbers.contains(model.number)) {
-                  numbers.add(model.number);
-                  mergedList.add(model);
-                }
+                items.add(MyTransactionModel.fromJson(mapItem));
               }
             }
           }
-        },
-      );
-    }
 
-    return mergedList;
+          // Parse pagination
+          if (dataMap['pagination'] is Map) {
+            final pagination = dataMap['pagination'];
+            nextCursor = pagination['next_cursor'] as String?;
+            hasNext = pagination['has_next'] as bool? ?? false;
+
+            final totalRaw = pagination['total'] ?? pagination['total_items'];
+            if (totalRaw != null) {
+              totalCount = int.tryParse(totalRaw.toString()) ?? 0;
+            }
+          }
+        }
+        return Right(MyTransactionsPaginatedResult(
+          items: items,
+          nextCursor: nextCursor,
+          hasNext: hasNext,
+          totalCount: totalCount,
+        ));
+      },
+    );
   }
+
   @override
-  Future<Either<Failure, Map<String, dynamic>>> getTaskDetails({required String taskId}) async {
+  Future<Either<Failure, Map<String, dynamic>>> getTaskDetails(
+      {required String taskId}) async {
     final result = await remoteDataSource.getTaskDetails(taskId: taskId);
+    return result.map((r) => r as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getTransactionCertificate(
+      {required String taskId}) async {
+    final result =
+        await remoteDataSource.getTransactionCertificate(taskId: taskId);
     return result.map((r) => r as Map<String, dynamic>);
   }
 
@@ -107,7 +135,8 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
     );
     return result.map((r) {
       if (r is Map) {
-         return r['data'] as Map<String, dynamic>? ?? Map<String, dynamic>.from(r);
+        return r['data'] as Map<String, dynamic>? ??
+            Map<String, dynamic>.from(r);
       }
       return <String, dynamic>{};
     });
@@ -117,7 +146,8 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
   Future<Either<Failure, Map<String, dynamic>>> getDocumentTemplate({
     required int templateId,
   }) async {
-    final result = await remoteDataSource.getDocumentTemplate(templateId: templateId);
+    final result =
+        await remoteDataSource.getDocumentTemplate(templateId: templateId);
     return result.map((r) => r as Map<String, dynamic>);
   }
 }

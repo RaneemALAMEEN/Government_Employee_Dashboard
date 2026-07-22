@@ -2,10 +2,18 @@ abstract class MyTransactionsEvent {
   const MyTransactionsEvent();
 }
 
-class LoadMyTransactions extends MyTransactionsEvent {}
+/// تحميل المعاملات (أول صفحة) — يُستخدم عند فتح الشاشة أو تغيير الفلتر
+class LoadMyTransactions extends MyTransactionsEvent {
+  final String apiStatus; // 'all', 'pending_pickup', 'in_progress', 'completed', 'rejected'
+  const LoadMyTransactions({this.apiStatus = 'all'});
+}
 
+/// تحميل المزيد من المعاملات (infinite scroll)
+class LoadMoreTransactions extends MyTransactionsEvent {}
+
+/// تغيير الفلتر — يعيد التحميل من الصفر مع الفلتر الجديد
 class FilterMyTransactions extends MyTransactionsEvent {
-  final String statusFilter; // 'الكل', 'بانتظار الاستلام', 'قيد التنفيذ', 'منجزة', 'تم الرفض'
+  final String statusFilter; // النص العربي: 'الكل', 'بانتظار الاستلام', etc.
   const FilterMyTransactions(this.statusFilter);
 }
 

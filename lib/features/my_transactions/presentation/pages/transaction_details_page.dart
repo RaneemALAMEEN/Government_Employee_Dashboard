@@ -11,14 +11,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/my_transaction_entity.dart';
 import '../../../internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import '../../../internal_transactions/data/models/dynamic_widget_model.dart';
 import '../bloc/my_transactions_bloc.dart';
 import '../bloc/my_transactions_event.dart';
 import '../widgets/secure_signature_dialog.dart';
-import 'pdf_viewer_page.dart';
-import 'image_viewer_page.dart';
 
 import '../bloc/transaction_details/transaction_details_bloc.dart';
 import '../bloc/transaction_details/transaction_details_event.dart';
@@ -33,10 +33,12 @@ import 'transaction_details/widgets/workflow_timeline_widget.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final String transactionId;
+  final String? status;
 
   const TransactionDetailsPage({
     Key? key,
     required this.transactionId,
+    this.status,
   }) : super(key: key);
 
   @override
@@ -51,7 +53,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   void initState() {
     super.initState();
     _bloc = getIt<TransactionDetailsBloc>();
-    _bloc.add(LoadTransactionDetails(widget.transactionId));
+    _bloc.add(
+        LoadTransactionDetails(widget.transactionId, status: widget.status));
   }
 
   @override
@@ -84,10 +87,22 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage =
+            'فشل تحميل الملف. قد يكون تالفاً أو غير موجود على الخادم.';
+        if (e is DioException) {
+          if (e.response?.statusCode == 404) {
+            errorMessage =
+                'هناك مشكلة في هذا الملف ولا يمكن عرضه أو تنزيله ، يرجى التواصل مع من أرفقه لإعادة إرفاقه مرة أخرى';
+          } else {
+            errorMessage = 'حدث خطأ في الاتصال بالخادم عند محاولة تحميل الملف.';
+          }
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('فشل تحميل الملف: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.umber,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -181,31 +196,94 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             }
           },
           builder: (context, state) {
+// ... (in builder)
             if (state is TransactionDetailsInitial ||
                 state is TransactionDetailsLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.forest),
+              final isWide = MediaQuery.of(context).size.width > 950;
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.go('/my-transactions'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              LucideIcons.arrowRight,
+                              color: AppColors.charcoal,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'العودة للمعاملات',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                  fontWeight: AppTextStyles.medium,
+                                  color: AppColors.charcoal.withOpacity(0.8)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const CustomSkeletonLoader(
+                          width: double.infinity, height: 110),
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: isWide
+                            ? const Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 7,
+                                    child: Column(
+                                      children: [
+                                        CustomSkeletonLoader(
+                                            width: double.infinity,
+                                            height: 120),
+                                        SizedBox(height: 20),
+                                        CustomSkeletonLoader(
+                                            width: double.infinity,
+                                            height: 250),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 24),
+                                  Expanded(
+                                    flex: 3,
+                                    child: CustomSkeletonLoader(
+                                        width: double.infinity, height: 400),
+                                  ),
+                                ],
+                              )
+                            : const SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    CustomSkeletonLoader(
+                                        width: double.infinity, height: 120),
+                                    SizedBox(height: 20),
+                                    CustomSkeletonLoader(
+                                        width: double.infinity, height: 250),
+                                    SizedBox(height: 20),
+                                    CustomSkeletonLoader(
+                                        width: double.infinity, height: 400),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
 
             if (state is TransactionDetailsFailure &&
                 _bloc.state is! TransactionDetailsLoaded) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      state.message,
-                      style: AppTextStyles.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _bloc
-                          .add(LoadTransactionDetails(widget.transactionId)),
-                      child: const Text('إعادة المحاولة'),
-                    ),
-                  ],
-                ),
+              return AppErrorWidget(
+                onRetry: () =>
+                    _bloc.add(LoadTransactionDetails(widget.transactionId)),
               );
             }
 
@@ -274,7 +352,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 .toList();
 
             // Extract templateIds from config
-            final templateJson = config?['template'] as List? ?? config?['templates'] as List? ?? [];
+            final templateJson = config?['template'] as List? ??
+                config?['templates'] as List? ??
+                [];
             final templateIds = templateJson
                 .map((item) {
                   if (item is Map<String, dynamic>) {
@@ -319,6 +399,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             final rightContentList = [
               EmployeeInfoCard(applicant: applicant),
               const SizedBox(height: 20),
+              if (data['final_document'] != null) ...[
+                _buildFinalDocumentCard(
+                    data['final_document'] as Map<String, dynamic>),
+                const SizedBox(height: 20),
+              ],
               ...completedStages.map((stage) => StageHistoryCard(
                     stage: Map<String, dynamic>.from(stage),
                     buildFileUrl: _buildFileUrl,
@@ -345,17 +430,27 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   ),
                   const SizedBox(height: 20),
                 ],
-                if (loadedState != null && loadedState.loadedTemplates.isNotEmpty) ...[
+                if (loadedState != null &&
+                    loadedState.loadedTemplates.isNotEmpty) ...[
                   ...loadedState.loadedTemplates.map((template) {
                     final templateName = template['name']?.toString() ?? 'قالب';
-                    final templateFilePath = template['file_path']?.toString() ?? template['pdf_path']?.toString() ?? template['template_file']?.toString();
-                    final configJson = template['config_json'] as Map<String, dynamic>? ?? {};
-                    final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+                    final templateFilePath =
+                        template['file_path']?.toString() ??
+                            template['pdf_path']?.toString() ??
+                            template['template_file']?.toString();
+                    final configJson =
+                        template['config_json'] as Map<String, dynamic>? ?? {};
+                    final fields = configJson['widgets'] as List? ??
+                        configJson['fields'] as List? ??
+                        [];
 
                     final templateWidgets = fields.map((w) {
-                      final wMap = w is Map ? Map<String, dynamic>.from(w) : <String, dynamic>{};
+                      final wMap = w is Map
+                          ? Map<String, dynamic>.from(w)
+                          : <String, dynamic>{};
                       final widgetJson = {
-                        'widget_type': wMap['widget_type'] ?? wMap['type'] ?? 'text_field',
+                        'widget_type':
+                            wMap['widget_type'] ?? wMap['type'] ?? 'text_field',
                         'data': wMap['data'] ?? wMap,
                       };
                       return DynamicWidgetModel.fromJson(widgetJson);
@@ -368,8 +463,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         child: TemplateFormCard(
                           templateName: templateName,
                           templateFilePath: templateFilePath,
-                          onDownload: templateFilePath != null && templateFilePath.isNotEmpty
-                              ? () => _downloadFile(templateFilePath, templateFilePath.split('/').last)
+                          onDownload: templateFilePath != null &&
+                                  templateFilePath.isNotEmpty
+                              ? () => _downloadFile(templateFilePath,
+                                  templateFilePath.split('/').last)
                               : null,
                           widgets: templateWidgets,
                           formValues: loadedState!.templateFormValues,
@@ -449,7 +546,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                           const SizedBox(width: 8),
                           Text(
                             'العودة للمعاملات',
-                            style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.8)),
+                            style: AppTextStyles.bodySmall.copyWith(
+                                fontWeight: AppTextStyles.medium,
+                                color: AppColors.charcoal.withOpacity(0.8)),
                           ),
                         ],
                       ),
@@ -470,7 +569,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                           currentStageWidgets, formId, formName, true,
                           templateIds: templateIds,
                           loadedTemplates: loadedState?.loadedTemplates ?? [],
-                          templateFormValues: loadedState?.templateFormValues ?? {}),
+                          templateFormValues:
+                              loadedState?.templateFormValues ?? {}),
                       onReject: () => _bloc.add(SubmitTransactionDetailsEvent(
                         taskId: widget.transactionId,
                         widgets: currentStageWidgets,
@@ -480,7 +580,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         isApprove: false,
                         templateIds: templateIds,
                         loadedTemplates: loadedState?.loadedTemplates ?? [],
-                        templateFormValues: loadedState?.templateFormValues ?? {},
+                        templateFormValues:
+                            loadedState?.templateFormValues ?? {},
                       )),
                     ),
                     const SizedBox(height: 24),
@@ -490,6 +591,96 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinalDocumentCard(Map<String, dynamic> finalDoc) {
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      delay: const Duration(milliseconds: 100),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forestLight.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(LucideIcons.fileCheck,
+                      color: AppColors.forest, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'الوثيقة النهائية (الشهادة)',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: AppTextStyles.bold, color: AppColors.forest),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'تم إصدار الشهادة بنجاح. يمكنك عرضها وتحميلها أدناه.',
+              style:
+                  AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final url =
+                          finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                      if (url.isNotEmpty) {
+                        final fullUrl = _buildFileUrl(url);
+                        context.push('/pdf-viewer', extra: fullUrl);
+                      }
+                    },
+                    icon: const Icon(LucideIcons.eye),
+                    label: const Text('عرض الوثيقة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      foregroundColor: AppColors.charcoal,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final url =
+                          finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                      final originalName =
+                          finalDoc['original_name'] ?? 'certificate.pdf';
+                      if (url.isNotEmpty) {
+                        _downloadFile(url, originalName);
+                      }
+                    },
+                    icon: const Icon(LucideIcons.download),
+                    label: const Text('تحميل الوثيقة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.forest,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

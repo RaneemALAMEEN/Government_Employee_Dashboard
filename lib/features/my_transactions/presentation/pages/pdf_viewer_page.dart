@@ -1,8 +1,12 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 
@@ -26,8 +30,79 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   int _pageCount = 0;
   double _zoom = 1;
   double _viewScale = .75;
+  bool _isLoading = true;
+  Uint8List? _pdfBytes;
   String? _errorMessage;
   int _reloadKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdf();
+  }
+
+  Future<void> _loadPdf() async {
+    try {
+      final response = await getIt<Dio>().get<List<int>>(
+        widget.fileUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = response.data;
+
+      if (response.statusCode != 200 || bytes == null || bytes.isEmpty) {
+        _showLoadError(
+          response.statusCode == 404
+              ? 'الملف غير متاح حالياً، يرجى التواصل مع الشخص الذي أرفقه.'
+              : 'تعذر تحميل ملف PDF. حاول مرة أخرى.',
+        );
+        return;
+      }
+
+      final pdfBytes = Uint8List.fromList(bytes);
+      if (!_hasPdfSignature(pdfBytes)) {
+        _showLoadError('الملف المستلم ليس ملف PDF صالحاً أو أنه تالف.');
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _pdfBytes = pdfBytes;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } on DioException catch (error) {
+      _showLoadError(
+        error.response?.statusCode == 404
+            ? 'الملف غير متاح حالياً، يرجى التواصل مع الشخص الذي أرفقه.'
+            : 'تعذر الاتصال بالخادم لتحميل الملف.',
+      );
+    } catch (_) {
+      _showLoadError('حدث خطأ غير متوقع أثناء تحميل الملف.');
+    }
+  }
+
+  bool _hasPdfSignature(Uint8List bytes) {
+    final checkLength = bytes.length > 1024 ? 1024 : bytes.length;
+    for (var index = 0; index <= checkLength - 5; index++) {
+      if (bytes[index] == 37 &&
+          bytes[index + 1] == 80 &&
+          bytes[index + 2] == 68 &&
+          bytes[index + 3] == 70 &&
+          bytes[index + 4] == 45) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _showLoadError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _pdfBytes = null;
+      _errorMessage = message;
+    });
+  }
 
   void _changeZoom(double value) {
     final next = value.clamp(1.0, 3.0);
@@ -61,11 +136,14 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   void _retry() {
     setState(() {
+      _isLoading = true;
+      _pdfBytes = null;
       _errorMessage = null;
       _pageNumber = 1;
       _pageCount = 0;
       _reloadKey++;
     });
+    _loadPdf();
   }
 
   @override
@@ -164,59 +242,69 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               borderRadius: BorderRadius.circular(14),
               child: ColoredBox(
                 color: AppColors.surface,
-                child: _errorMessage != null
-                    ? _PdfErrorState(onRetry: _retry)
-                    : LayoutBuilder(
-                        builder: (_, constraints) => OverflowBox(
-                          maxWidth: constraints.maxWidth / _viewScale,
-                          maxHeight: constraints.maxHeight / _viewScale,
-                          child: Transform.scale(
-                            scale: _viewScale,
-                            child: SizedBox(
-                              width: constraints.maxWidth / _viewScale,
-                              height: constraints.maxHeight / _viewScale,
-                              child: SfPdfViewerTheme(
-                                data: const SfPdfViewerThemeData(
-                                  backgroundColor: AppColors.background,
-                                  progressBarColor: AppColors.primary,
-                                ),
-                                child: SfPdfViewer.network(
-                                  widget.fileUrl,
-                                  key: ValueKey(_reloadKey),
-                                  controller: _controller,
-                                  pageLayoutMode: PdfPageLayoutMode.single,
-                                  canShowScrollHead: false,
-                                  canShowScrollStatus: false,
-                                  enableDoubleTapZooming: true,
-                                  onDocumentLoaded: (details) {
-                                    if (!mounted) return;
-                                    setState(() {
-                                      _pageCount = details.document.pages.count;
-                                      _pageNumber = 1;
-                                    });
-                                  },
-                                  onPageChanged: (details) {
-                                    if (mounted) {
-                                      setState(
-                                        () =>
-                                            _pageNumber = details.newPageNumber,
-                                      );
-                                    }
-                                  },
-                                  onDocumentLoadFailed: (details) {
-                                    if (mounted) {
-                                      setState(
-                                        () =>
-                                            _errorMessage = details.description,
-                                      );
-                                    }
-                                  },
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : _errorMessage != null || _pdfBytes == null
+                        ? _PdfErrorState(
+                            message: _errorMessage ?? 'تعذر عرض ملف PDF',
+                            onRetry: _retry,
+                          )
+                        : LayoutBuilder(
+                            builder: (_, constraints) => OverflowBox(
+                              maxWidth: constraints.maxWidth / _viewScale,
+                              maxHeight: constraints.maxHeight / _viewScale,
+                              child: Transform.scale(
+                                scale: _viewScale,
+                                child: SizedBox(
+                                  width: constraints.maxWidth / _viewScale,
+                                  height: constraints.maxHeight / _viewScale,
+                                  child: SfPdfViewerTheme(
+                                    data: const SfPdfViewerThemeData(
+                                      backgroundColor: AppColors.background,
+                                      progressBarColor: AppColors.primary,
+                                    ),
+                                    child: SfPdfViewer.memory(
+                                      _pdfBytes!,
+                                      key: ValueKey(_reloadKey),
+                                      controller: _controller,
+                                      pageLayoutMode: PdfPageLayoutMode.single,
+                                      canShowScrollHead: false,
+                                      canShowScrollStatus: false,
+                                      enableDoubleTapZooming: true,
+                                      onDocumentLoaded: (details) {
+                                        if (!mounted) return;
+                                        setState(() {
+                                          _pageCount =
+                                              details.document.pages.count;
+                                          _pageNumber = 1;
+                                        });
+                                      },
+                                      onPageChanged: (details) {
+                                        if (mounted) {
+                                          setState(
+                                            () => _pageNumber =
+                                                details.newPageNumber,
+                                          );
+                                        }
+                                      },
+                                      onDocumentLoadFailed: (details) {
+                                        if (mounted) {
+                                          setState(
+                                            () => _errorMessage =
+                                                details.description,
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
               ),
             ),
           ),
@@ -246,9 +334,10 @@ class _ToolbarButton extends StatelessWidget {
 }
 
 class _PdfErrorState extends StatelessWidget {
+  final String message;
   final VoidCallback onRetry;
 
-  const _PdfErrorState({required this.onRetry});
+  const _PdfErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) => Center(
@@ -264,6 +353,17 @@ class _PdfErrorState extends StatelessWidget {
             const Text(
               'تعذر عرض ملف PDF',
               style: AppTextStyles.titleMedium,
+            ),
+            const SizedBox(height: 7),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             FilledButton.icon(

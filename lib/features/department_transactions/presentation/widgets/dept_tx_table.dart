@@ -2,6 +2,7 @@ import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/department_transaction_entity.dart';
@@ -301,7 +302,7 @@ class _TransactionRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                   child: InkWell(
                     onTap: () {
-                      // Action details placeholder
+                      context.push('/department-transaction-details/${tx.transactionId}');
                     },
                     borderRadius: BorderRadius.circular(6),
                     child: Container(

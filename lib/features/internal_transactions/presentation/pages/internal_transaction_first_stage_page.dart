@@ -8,6 +8,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/internal_transaction_first_stage_entity.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
@@ -38,8 +39,7 @@ class InternalTransactionFirstStagePage extends StatelessWidget {
           }
 
           if (state.errorMessage != null) {
-            return _ErrorState(
-              message: state.errorMessage!,
+            return AppErrorWidget(
               onRetry: () {
                 context.read<InternalTransactionFirstStageBloc>().add(
                       LoadInternalTransactionFirstStage(transactionId),
@@ -680,49 +680,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
 
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(32),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppColors.umber.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.umber.withValues(alpha: 0.18)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.umber,
-                fontWeight: AppTextStyles.semiBold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(LucideIcons.refreshCw, size: 16),
-              label: const Text('إعادة المحاولة'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 BoxDecoration _cardDecoration() {
   return BoxDecoration(

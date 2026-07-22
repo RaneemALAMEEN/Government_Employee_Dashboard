@@ -65,4 +65,48 @@ class DepartmentTransactionsRepositoryImpl implements DepartmentTransactionsRepo
       'pagination': <String, dynamic>{},
     };
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getTransactionCertificate(String transactionId) async {
+    final result = await remoteDataSource.getTransactionCertificate(transactionId);
+    return result.map((data) {
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return <String, dynamic>{};
+    });
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getCompletedStatsLastMonth({required String departmentIds}) async {
+    final result = await remoteDataSource.getCompletedStatsLastMonth(departmentIds: departmentIds);
+    return result.map((data) {
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return <String, dynamic>{};
+    });
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getRejectedStatsLastMonth({required String departmentIds}) async {
+    final result = await remoteDataSource.getRejectedStatsLastMonth(departmentIds: departmentIds);
+    return result.map((data) {
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return <String, dynamic>{};
+    });
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getActiveStats({required String departmentIds}) async {
+    final result = await remoteDataSource.getActiveStats(departmentIds: departmentIds);
+    return result.map((data) {
+      if (data is Map<String, dynamic> && data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      }
+      return <String, dynamic>{};
+    });
+  }
 }

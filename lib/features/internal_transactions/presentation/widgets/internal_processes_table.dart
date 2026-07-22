@@ -10,6 +10,8 @@ import '../../domain/entities/internal_transaction_entity.dart';
 import '../bloc/internal_transactions_bloc.dart';
 import '../bloc/internal_transactions_state.dart';
 
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
+
 class InternalProcessesTable extends StatelessWidget {
   const InternalProcessesTable({super.key});
 
@@ -20,11 +22,9 @@ class InternalProcessesTable extends StatelessWidget {
     return BlocBuilder<InternalTransactionsBloc, InternalTransactionsState>(
       builder: (context, state) {
         if (state.loadingTransactions && state.transactionsPageData == null) {
-          return const SizedBox(
-            height: 240,
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.forest),
-            ),
+          return const ListSkeletonLoader(
+            itemCount: 5,
+            itemHeight: 70,
           );
         }
 

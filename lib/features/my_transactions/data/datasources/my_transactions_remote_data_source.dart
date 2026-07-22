@@ -13,45 +13,20 @@ class MyTransactionsRemoteDataSource {
 
   Future<Either<Failure, dynamic>> getTasks({
     required String status,
-    int page = 1,
-    int limit = 50,
+    String? cursor,
+    int limit = 6,
   }) {
+    final queryParameters = <String, dynamic>{
+      'status': status,
+      'limit': limit,
+    };
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParameters['cursor'] = cursor;
+    }
     return api.makeRequest(
       method: ApiMethod.get,
       endPoint: 'api/workflow/tasks',
-      queryParameters: {
-        'status': status,
-        'page': page,
-        'limit': limit,
-      },
-    );
-  }
-
-  Future<Either<Failure, dynamic>> getInProgressTasks({
-    int page = 1,
-    int limit = 50,
-  }) {
-    return api.makeRequest(
-      method: ApiMethod.get,
-      endPoint: 'api/workflow/tasks/in-progress',
-      queryParameters: {
-        'page': page,
-        'limit': limit,
-      },
-    );
-  }
-
-  Future<Either<Failure, dynamic>> getPendingPickupTasks({
-    int page = 1,
-    int limit = 50,
-  }) {
-    return api.makeRequest(
-      method: ApiMethod.get,
-      endPoint: 'api/workflow/tasks/pending-pickup',
-      queryParameters: {
-        'page': page,
-        'limit': limit,
-      },
+      queryParameters: queryParameters,
     );
   }
 
@@ -61,6 +36,15 @@ class MyTransactionsRemoteDataSource {
     return api.makeRequest(
       method: ApiMethod.get,
       endPoint: 'api/workflow/tasks/$taskId',
+    );
+  }
+
+  Future<Either<Failure, dynamic>> getTransactionCertificate({
+    required String taskId,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/$taskId/certificate',
     );
   }
 

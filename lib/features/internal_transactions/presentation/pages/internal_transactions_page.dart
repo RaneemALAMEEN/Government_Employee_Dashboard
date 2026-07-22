@@ -9,6 +9,7 @@ import '../bloc/internal_transactions_event.dart';
 import '../bloc/internal_transactions_state.dart';
 import '../widgets/internal_processes_table.dart';
 import '../widgets/internal_stats_section.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 
 class InternalTransactionsPage extends StatelessWidget {
   const InternalTransactionsPage({super.key});
@@ -32,42 +33,51 @@ class InternalTransactionsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          FadeInDown(
-            duration: const Duration(milliseconds: 400),
-            child: const _Header(),
-          ),
-          const SizedBox(height: 28),
-          FadeInUp(
-            duration: const Duration(milliseconds: 400),
-            delay: const Duration(milliseconds: 100),
-            child: BlocBuilder<InternalTransactionsBloc,
-                InternalTransactionsState>(
-              builder: (context, state) {
-                if (state.loadingCounts) {
-                  return const SizedBox(
-                    height: 116,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.forest,
-                      ),
-                    ),
-                  );
-                }
-
-                return InternalStatsSection(
-                  total: state.counts.total,
-                  inProgress: state.counts.inProgress,
-                  completed: state.counts.completed,
-                );
-              },
+            FadeInDown(
+              duration: const Duration(milliseconds: 400),
+              child: const _Header(),
             ),
-          ),
-          const SizedBox(height: 24),
-          FadeInUp(
-            duration: const Duration(milliseconds: 500),
-            delay: const Duration(milliseconds: 200),
-            child: const InternalProcessesTable(),
-          ),
+            const SizedBox(height: 28),
+            FadeInUp(
+              duration: const Duration(milliseconds: 400),
+              delay: const Duration(milliseconds: 100),
+              child: BlocBuilder<InternalTransactionsBloc,
+                  InternalTransactionsState>(
+                builder: (context, state) {
+                  if (state.loadingCounts) {
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isSmall = constraints.maxWidth < 800;
+                        if (isSmall) {
+                          return const CustomSkeletonLoader(width: double.infinity, height: 116);
+                        }
+                        return Row(
+                          children: const [
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 116)),
+                            SizedBox(width: 16),
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 116)),
+                            SizedBox(width: 16),
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 116)),
+                          ],
+                        );
+                      }
+                    );
+                  }
+
+                  return InternalStatsSection(
+                    total: state.counts.total,
+                    inProgress: state.counts.inProgress,
+                    completed: state.counts.completed,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 200),
+              child: const InternalProcessesTable(),
+            ),
           ],
         ),
       ),

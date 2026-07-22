@@ -70,6 +70,8 @@ dependencies:
   window_manager: ^0.5.1
   # أيقونة شريط النظام (System Tray) للإبقاء على الاتصال حيًّا.
   tray_manager: ^0.5.3
+  skeletonizer: ^2.1.3
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

@@ -9,6 +9,7 @@ import '../domain/usecases/get_task_details.dart';
 import '../domain/usecases/pickup_task.dart';
 import '../domain/usecases/release_task.dart';
 import '../domain/usecases/submit_transaction.dart';
+import '../domain/usecases/get_transaction_certificate.dart';
 import '../presentation/bloc/my_transactions_bloc.dart';
 import '../presentation/bloc/transaction_details/transaction_details_bloc.dart';
 
@@ -56,6 +57,12 @@ Future<void> setupMyTransactionsInjection() async {
     );
   }
 
+  if (!getIt.isRegistered<GetTransactionCertificate>()) {
+    getIt.registerLazySingleton<GetTransactionCertificate>(
+      () => GetTransactionCertificate(getIt<MyTransactionsRepository>()),
+    );
+  }
+
   // BLoCs
   if (!getIt.isRegistered<MyTransactionsBloc>()) {
     getIt.registerFactory<MyTransactionsBloc>(
@@ -67,6 +74,7 @@ Future<void> setupMyTransactionsInjection() async {
     getIt.registerFactory<TransactionDetailsBloc>(
       () => TransactionDetailsBloc(
         getTaskDetails: getIt<GetTaskDetails>(),
+        getTransactionCertificate: getIt<GetTransactionCertificate>(),
         pickupTask: getIt<PickupTask>(),
         releaseTask: getIt<ReleaseTask>(),
         submitTransaction: getIt<SubmitTransaction>(),

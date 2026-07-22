@@ -9,10 +9,15 @@ class MyTransactionsInitial extends MyTransactionsState {}
 class MyTransactionsLoading extends MyTransactionsState {}
 
 class MyTransactionsLoaded extends MyTransactionsState {
-  final List<MyTransactionEntity> allTransactions;
-  final List<MyTransactionEntity> filteredTransactions;
-  final String statusFilter;
+  final List<MyTransactionEntity> transactions;
+  final String statusFilter; // النص العربي للفلتر
+  final String apiStatusFilter; // القيمة الإنجليزية المرسلة لل API
   final String searchQuery;
+
+  // Pagination
+  final String? nextCursor;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   // Cache counts
   final int awaitingSignatureCount;
@@ -20,29 +25,38 @@ class MyTransactionsLoaded extends MyTransactionsState {
   final int completedMonthCount;
 
   const MyTransactionsLoaded({
-    required this.allTransactions,
-    required this.filteredTransactions,
+    required this.transactions,
     required this.statusFilter,
+    required this.apiStatusFilter,
     required this.searchQuery,
+    this.nextCursor,
+    this.hasMore = false,
+    this.isLoadingMore = false,
     required this.awaitingSignatureCount,
     required this.urgentCount,
     required this.completedMonthCount,
   });
 
   MyTransactionsLoaded copyWith({
-    List<MyTransactionEntity>? allTransactions,
-    List<MyTransactionEntity>? filteredTransactions,
+    List<MyTransactionEntity>? transactions,
     String? statusFilter,
+    String? apiStatusFilter,
     String? searchQuery,
+    String? nextCursor,
+    bool? hasMore,
+    bool? isLoadingMore,
     int? awaitingSignatureCount,
     int? urgentCount,
     int? completedMonthCount,
   }) {
     return MyTransactionsLoaded(
-      allTransactions: allTransactions ?? this.allTransactions,
-      filteredTransactions: filteredTransactions ?? this.filteredTransactions,
+      transactions: transactions ?? this.transactions,
       statusFilter: statusFilter ?? this.statusFilter,
+      apiStatusFilter: apiStatusFilter ?? this.apiStatusFilter,
       searchQuery: searchQuery ?? this.searchQuery,
+      nextCursor: nextCursor ?? this.nextCursor,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       awaitingSignatureCount: awaitingSignatureCount ?? this.awaitingSignatureCount,
       urgentCount: urgentCount ?? this.urgentCount,
       completedMonthCount: completedMonthCount ?? this.completedMonthCount,

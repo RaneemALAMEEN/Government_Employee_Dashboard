@@ -130,6 +130,11 @@ class _SafeResponseLoggingInterceptor extends Interceptor {
   }
 
   String _safeBodyText(dynamic data) {
+    // Skip binary data (e.g. PDF / image bytes) to avoid flooding the console.
+    if (data is List<int>) {
+      return '[Binary data: ${data.length} bytes]';
+    }
+
     dynamic decodedData = data;
     if (data is String) {
       try {

@@ -8,6 +8,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/statistics_employee_entity.dart';
 import '../../domain/entities/statistics_process_entity.dart';
 import '../bloc/statistics_bloc.dart';
@@ -86,11 +87,32 @@ class _StatisticsViewState extends State<_StatisticsView>
               const SizedBox(height: 22),
               BlocBuilder<StatisticsBloc, StatisticsState>(
                 builder: (context, state) {
+// ... (inside build)
                   if (state is StatisticsLoading ||
                       state is StatisticsInitial) {
-                    return const SizedBox(
-                      height: 620,
-                      child: Center(child: CircularProgressIndicator()),
+                    return const Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
+                            SizedBox(width: 16),
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
+                            SizedBox(width: 16),
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
+                            SizedBox(width: 16),
+                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
+                          ],
+                        ),
+                        SizedBox(height: 24),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 7, child: CustomSkeletonLoader(width: double.infinity, height: 400)),
+                            SizedBox(width: 24),
+                            Expanded(flex: 3, child: CustomSkeletonLoader(width: double.infinity, height: 400)),
+                          ],
+                        ),
+                      ],
                     );
                   }
 
