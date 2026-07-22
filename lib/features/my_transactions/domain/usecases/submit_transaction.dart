@@ -23,6 +23,7 @@ class SubmitTransaction {
     List<int> templateIds = const [],
     List<Map<String, dynamic>> loadedTemplates = const [],
     Map<String, dynamic> templateFormValues = const {},
+    int? expectedVersion,
   }) async {
     try {
       final isSubmitDocuments = formId.contains('sign') || formId.contains('document');
@@ -97,6 +98,7 @@ class SubmitTransaction {
         'templates': templatesPayload,
         'note': '',
         'decision': decisionValue,
+        if (expectedVersion != null) 'expected_version': expectedVersion,
       };
 
       // 4. Handle Signature if required (only for approve and when pin/keys exist)

@@ -161,7 +161,10 @@ class _DepartmentTransactionDetailsPageState
             // Extract final document
             final finalDocument =
                 data['final_document'] as Map<String, dynamic>? ?? {};
-            final hasFinalDoc = finalDocument['available'] == true;
+            final hasFinalDoc = (finalDocument['file_url']?.toString() ??
+                    finalDocument['file_path']?.toString() ??
+                    '')
+                .isNotEmpty;
 
             return Directionality(
               textDirection: TextDirection.rtl,
@@ -284,18 +287,54 @@ class _DepartmentTransactionDetailsPageState
                   AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Action to download/view the final document (handled later)
-              },
-              icon: const Icon(LucideIcons.download),
-              label: const Text('تحميل الوثيقة'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.forest,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            if ((finalDoc['file_url']?.toString() ??
+                    finalDoc['file_path']?.toString() ??
+                    '')
+                .isNotEmpty)
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final url =
+                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                        if (url.isNotEmpty) {
+                          final fullUrl = _buildFileUrl(url);
+                          context.push('/pdf-viewer', extra: fullUrl);
+                        }
+                      },
+                      icon: const Icon(LucideIcons.eye),
+                      label: const Text('عرض الوثيقة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.charcoal,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final url =
+                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                        final originalName =
+                            finalDoc['original_name'] ?? 'certificate.pdf';
+                        if (url.isNotEmpty) {
+                          _downloadFile(url, originalName);
+                        }
+                      },
+                      icon: const Icon(LucideIcons.download),
+                      label: const Text('تحميل الوثيقة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.forest,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         ),
       ),

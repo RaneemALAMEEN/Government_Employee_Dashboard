@@ -137,7 +137,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       String formName, bool isApprove,
       {List<int> templateIds = const [],
       List<Map<String, dynamic>> loadedTemplates = const [],
-      Map<String, dynamic> templateFormValues = const {}}) async {
+      Map<String, dynamic> templateFormValues = const {},
+      int? expectedVersion}) async {
     final result = await showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
@@ -161,6 +162,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         templateIds: templateIds,
         loadedTemplates: loadedTemplates,
         templateFormValues: templateFormValues,
+        expectedVersion: expectedVersion,
       ));
     }
   }
@@ -399,7 +401,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             final rightContentList = [
               EmployeeInfoCard(applicant: applicant),
               const SizedBox(height: 20),
-              if (data['final_document'] != null) ...[
+              if (data['final_document'] != null && 
+                  ((data['final_document'] as Map<String, dynamic>)['file_url']?.toString() ?? 
+                   (data['final_document'] as Map<String, dynamic>)['file_path']?.toString() ?? '').isNotEmpty) ...[
                 _buildFinalDocumentCard(
                     data['final_document'] as Map<String, dynamic>),
                 const SizedBox(height: 20),
@@ -570,7 +574,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                           templateIds: templateIds,
                           loadedTemplates: loadedState?.loadedTemplates ?? [],
                           templateFormValues:
-                              loadedState?.templateFormValues ?? {}),
+                              loadedState?.templateFormValues ?? {},
+                          expectedVersion: data['expected_version'] != null
+                              ? int.tryParse(
+                                  data['expected_version'].toString())
+                              : null),
                       onReject: () => _bloc.add(SubmitTransactionDetailsEvent(
                         taskId: widget.transactionId,
                         widgets: currentStageWidgets,
@@ -582,6 +590,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         loadedTemplates: loadedState?.loadedTemplates ?? [],
                         templateFormValues:
                             loadedState?.templateFormValues ?? {},
+                        expectedVersion: data['expected_version'] != null
+                            ? int.tryParse(data['expected_version'].toString())
+                            : null,
                       )),
                     ),
                     const SizedBox(height: 24),
@@ -636,7 +647,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
             ),
             const SizedBox(height: 24),
-            Row(
+            if ((finalDoc['file_url']?.toString() ?? finalDoc['file_path']?.toString() ?? '').isNotEmpty)
+              Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(

@@ -29,6 +29,7 @@ import '../../features/statistics/presentation/bloc/statistics_employee_details_
 import '../../features/statistics/presentation/bloc/statistics_employee_details_event.dart';
 import '../../features/my_transactions/presentation/pages/my_transactions_page.dart';
 import '../../features/my_transactions/presentation/pages/transaction_details_page.dart';
+import '../../features/my_transactions/presentation/pages/pdf_viewer_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
 import '../../features/internal_transactions/presentation/pages/create_internal_transaction_page.dart';
@@ -270,6 +271,18 @@ class AppRouter {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: OrganizationHierarchyPage(),
             ),
+          ),
+          GoRoute(
+            path: '/pdf-viewer',
+            pageBuilder: (context, state) {
+              final fileUrl = state.extra as String? ?? '';
+              return NoTransitionPage(
+                child: PdfViewerPage(
+                  fileUrl: fileUrl,
+                  title: 'عرض الوثيقة',
+                ),
+              );
+            },
           ),
         ],
       ),

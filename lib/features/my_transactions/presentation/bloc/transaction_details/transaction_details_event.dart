@@ -40,6 +40,7 @@ class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
   final List<int> templateIds;
   final List<Map<String, dynamic>> loadedTemplates;
   final Map<String, dynamic> templateFormValues;
+  final int? expectedVersion;
 
   SubmitTransactionDetailsEvent({
     required this.taskId,
@@ -53,5 +54,6 @@ class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
     this.templateIds = const [],
     this.loadedTemplates = const [],
     this.templateFormValues = const {},
+    this.expectedVersion,
   });
 }

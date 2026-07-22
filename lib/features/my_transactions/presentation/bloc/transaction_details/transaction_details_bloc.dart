@@ -197,12 +197,15 @@ class TransactionDetailsBloc
       templateIds: event.templateIds,
       templateFormValues: event.templateFormValues,
       loadedTemplates: event.loadedTemplates,
+      expectedVersion: event.expectedVersion,
     );
 
     result.fold(
       (failure) {
         emit(TransactionDetailsFailure(failure.message));
-        if (currentState is TransactionDetailsLoaded) {
+        if (failure.message.contains('تعارض في إصدار المعاملة') || failure.message.contains('VERSION_CONFLICT')) {
+          add(LoadTransactionDetails(event.taskId));
+        } else if (currentState is TransactionDetailsLoaded) {
           emit(currentState);
         }
       },

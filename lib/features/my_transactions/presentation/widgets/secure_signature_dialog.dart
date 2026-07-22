@@ -205,10 +205,8 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
                     _buildInsertFlashCard(),
                     const SizedBox(height: 20),
 
-                    // Search/Detected State Container
-                    _isSearching
-                        ? _buildSearchingState()
-                        : _buildDetectedState(),
+                    // Detected State Container (Folder Selector)
+                    _buildDetectedState(),
                     const SizedBox(height: 24),
 
                     // PIN Code Inputs Label
@@ -357,30 +355,6 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Status detected text
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F9F6),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFD4EFEB)),
-          ),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Icon(LucideIcons.checkCircle, color: Color(0xFF2E7D32), size: 16),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'تم الكشف عن منفذ التوقيع. يرجى اختيار مجلد مفاتيح الأمان من الفلاشة وإدخال رمز PIN المكون من 6 أرقام لتوقيع المعاملة.',
-                  style: AppTextStyles.labelMedium
-                      .copyWith(color: Color(0xFF2E7D32), height: 1.45),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
         // Folder Selector Card
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
