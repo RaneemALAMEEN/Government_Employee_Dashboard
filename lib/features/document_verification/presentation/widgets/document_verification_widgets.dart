@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../my_transactions/presentation/pages/pdf_viewer_page.dart';
 import '../../domain/entities/document_verification_entity.dart';
 import 'transaction_history_renderer.dart';
 
@@ -561,12 +561,18 @@ class _FinalDocumentCard extends StatelessWidget {
 
   Future<void> _open(BuildContext context) async {
     final uri = Uri.tryParse(document.fileUrl);
-    if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (context.mounted) {
-        AppSnackBar.show(context, message: 'تعذر فتح ملف PDF', isError: true);
-      }
+    if (uri == null || !uri.hasScheme) {
+      AppSnackBar.show(context, message: 'تعذر فتح ملف PDF', isError: true);
+      return;
     }
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PdfViewerPage(
+          fileUrl: document.fileUrl,
+          title: 'الوثيقة النهائية',
+        ),
+      ),
+    );
   }
 
   @override

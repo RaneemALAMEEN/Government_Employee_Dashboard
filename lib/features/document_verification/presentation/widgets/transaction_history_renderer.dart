@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../my_transactions/presentation/pages/pdf_viewer_page.dart';
 import '../../domain/entities/document_verification_entity.dart';
 
 class TransactionHistoryTimeline extends StatefulWidget {
@@ -505,12 +506,26 @@ class _FileTileState extends State<_FileTile> {
 
   Future<void> _open() async {
     final uri = Uri.tryParse(widget.url);
-    if (uri == null ||
-        !uri.hasScheme ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    if (uri == null || !uri.hasScheme) {
       if (mounted) {
         AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
       }
+      return;
+    }
+    if (_isPdf(widget.url, widget.name, widget.type)) {
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PdfViewerPage(
+            fileUrl: widget.url,
+            title: widget.name,
+          ),
+        ),
+      );
+      return;
+    }
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
     }
   }
 
@@ -581,7 +596,11 @@ class _GeneratedDocumentStage extends StatelessWidget {
           if (url.isNotEmpty) ...[
             const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: () => _openUrl(context, url),
+              onPressed: () => _openPdfInsideApp(
+                context,
+                url,
+                'الملف المولّد',
+              ),
               icon: const Icon(LucideIcons.externalLink, size: 16),
               label: const Text('عرض الملف المولّد'),
             ),
@@ -853,15 +872,26 @@ String _templateLabel(String key) {
           .join(' ');
 }
 
-Future<void> _openUrl(BuildContext context, String url) async {
+Future<void> _openPdfInsideApp(
+  BuildContext context,
+  String url,
+  String title,
+) async {
   final uri = Uri.tryParse(url);
-  if (uri == null ||
-      !uri.hasScheme ||
-      !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-    if (context.mounted) {
-      AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
-    }
+  if (uri == null || !uri.hasScheme) {
+    AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
+    return;
   }
+  await Navigator.of(context, rootNavigator: true).push(
+    MaterialPageRoute<void>(
+      builder: (_) => PdfViewerPage(fileUrl: url, title: title),
+    ),
+  );
+}
+
+bool _isPdf(String url, String name, String type) {
+  final combined = '$url $name $type'.toLowerCase().split('?').first;
+  return combined.contains('application/pdf') || combined.contains('.pdf');
 }
 
 BoxDecoration _historyDecoration() => BoxDecoration(
