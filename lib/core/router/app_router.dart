@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:government_employee_dashboard/features/auth/presentation/pages/app_pin_unlock_page.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/presentation/bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/presentation/bloc/internal_transaction_form/internal_transaction_form_event.dart';
 import '../../features/internal_transactions/presentation/bloc/create_internal_transaction/create_internal_transaction_bloc.dart';
@@ -53,6 +54,12 @@ class AppRouter {
         path: '/splash',
         pageBuilder: (context, state) => const NoTransitionPage(
           child: SplashPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/pin-unlock',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: AppPinUnlockPage(),
         ),
       ),
       GoRoute(

@@ -42,4 +42,30 @@ class AuthRemoteDataSource {
       },
     );
   }
+
+  Future<Either<Failure, dynamic>> verifyAppPin(String pin) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.verifyAppPin,
+      body: {
+        'pin': pin.trim(),
+      },
+    );
+  }
+
+  Future<Either<Failure, dynamic>> changePin({
+    required String oldPin,
+    required String newPin,
+    required String confirmNewPin,
+  }) {
+    return api.makeRequest(
+      method: ApiMethod.post,
+      endPoint: _endPoints.changePin,
+      body: {
+        'old_pin': oldPin.trim(),
+        'new_pin': newPin.trim(),
+        'confirm_new_pin': confirmNewPin.trim(),
+      },
+    );
+  }
 }

@@ -17,6 +17,8 @@ class EndPoints {
       'api/auth/login/employee'; // step 1 → session_id + sends OTP
   String get verifyLoginOtp =>
       'api/auth/verify-otp/login'; // step 2 → token + refreshToken + user + roles
+  String get verifyAppPin => 'api/auth/verify-app-pin';
+  String get changePin => 'api/auth/change-pin';
   String get myTransactionCounts => 'api/transaction/my/counts';
   // ===== auth — token lifecycle =====
   String get refresh =>

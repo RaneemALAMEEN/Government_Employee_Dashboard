@@ -77,4 +77,30 @@ class AuthRepositoryImpl implements AuthRepository {
       },
     );
   }
+
+  @override
+  Future<Either<Failure, void>> verifyAppPin(String pin) async {
+    final result = await remote.verifyAppPin(pin);
+    return result.fold(
+      (failure) => Left(failure),
+      (_) => const Right(null),
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> changePin({
+    required String oldPin,
+    required String newPin,
+    required String confirmNewPin,
+  }) async {
+    final result = await remote.changePin(
+      oldPin: oldPin,
+      newPin: newPin,
+      confirmNewPin: confirmNewPin,
+    );
+    return result.fold(
+      (failure) => Left(failure),
+      (_) => const Right(null),
+    );
+  }
 }

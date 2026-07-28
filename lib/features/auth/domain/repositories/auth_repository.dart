@@ -14,4 +14,12 @@ abstract class AuthRepository {
     required String sessionId,
     required String otp,
   });
+
+  Future<Either<Failure, void>> verifyAppPin(String pin);
+
+  Future<Either<Failure, void>> changePin({
+    required String oldPin,
+    required String newPin,
+    required String confirmNewPin,
+  });
 }

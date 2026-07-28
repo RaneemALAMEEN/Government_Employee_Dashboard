@@ -51,7 +51,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (token != null && token.isNotEmpty) {
-      context.go('/dashboard');
+      context.go('/pin-unlock');
     } else {
       context.go('/login');
     }

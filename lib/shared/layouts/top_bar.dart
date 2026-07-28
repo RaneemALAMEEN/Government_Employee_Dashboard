@@ -6,6 +6,8 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
+import '../../core/storage/secure_storage_service.dart';
+import '../../features/auth/presentation/widgets/change_pin_dialog.dart';
 import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
 import '../../features/notifications/presentation/bloc/notifications_state.dart';
 import '../../features/notifications/presentation/widgets/notification_widgets.dart';
@@ -43,46 +45,133 @@ class TopBar extends StatelessWidget {
 class _UserInfo extends StatelessWidget {
   const _UserInfo();
 
+  void _handleSelectMenu(BuildContext context, String value) async {
+    if (value == 'change_pin') {
+      await ChangePinDialog.show(context);
+    } else if (value == 'lock_app') {
+      context.go('/pin-unlock');
+    } else if (value == 'logout') {
+      await getIt<SecureStorageService>().clear();
+      if (!context.mounted) return;
+      context.go('/login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const CircleAvatar(
-          radius: 20,
-          backgroundColor: AppColors.forest,
-          child: Icon(LucideIcons.user, color: AppColors.white, size: 20),
+    return PopupMenuButton<String>(
+      onSelected: (value) => _handleSelectMenu(context, value),
+      offset: const Offset(0, 50),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 4,
+      tooltip: 'خيارات الحساب والإعدادات',
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'change_pin',
+          child: Row(
+            children: [
+              const Icon(
+                LucideIcons.keyRound,
+                size: 18,
+                color: AppColors.forest,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'تغيير رمز PIN',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: AppTextStyles.medium,
+                  color: AppColors.charcoal,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 12),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        PopupMenuItem<String>(
+          value: 'lock_app',
+          child: Row(
+            children: [
+              const Icon(
+                LucideIcons.lock,
+                size: 18,
+                color: AppColors.charcoalDark,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'قفل التطبيق',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: AppTextStyles.medium,
+                  color: AppColors.charcoal,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              const Icon(
+                LucideIcons.logOut,
+                size: 18,
+                color: AppColors.error,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'تسجيل الخروج',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: AppTextStyles.medium,
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Row(
           children: [
-            ValueListenableBuilder(
-                valueListenable: getIt<SessionService>().currentUserNotifier,
-                builder: (context, user, _) {
-                  return Text(
-                    user?.userName ?? 'مستخدم',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: AppTextStyles.semiBold,
-                        color: AppColors.charcoalDark,
-                        height: 1.1),
-                  );
-                }),
-            const SizedBox(height: 4),
-            ValueListenableBuilder(
-              valueListenable: getIt<SessionService>().activeRoleNotifier,
-              builder: (context, activeRole, _) {
-                return Text(
-                  activeRole?.roleName ?? 'الدور غير محدد',
-                  style: AppTextStyles.labelMedium.copyWith(height: 1),
-                );
-              },
+            const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.forest,
+              child: Icon(LucideIcons.user, color: AppColors.white, size: 20),
             ),
+            const SizedBox(width: 12),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ValueListenableBuilder(
+                    valueListenable: getIt<SessionService>().currentUserNotifier,
+                    builder: (context, user, _) {
+                      return Text(
+                        user?.userName ?? 'مستخدم',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: AppTextStyles.semiBold,
+                            color: AppColors.charcoalDark,
+                            height: 1.1),
+                      );
+                    }),
+                const SizedBox(height: 4),
+                ValueListenableBuilder(
+                  valueListenable: getIt<SessionService>().activeRoleNotifier,
+                  builder: (context, activeRole, _) {
+                    return Text(
+                      activeRole?.roleName ?? 'الدور غير محدد',
+                      style: AppTextStyles.labelMedium.copyWith(height: 1),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            const Icon(LucideIcons.chevronDown, size: 20),
           ],
         ),
-        const SizedBox(width: 14),
-        const Icon(LucideIcons.chevronDown, size: 20),
-      ],
+      ),
     );
   }
 }

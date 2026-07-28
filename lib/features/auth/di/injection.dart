@@ -5,7 +5,9 @@ import '../../../core/storage/secure_storage_service.dart';
 import '../data/datasources/auth_remote_data_source.dart';
 import '../data/repositories/auth_repository_impl.dart';
 import '../domain/repositories/auth_repository.dart';
+import '../domain/usecases/change_pin_usecase.dart';
 import '../domain/usecases/login_usecase.dart';
+import '../domain/usecases/verify_app_pin_usecase.dart';
 import '../domain/usecases/verify_otp_usecase.dart';
 import '../presentation/bloc/login/login_bloc.dart';
 import '../presentation/bloc/otp/otp_bloc.dart';
@@ -35,6 +37,18 @@ Future<void> setupAuthInjection() async {
   if (!getIt.isRegistered<VerifyOtpUseCase>()) {
     getIt.registerLazySingleton<VerifyOtpUseCase>(
       () => VerifyOtpUseCase(getIt<AuthRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<VerifyAppPinUseCase>()) {
+    getIt.registerLazySingleton<VerifyAppPinUseCase>(
+      () => VerifyAppPinUseCase(getIt<AuthRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<ChangePinUseCase>()) {
+    getIt.registerLazySingleton<ChangePinUseCase>(
+      () => ChangePinUseCase(getIt<AuthRepository>()),
     );
   }
 
