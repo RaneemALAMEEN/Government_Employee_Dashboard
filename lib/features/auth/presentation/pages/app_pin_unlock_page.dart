@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:government_employee_dashboard/core/services/session_service.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:pinput/pinput.dart';
 
@@ -96,6 +97,7 @@ class _AppPinUnlockPageState extends State<AppPinUnlockPage>
         _pinFocusNode.requestFocus();
       },
       (_) {
+        getIt<SessionService>().setSessionPin(pin);
         setState(() {
           _isLoading = false;
         });

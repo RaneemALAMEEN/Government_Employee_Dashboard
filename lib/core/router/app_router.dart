@@ -31,6 +31,7 @@ import '../../features/statistics/presentation/bloc/statistics_employee_details_
 import '../../features/my_transactions/presentation/pages/my_transactions_page.dart';
 import '../../features/my_transactions/presentation/pages/transaction_details_page.dart';
 import '../../features/my_transactions/presentation/pages/pdf_viewer_page.dart';
+import '../../features/my_transactions/presentation/pages/image_viewer_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transactions_page.dart';
 import '../../features/internal_transactions/presentation/pages/create_internal_transaction_page.dart';
@@ -115,10 +116,22 @@ class AppRouter {
             path: '/my-transactions/:id',
             pageBuilder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
-              final status = state.extra as String?;
+              String? status;
+              String? numericTxId;
+              if (state.extra is String) {
+                status = state.extra as String;
+              } else if (state.extra is Map) {
+                final extraMap = state.extra as Map;
+                status = extraMap['status'] as String?;
+                numericTxId = extraMap['transaction_id']?.toString() ??
+                    extraMap['numeric_transaction_id']?.toString();
+              }
               return NoTransitionPage(
-                child:
-                    TransactionDetailsPage(transactionId: id, status: status),
+                child: TransactionDetailsPage(
+                  transactionId: id,
+                  status: status,
+                  numericTransactionId: numericTxId,
+                ),
               );
             },
           ),
@@ -282,11 +295,39 @@ class AppRouter {
           GoRoute(
             path: '/pdf-viewer',
             pageBuilder: (context, state) {
-              final fileUrl = state.extra as String? ?? '';
+              String fileUrl = '';
+              String title = 'عرض الوثيقة';
+              if (state.extra is String) {
+                fileUrl = state.extra as String;
+              } else if (state.extra is Map<String, dynamic>) {
+                final map = state.extra as Map<String, dynamic>;
+                fileUrl = map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
+                title = map['title']?.toString() ?? 'عرض الوثيقة';
+              }
               return NoTransitionPage(
                 child: PdfViewerPage(
                   fileUrl: fileUrl,
-                  title: 'عرض الوثيقة',
+                  title: title,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/image-viewer',
+            pageBuilder: (context, state) {
+              String fileUrl = '';
+              String title = 'عرض الصورة';
+              if (state.extra is String) {
+                fileUrl = state.extra as String;
+              } else if (state.extra is Map<String, dynamic>) {
+                final map = state.extra as Map<String, dynamic>;
+                fileUrl = map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
+                title = map['title']?.toString() ?? 'عرض الصورة';
+              }
+              return NoTransitionPage(
+                child: ImageViewerPage(
+                  fileUrl: fileUrl,
+                  title: title,
                 ),
               );
             },

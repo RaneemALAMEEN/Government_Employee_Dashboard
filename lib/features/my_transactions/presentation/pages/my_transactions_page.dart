@@ -61,7 +61,7 @@ class _MyTransactionsPageState extends State<MyTransactionsPage> {
       builder: (context, state) {
         // تحديد القيم حتى أثناء التحميل لعرض العناصر الثابتة
         String searchQuery = '';
-        String statusFilter = 'all';
+        String statusFilter = 'بانتظار الاستلام';
         int awaitingCount = 0;
         int urgentCount = 0;
 

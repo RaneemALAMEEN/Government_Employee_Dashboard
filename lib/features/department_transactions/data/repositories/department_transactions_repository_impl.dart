@@ -14,14 +14,14 @@ class DepartmentTransactionsRepositoryImpl implements DepartmentTransactionsRepo
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   }) async {
     final result = await remoteDataSource.getCompletedTransactions(
       departmentIds: departmentIds,
       fromDate: fromDate,
       toDate: toDate,
-      page: page,
+      cursor: cursor,
       limit: limit,
     );
 
@@ -33,14 +33,14 @@ class DepartmentTransactionsRepositoryImpl implements DepartmentTransactionsRepo
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   }) async {
     final result = await remoteDataSource.getRejectedTransactions(
       departmentIds: departmentIds,
       fromDate: fromDate,
       toDate: toDate,
-      page: page,
+      cursor: cursor,
       limit: limit,
     );
 

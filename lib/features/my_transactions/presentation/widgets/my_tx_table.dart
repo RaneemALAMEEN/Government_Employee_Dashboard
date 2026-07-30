@@ -357,7 +357,15 @@ class _TransactionRow extends StatelessWidget {
                     icon: LucideIcons.eye,
                     tooltip: 'عرض التفاصيل',
                     onTap: () {
-                      context.go('/my-transactions/${tx.idTask}', extra: tx.status);
+                      final numericId = tx.transactionId?.toString() ??
+                          (int.tryParse(tx.idTask) != null ? tx.idTask : '');
+                      context.go(
+                        '/my-transactions/${tx.idTask}',
+                        extra: {
+                          'status': tx.status,
+                          'transaction_id': numericId,
+                        },
+                      );
                     },
                   ),
                 ],

@@ -41,7 +41,14 @@ class MyTransactionsRemoteDataSource {
 
   Future<Either<Failure, dynamic>> getTransactionCertificate({
     required String taskId,
-  }) {
+  }) async {
+    final result = await api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/workflow/transactions/$taskId/certificate',
+    );
+    if (result.isRight()) {
+      return result;
+    }
     return api.makeRequest(
       method: ApiMethod.get,
       endPoint: 'api/transaction/$taskId/certificate',

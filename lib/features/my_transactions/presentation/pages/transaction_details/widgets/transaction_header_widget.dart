@@ -1,6 +1,7 @@
 import '../../../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:government_employee_dashboard/shared/theme/app_colors.dart';
 import '../../../../domain/entities/my_transaction_entity.dart';
 import 'transaction_action_buttons.dart';
@@ -99,6 +100,32 @@ class TransactionHeaderWidget extends StatelessWidget {
                         child: Text(
                           'مستعجل',
                           style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.umber),
+                        ),
+                      ),
+                    ],
+                    // Lock badge when locked by another employee
+                    if (isLocked && !lockedByMe) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.red.shade200, width: 0.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.lock, size: 14, color: Colors.red.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'مقفلة من موظف آخر',
+                              style: AppTextStyles.labelLarge.copyWith(
+                                fontWeight: AppTextStyles.medium,
+                                color: Colors.red.shade700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -513,14 +514,10 @@ class _FileTileState extends State<_FileTile> {
       return;
     }
     if (_isPdf(widget.url, widget.name, widget.type)) {
-      await Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute<void>(
-          builder: (_) => PdfViewerPage(
-            fileUrl: widget.url,
-            title: widget.name,
-          ),
-        ),
-      );
+      context.push('/pdf-viewer', extra: {
+        'fileUrl': widget.url,
+        'title': widget.name,
+      });
       return;
     }
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -882,11 +879,10 @@ Future<void> _openPdfInsideApp(
     AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
     return;
   }
-  await Navigator.of(context, rootNavigator: true).push(
-    MaterialPageRoute<void>(
-      builder: (_) => PdfViewerPage(fileUrl: url, title: title),
-    ),
-  );
+  context.push('/pdf-viewer', extra: {
+    'fileUrl': url,
+    'title': title,
+  });
 }
 
 bool _isPdf(String url, String name, String type) {

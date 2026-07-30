@@ -6,7 +6,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:path_provider/path_provider.dart';
+import '../../../../shared/utils/app_file_downloader.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -18,6 +18,7 @@ import '../bloc/certificate_details/department_certificate_state.dart';
 import '../../../my_transactions/presentation/pages/transaction_details/widgets/employee_info_card.dart';
 import '../../../my_transactions/presentation/pages/transaction_details/widgets/workflow_timeline_widget.dart';
 import '../../../my_transactions/presentation/pages/transaction_details/widgets/stage_history_card.dart';
+import '../../../my_transactions/presentation/pages/transaction_details/widgets/transaction_info_card.dart';
 
 class DepartmentTransactionDetailsPage extends StatefulWidget {
   final String transactionId;
@@ -49,11 +50,26 @@ class _DepartmentTransactionDetailsPageState
     super.dispose();
   }
 
-  Future<void> _downloadFile(String path, String filename) async {
+  /// Returns the applicant's full name from the current loaded state.
+  String _getApplicantName() {
+    final state = _bloc.state;
+    if (state is DepartmentCertificateLoaded) {
+      final data = state.data;
+      final history = data['transaction_history'] as Map<String, dynamic>? ?? {};
+      final historyData = history['data'] as Map<String, dynamic>? ?? {};
+      final applicant = historyData['applicant'] as Map<String, dynamic>?;
+      if (applicant != null) {
+        final first = applicant['first_name']?.toString() ?? '';
+        final last = applicant['last_name']?.toString() ?? '';
+        return '$first $last'.trim();
+      }
+    }
+    return '';
+  }
+
+  Future<void> _downloadFile(String path, String filename, {String? documentType}) async {
     try {
       final dio = getIt<Dio>();
-      final dir = await getApplicationDocumentsDirectory();
-      final savePath = '${dir.path}/$filename';
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('جاري تحميل الملف...')),
@@ -61,12 +77,18 @@ class _DepartmentTransactionDetailsPageState
 
       final fileUrl = _buildFileUrl(path);
 
+      final savePath = await AppFileDownloader.getSavePath(
+        applicantName: _getApplicantName(),
+        documentType: documentType,
+        originalFilename: filename,
+      );
+
       await dio.download(fileUrl, savePath);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تحميل الملف بنجاح: $filename\nالمسار: $savePath'),
+            content: Text('تم تحميل الملف بنجاح\n$savePath'),
             backgroundColor: AppColors.forest,
           ),
         );
@@ -191,8 +213,21 @@ class _DepartmentTransactionDetailsPageState
                                   _buildApplicantInfo(applicant),
                                   const SizedBox(height: 24),
                                 ],
-                                ...stages.map((stage) => StageHistoryCard(
-                                      stage: Map<String, dynamic>.from(stage),
+                                TransactionInfoCard(
+                                  taskData: data,
+                                  status: status == 'completed' ? 'منجزة' : (status == 'rejected' ? 'تم الرفض' : 'بانتظار الاستلام'),
+                                  transactionNumber: idProcess,
+                                ),
+                                const SizedBox(height: 24),
+                                ...stages
+                                    .where((stage) {
+                                      final name = (stage as Map)['stage_name']?.toString() ?? '';
+                                      final formName = stage['form_name']?.toString() ?? '';
+                                      return !name.toUpperCase().contains('GENERATE_PDF') &&
+                                          !formName.toUpperCase().contains('GENERATE_PDF');
+                                    })
+                                    .map((stage) => StageHistoryCard(
+                                      stage: Map<String, dynamic>.from(stage as Map),
                                       buildFileUrl: _buildFileUrl,
                                       onDownloadFile: _downloadFile,
                                     )),
@@ -236,12 +271,12 @@ class _DepartmentTransactionDetailsPageState
   }
 
   Widget _buildApplicantInfo(Map<String, dynamic> applicant) {
-    // Map the applicant from the format "first_name_employee" to "firstName" that EmployeeInfoCard expects
     final mappedApplicant = {
-      'firstName': applicant['first_name_employee'] ?? '',
-      'lastName': applicant['last_name_employee'] ?? '',
-      'nationalId': applicant['national_id_employee'] ?? '',
-      'phoneNumber': applicant['phone_number_employee'] ?? '',
+      'first_name': applicant['first_name_employee'] ?? applicant['first_name'] ?? '',
+      'father_name': applicant['father_name_employee'] ?? applicant['father_name'] ?? '',
+      'last_name': applicant['last_name_employee'] ?? applicant['last_name'] ?? '',
+      'national_id': applicant['national_id_employee'] ?? applicant['national_id'] ?? '',
+      'phone_number': applicant['phone_number_employee'] ?? applicant['phone_number'] ?? '',
     };
 
     return EmployeeInfoCard(applicant: mappedApplicant);
@@ -321,7 +356,8 @@ class _DepartmentTransactionDetailsPageState
                         final originalName =
                             finalDoc['original_name'] ?? 'certificate.pdf';
                         if (url.isNotEmpty) {
-                          _downloadFile(url, originalName);
+                          _downloadFile(url, originalName,
+                              documentType: 'الوثيقة النهائية');
                         }
                       },
                       icon: const Icon(LucideIcons.download),

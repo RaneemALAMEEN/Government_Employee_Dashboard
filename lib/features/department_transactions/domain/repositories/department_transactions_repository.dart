@@ -6,16 +6,16 @@ abstract class DepartmentTransactionsRepository {
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> getRejectedTransactions({
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> getTransactionCertificate(

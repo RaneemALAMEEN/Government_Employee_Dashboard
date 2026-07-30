@@ -6,6 +6,45 @@ import 'package:cryptography/cryptography.dart';
 class UsbSigningService {
   final _aes = AesGcm.with256bits();
 
+  /// Automatically searches all available drive letters for folder `{username}-keys`
+  /// containing both `employee-key.enc` and `employee-key.meta`.
+  Future<String?> findUsbKeysDirectory(String username) async {
+    if (username.trim().isEmpty) return null;
+
+    final trimmed = username.trim();
+    final folderNames = [
+      '$trimmed-keys',
+      '${trimmed.toLowerCase()}-keys',
+    ].toSet();
+
+    final driveLetters = [
+      'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+      'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'C'
+    ];
+
+    final sep = Platform.pathSeparator;
+
+    for (final drive in driveLetters) {
+      for (final folderName in folderNames) {
+        final dirPath = '$drive:$sep$folderName';
+        try {
+          final dir = Directory(dirPath);
+          if (dir.existsSync()) {
+            final encFile = File('$dirPath${sep}employee-key.enc');
+            final metaFile = File('$dirPath${sep}employee-key.meta');
+            if (encFile.existsSync() && metaFile.existsSync()) {
+              return dirPath;
+            }
+          }
+        } catch (_) {
+          // Ignore unmounted/unreadable drives
+        }
+      }
+    }
+
+    return null;
+  }
+
   Future<String> signMessageFromUsb({
     required String keysDirectoryPath,
     required String pin,

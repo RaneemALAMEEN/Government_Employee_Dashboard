@@ -9,12 +9,14 @@ class DynamicFormWidgetRenderer extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const DynamicFormWidgetRenderer({
     super.key,
     required this.widgetEntity,
     required this.value,
     required this.onChanged,
+    this.hasError = false,
   });
 
   @override
@@ -22,28 +24,31 @@ class DynamicFormWidgetRenderer extends StatelessWidget {
     switch (widgetEntity.widgetType) {
       case 'text_field':
         return _TextFieldWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged);
+            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
       case 'dropdown':
         return _DropdownWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged);
+            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
       case 'file_picker':
         return _FilePickerWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged);
+            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
       case 'date_picker':
         return _DatePickerWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged);
+            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
       case 'radio_group':
         return _RadioGroupWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged);
+            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
       case 'check_list':
         return _CheckListWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged);
+            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
       default:
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.goldLight,
-            borderRadius: BorderRadius.circular(12),
+            color: hasError ? Colors.red.shade50 : Colors.white,
+            border: Border.all(
+                color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
+                width: hasError ? 2.0 : 1.2),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text('Widget غير مدعوم: ${widgetEntity.widgetType}',
               textAlign: TextAlign.right),
@@ -61,11 +66,13 @@ class _TextFieldWidget extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const _TextFieldWidget(
       {required this.widgetEntity,
       required this.value,
-      required this.onChanged});
+      required this.onChanged,
+      this.hasError = false});
 
   @override
   Widget build(BuildContext context) {
@@ -80,14 +87,18 @@ class _TextFieldWidget extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              width: 2.0),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? Colors.red.shade50 : Colors.white,
       ),
     );
   }
@@ -97,11 +108,13 @@ class _DropdownWidget extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const _DropdownWidget(
       {required this.widgetEntity,
       required this.value,
-      required this.onChanged});
+      required this.onChanged,
+      this.hasError = false});
 
   @override
   Widget build(BuildContext context) {
@@ -112,14 +125,18 @@ class _DropdownWidget extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              width: 2.0),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? Colors.red.shade50 : Colors.white,
       ),
       items: widgetEntity.options
           .map((option) => DropdownMenuItem<String>(
@@ -138,11 +155,13 @@ class _DatePickerWidget extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const _DatePickerWidget(
       {required this.widgetEntity,
       required this.value,
-      required this.onChanged});
+      required this.onChanged,
+      this.hasError = false});
 
   @override
   Widget build(BuildContext context) {
@@ -156,14 +175,18 @@ class _DatePickerWidget extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              width: 2.0),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? Colors.red.shade50 : Colors.white,
         suffixIcon: const Icon(Icons.calendar_month_outlined),
       ),
       onTap: () async {
@@ -194,11 +217,13 @@ class _RadioGroupWidget extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const _RadioGroupWidget(
       {required this.widgetEntity,
       required this.value,
-      required this.onChanged});
+      required this.onChanged,
+      this.hasError = false});
 
   @override
   Widget build(BuildContext context) {
@@ -208,14 +233,18 @@ class _RadioGroupWidget extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              width: 2.0),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? Colors.red.shade50 : Colors.white,
       ),
       child: Material(
         color: Colors.transparent,
@@ -238,11 +267,13 @@ class _CheckListWidget extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const _CheckListWidget(
       {required this.widgetEntity,
       required this.value,
-      required this.onChanged});
+      required this.onChanged,
+      this.hasError = false});
 
   @override
   Widget build(BuildContext context) {
@@ -254,14 +285,18 @@ class _CheckListWidget extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.2),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.forest, width: 2.0),
+          borderSide: BorderSide(
+              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              width: 2.0),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? Colors.red.shade50 : Colors.white,
       ),
       child: Material(
         color: Colors.transparent,
@@ -295,11 +330,13 @@ class _FilePickerWidget extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
+  final bool hasError;
 
   const _FilePickerWidget(
       {required this.widgetEntity,
       required this.value,
-      required this.onChanged});
+      required this.onChanged,
+      this.hasError = false});
 
   @override
   Widget build(BuildContext context) {
@@ -311,43 +348,51 @@ class _FilePickerWidget extends StatelessWidget {
 
     final files = value is List ? value : const [];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OutlinedButton.icon(
-          onPressed: () async {
-            final result = await FilePicker.platform.pickFiles(
-              allowMultiple: allowMultiple,
-              type: FileType.custom,
-              allowedExtensions: allowedExtensions,
-              withData: false,
-            );
+    return Container(
+      decoration: BoxDecoration(
+        color: hasError ? Colors.red.shade50 : Colors.transparent,
+        border: hasError ? Border.all(color: Colors.red.shade700, width: 1.5) : null,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: hasError ? const EdgeInsets.all(8) : EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () async {
+              final result = await FilePicker.platform.pickFiles(
+                allowMultiple: allowMultiple,
+                type: FileType.custom,
+                allowedExtensions: allowedExtensions,
+                withData: false,
+              );
 
-            if (result != null) {
-              onChanged(result.files);
-            }
-          },
-          icon: const Icon(Icons.upload_file),
-          label: Text(
-            files.isEmpty
-                ? _label(widgetEntity)
-                : allowMultiple
-                    ? 'تم اختيار ${files.length} ملفات'
-                    : _fileDisplayName(files.first),
-          ),
-        ),
-        if (files.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          ...files.map(
-            (file) => Text(
-              _fileDisplayName(file),
-              textAlign: TextAlign.right,
-              style:
-                  AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
+              if (result != null) {
+                onChanged(result.files);
+              }
+            },
+            icon: const Icon(Icons.upload_file),
+            label: Text(
+              files.isEmpty
+                  ? _label(widgetEntity)
+                  : allowMultiple
+                      ? 'تم اختيار ${files.length} ملفات'
+                      : _fileDisplayName(files.first),
             ),
           ),
+          if (files.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...files.map(
+              (file) => Text(
+                _fileDisplayName(file),
+                textAlign: TextAlign.right,
+                style:
+                    AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

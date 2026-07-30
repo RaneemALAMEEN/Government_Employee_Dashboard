@@ -12,15 +12,15 @@ class GetDepartmentTransactions {
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   }) async {
     if (status == 'منجزة') {
       return await repository.getCompletedTransactions(
         departmentIds: departmentIds,
         fromDate: fromDate,
         toDate: toDate,
-        page: page,
+        cursor: cursor,
         limit: limit,
       );
     } else if (status == 'مرفوضة') {
@@ -28,7 +28,7 @@ class GetDepartmentTransactions {
         departmentIds: departmentIds,
         fromDate: fromDate,
         toDate: toDate,
-        page: page,
+        cursor: cursor,
         limit: limit,
       );
     } else {

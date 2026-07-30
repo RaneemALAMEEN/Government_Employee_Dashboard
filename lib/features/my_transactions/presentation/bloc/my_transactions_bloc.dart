@@ -15,7 +15,6 @@ class MyTransactionsBloc
 
   /// خريطة تحويل الفلتر العربي إلى قيمة API
   static const Map<String, String> _filterToApiStatus = {
-    'الكل': 'all',
     'بانتظار الاستلام': 'pending_pickup',
     'قيد التنفيذ': 'in_progress',
     'منجزة': 'completed',
@@ -40,7 +39,7 @@ class MyTransactionsBloc
     final apiStatus = event.apiStatus;
     final arabicFilter = _filterToApiStatus.entries
         .firstWhere((e) => e.value == apiStatus,
-            orElse: () => const MapEntry('الكل', 'all'))
+            orElse: () => const MapEntry('بانتظار الاستلام', 'pending_pickup'))
         .key;
     await _fetchDataAndEmit(apiStatus, arabicFilter, emit);
   }
@@ -50,7 +49,7 @@ class MyTransactionsBloc
     FilterMyTransactions event,
     Emitter<MyTransactionsState> emit,
   ) async {
-    final apiStatus = _filterToApiStatus[event.statusFilter] ?? 'all';
+    final apiStatus = _filterToApiStatus[event.statusFilter] ?? 'pending_pickup';
     await _fetchDataAndEmit(apiStatus, event.statusFilter, emit);
   }
 

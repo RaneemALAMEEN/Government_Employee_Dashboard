@@ -5,10 +5,11 @@ abstract class TransactionDetailsEvent {}
 class LoadTransactionDetails extends TransactionDetailsEvent {
   final String taskId;
   final String? status;
+  final String? numericTransactionId;
 
-  LoadTransactionDetails(this.taskId, {this.status});
+  LoadTransactionDetails(this.taskId, {this.status, this.numericTransactionId});
 
-  List<Object?> get props => [taskId, status];
+  List<Object?> get props => [taskId, status, numericTransactionId];
 }
 
 class PickupTransactionEvent extends TransactionDetailsEvent {
@@ -35,6 +36,7 @@ class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
   final String formId;
   final String formName;
   final bool isApprove;
+  final String? note;
   final String? pin;
   final String? keysDirectoryPath;
   final List<int> templateIds;
@@ -49,6 +51,7 @@ class SubmitTransactionDetailsEvent extends TransactionDetailsEvent {
     required this.formId,
     required this.formName,
     required this.isApprove,
+    this.note,
     this.pin,
     this.keysDirectoryPath,
     this.templateIds = const [],

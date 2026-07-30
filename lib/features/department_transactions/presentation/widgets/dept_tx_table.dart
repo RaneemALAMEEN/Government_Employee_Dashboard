@@ -60,10 +60,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
             child: Row(
               textDirection: TextDirection.rtl,
               children: [
-                Text(
-                  '${widget.transactions.length} معاملة في هذه الصفحة',
-                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.charcoalDark),
-                ),
+                const SizedBox.shrink(),
                 const Spacer(),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -178,7 +175,7 @@ class _TableHeader extends StatelessWidget {
         children: [
           _HeaderText('رقم المعاملة', flex: 12),
           _HeaderText('النوع', flex: 16),
-          _HeaderText('الدائرة', flex: 14),
+          _HeaderText('اسم المعاملة', flex: 14),
           _HeaderText('التاريخ', flex: 12),
           _HeaderText('المقدم', flex: 18),
           _HeaderText('الحالة', flex: 14),

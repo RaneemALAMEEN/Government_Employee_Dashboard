@@ -10,7 +10,7 @@ import 'dept_tx_state.dart';
 
 import '../../domain/usecases/get_department_stats.dart';
 
-const _limit = 10;
+const _limit = 6;
 
 class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
   final GetDepartmentTransactions getDepartmentTransactions;
@@ -70,7 +70,7 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
         status: currentStatus,
         fromDate: currentFromDate,
         toDate: currentToDate,
-        page: 1,
+        cursor: null,
         limit: _limit,
       ),
       getDepartmentStats(departmentIds: departmentId),
@@ -87,6 +87,7 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
         final totalCount = pagination['total'] as int? ?? 0;
         final hasNext = pagination['has_next'] as bool? ?? false;
+        final nextCursor = pagination['next_cursor'] as String?;
 
         // If stats succeeded, update them
         statsResult.fold(
@@ -107,7 +108,7 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
           fromDate: currentFromDate,
           toDate: currentToDate,
           searchQuery: currentSearchQuery,
-          page: 1,
+          nextCursor: nextCursor,
           hasReachedMax: !hasNext,
           totalCount: totalCount,
           completedCount: completedCount,
@@ -129,7 +130,7 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
     emit(currentState.copyWith(isFetchingMore: true));
 
-    final nextPage = currentState.page + 1;
+
 
     final activeRole = getIt<SessionService>().activeRoleNotifier.value;
     final departmentId = activeRole?.departmentId.toString() ?? '1';
@@ -139,7 +140,7 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       status: currentState.statusFilter,
       fromDate: currentState.fromDate,
       toDate: currentState.toDate,
-      page: nextPage,
+      cursor: currentState.nextCursor,
       limit: _limit,
     );
 
@@ -149,13 +150,14 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
         final items = data['items'] as List<dynamic>;
         final pagination = data['pagination'] as Map<String, dynamic>;
         final hasNext = pagination['has_next'] as bool? ?? false;
+        final nextCursor = pagination['next_cursor'] as String?;
         final totalCount =
             pagination['total'] as int? ?? currentState.totalCount;
 
         emit(currentState.copyWith(
           transactions: List.of(currentState.transactions)
             ..addAll(items.cast()),
-          page: nextPage,
+          nextCursor: nextCursor,
           hasReachedMax: !hasNext,
           isFetchingMore: false,
           totalCount: totalCount,

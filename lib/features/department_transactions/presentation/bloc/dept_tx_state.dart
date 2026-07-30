@@ -14,7 +14,7 @@ class DeptTxLoaded extends DeptTxState {
   final String? fromDate;
   final String? toDate;
   final String searchQuery;
-  final int page;
+  final String? nextCursor;
   final bool hasReachedMax;
   final bool isFetchingMore;
   
@@ -32,7 +32,7 @@ class DeptTxLoaded extends DeptTxState {
     this.fromDate,
     this.toDate,
     required this.searchQuery,
-    required this.page,
+    this.nextCursor,
     required this.hasReachedMax,
     this.isFetchingMore = false,
     required this.totalCount,
@@ -49,7 +49,7 @@ class DeptTxLoaded extends DeptTxState {
     String? fromDate,
     String? toDate,
     String? searchQuery,
-    int? page,
+    String? nextCursor,
     bool? hasReachedMax,
     bool? isFetchingMore,
     int? totalCount,
@@ -65,7 +65,7 @@ class DeptTxLoaded extends DeptTxState {
       fromDate: fromDate ?? this.fromDate,
       toDate: toDate ?? this.toDate,
       searchQuery: searchQuery ?? this.searchQuery,
-      page: page ?? this.page,
+      nextCursor: nextCursor ?? this.nextCursor,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       totalCount: totalCount ?? this.totalCount,

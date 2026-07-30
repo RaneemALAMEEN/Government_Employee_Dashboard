@@ -13,6 +13,17 @@ class SessionService {
   final ValueNotifier<User?> currentUserNotifier = ValueNotifier<User?>(null);
 
   List<UserRole> _availableRoles = [];
+  String? _sessionPin;
+
+  String? get sessionPin => _sessionPin;
+
+  void setSessionPin(String? pin) {
+    _sessionPin = pin;
+  }
+
+  void clearSessionPin() {
+    _sessionPin = null;
+  }
 
   SessionService(this._storage) {
     _init();

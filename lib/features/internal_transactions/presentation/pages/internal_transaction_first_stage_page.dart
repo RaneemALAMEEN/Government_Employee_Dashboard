@@ -509,25 +509,17 @@ class _FileTile extends StatelessWidget {
                   return;
                 }
 
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PdfViewerPage(
-                      fileUrl: fileUrl,
-                      title: text,
-                    ),
-                  ),
-                );
+                context.push('/pdf-viewer', extra: {
+                  'fileUrl': fileUrl,
+                  'title': text,
+                });
                 return;
               }
 
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ImageViewerPage(
-                    fileUrl: fileUrl,
-                    title: text,
-                  ),
-                ),
-              );
+              context.push('/image-viewer', extra: {
+                'fileUrl': fileUrl,
+                'title': text,
+              });
             }
           : null,
       borderRadius: BorderRadius.circular(8),

@@ -9,10 +9,14 @@ import '../../../../shared/theme/app_colors.dart';
 
 class SecureSignatureDialog extends StatefulWidget {
   final String transactionNumber;
+  final String? initialPin;
+  final String? initialKeysDirectory;
 
   const SecureSignatureDialog({
     super.key,
     required this.transactionNumber,
+    this.initialPin,
+    this.initialKeysDirectory,
   });
 
   @override
@@ -32,6 +36,13 @@ class _SecureSignatureDialogState extends State<SecureSignatureDialog> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialPin != null && widget.initialPin!.isNotEmpty) {
+      _pinController.text = widget.initialPin!;
+    }
+    if (widget.initialKeysDirectory != null &&
+        widget.initialKeysDirectory!.isNotEmpty) {
+      _keysDirectoryPath = widget.initialKeysDirectory;
+    }
     _startSearchTimer();
   }
 

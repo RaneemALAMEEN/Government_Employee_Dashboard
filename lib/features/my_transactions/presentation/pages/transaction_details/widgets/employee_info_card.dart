@@ -17,10 +17,13 @@ class EmployeeInfoCard extends StatelessWidget {
     final firstName = applicant!['first_name']?.toString() ?? '';
     final fatherName = applicant!['father_name']?.toString() ?? '';
     final lastName = applicant!['last_name']?.toString() ?? '';
-    final fullName = '$firstName $fatherName $lastName'.trim();
+    final fullName = [firstName, fatherName, lastName]
+        .where((n) => n.isNotEmpty)
+        .join(' ');
 
     final nationalId = applicant!['national_id']?.toString() ?? '-';
-    final phoneNumber = applicant!['phone_number']?.toString() ?? '-';
+    final phoneNumber = applicant!['phone_number']?.toString();
+    final hasPhone = phoneNumber != null && phoneNumber.isNotEmpty && phoneNumber != '-';
 
     return FadeInUp(
       duration: const Duration(milliseconds: 300),
@@ -56,7 +59,7 @@ class EmployeeInfoCard extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       _buildInfoTag('الرقم الوطني', nationalId),
-                      _buildInfoTag('رقم الهاتف', phoneNumber),
+                      if (hasPhone) _buildInfoTag('رقم الهاتف', phoneNumber!),
                     ],
                   ),
                 ],

@@ -18,6 +18,7 @@ class SubmitTransaction {
     required String formId,
     required String formName,
     required bool isApprove,
+    String? note,
     String? pin,
     String? keysDirectoryPath,
     List<int> templateIds = const [],
@@ -96,13 +97,13 @@ class SubmitTransaction {
         'form_name': formName,
         'widgets': payload['widgets'],
         'templates': templatesPayload,
-        'note': '',
+        'note': note ?? '',
         'decision': decisionValue,
         if (expectedVersion != null) 'expected_version': expectedVersion,
       };
 
-      // 4. Handle Signature if required (only for approve and when pin/keys exist)
-      if (isApprove && pin != null && keysDirectoryPath != null && pin.isNotEmpty && keysDirectoryPath.isNotEmpty) {
+      // 4. Handle Signature if required (when pin/keys exist)
+      if (pin != null && keysDirectoryPath != null && pin.isNotEmpty && keysDirectoryPath.isNotEmpty) {
         // Request Signing Challenge
         final challengeResult = await repository.createSigningChallenge(
           taskId: taskId,

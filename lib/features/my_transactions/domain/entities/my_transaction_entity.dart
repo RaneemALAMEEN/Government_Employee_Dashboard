@@ -12,6 +12,7 @@ class MyTransactionEntity {
   final String? completedAt;
   final String processName; // اسم المعاملة (process_name)
   final int progressPercent; // نسبة الإنجاز (progress_percent)
+  final int? transactionId; // معرف المعاملة الرقمي (transaction_id)
 
   const MyTransactionEntity({
     required this.idTask,
@@ -27,6 +28,7 @@ class MyTransactionEntity {
     this.completedAt,
     this.processName = '',
     this.progressPercent = 0,
+    this.transactionId,
   });
 
   MyTransactionEntity copyWith({

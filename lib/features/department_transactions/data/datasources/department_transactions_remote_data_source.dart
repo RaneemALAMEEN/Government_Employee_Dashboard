@@ -13,13 +13,15 @@ class DepartmentTransactionsRemoteDataSource {
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   }) {
     final queryParams = <String, dynamic>{
-      'page': page,
       'limit': limit,
     };
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParams['cursor'] = cursor;
+    }
     if (departmentIds != null && departmentIds.isNotEmpty) {
       queryParams['department_ids'] = departmentIds;
     }
@@ -41,13 +43,15 @@ class DepartmentTransactionsRemoteDataSource {
     String? departmentIds,
     String? fromDate,
     String? toDate,
-    int page = 1,
-    int limit = 10,
+    String? cursor,
+    int limit = 6,
   }) {
     final queryParams = <String, dynamic>{
-      'page': page,
       'limit': limit,
     };
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParams['cursor'] = cursor;
+    }
     if (departmentIds != null && departmentIds.isNotEmpty) {
       queryParams['department_ids'] = departmentIds;
     }
@@ -65,7 +69,14 @@ class DepartmentTransactionsRemoteDataSource {
     );
   }
 
-  Future<Either<Failure, dynamic>> getTransactionCertificate(String transactionId) {
+  Future<Either<Failure, dynamic>> getTransactionCertificate(String transactionId) async {
+    final result = await api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/workflow/transactions/$transactionId/certificate',
+    );
+    if (result.isRight()) {
+      return result;
+    }
     return api.makeRequest(
       method: ApiMethod.get,
       endPoint: 'api/transaction/$transactionId/certificate',

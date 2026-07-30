@@ -15,8 +15,7 @@ class AppSnackBar {
     Duration duration = const Duration(seconds: 4),
   }) {
     final messenger = ScaffoldMessenger.of(context);
-    final backgroundColor =
-        isError ? AppColors.umberLight : AppColors.goldDark;
+    final backgroundColor = isError ? AppColors.umberLight : AppColors.goldDark;
 
     messenger
       ..hideCurrentSnackBar()

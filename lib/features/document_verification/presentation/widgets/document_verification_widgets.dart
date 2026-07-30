@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
@@ -563,14 +564,10 @@ class _FinalDocumentCard extends StatelessWidget {
       AppSnackBar.show(context, message: 'تعذر فتح ملف PDF', isError: true);
       return;
     }
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PdfViewerPage(
-          fileUrl: document.fileUrl,
-          title: 'الوثيقة النهائية',
-        ),
-      ),
-    );
+    context.push('/pdf-viewer', extra: {
+      'fileUrl': document.fileUrl,
+      'title': 'الوثيقة النهائية',
+    });
   }
 
   @override

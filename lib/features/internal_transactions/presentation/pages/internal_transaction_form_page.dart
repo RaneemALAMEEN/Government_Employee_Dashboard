@@ -8,6 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sfpdf;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
@@ -35,14 +38,51 @@ class InternalTransactionFormPage extends StatefulWidget {
 
 class _InternalTransactionFormPageState
     extends State<InternalTransactionFormPage> {
-  Future<Map<String, String>?> _showSignatureDialog() {
+  Future<Map<String, String>?> _showSignatureDialog() async {
+    final sessionService = getIt<SessionService>();
+    final sessionPin = sessionService.sessionPin;
+    final username = sessionService.currentUserNotifier.value?.userName ?? '';
+
+    final usbSigningService = getIt.isRegistered<UsbSigningService>()
+        ? getIt<UsbSigningService>()
+        : UsbSigningService();
+
+    final detectedDir = await usbSigningService.findUsbKeysDirectory(username);
+
+    if (detectedDir != null &&
+        detectedDir.isNotEmpty &&
+        sessionPin != null &&
+        sessionPin.isNotEmpty) {
+      return {
+        'pin': sessionPin,
+        'keysDirectoryPath': detectedDir,
+      };
+    }
+
+    if (detectedDir == null || detectedDir.isEmpty) {
+      if (!mounted) return null;
+      _showSnackBar(
+        'يرجى إدخال وحدة الـ USB الخاصة بمفاتيح التوقيع الإلكتروني، فلن يتم التوقيع بدونها.',
+        isError: true,
+      );
+      return null;
+    }
+
+    /*
+    // Previous Manual Signature Dialog Fallback (Preserved for future use):
+    if (!mounted) return null;
+
     return showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
       builder: (_) => SecureSignatureDialog(
         transactionNumber: widget.processId.toString(),
+        initialPin: sessionPin,
+        initialKeysDirectory: detectedDir,
       ),
     );
+    */
+    return null;
   }
 
   Future<void> _submit() async {

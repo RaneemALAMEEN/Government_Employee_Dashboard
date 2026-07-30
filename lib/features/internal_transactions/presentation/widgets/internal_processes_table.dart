@@ -213,12 +213,12 @@ class _TableHeader extends StatelessWidget {
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderCell('رقم المعاملة', flex: 18, shiftRight: 10),
+          _HeaderCell('رقم المعاملة', flex: 16, shiftRight: 10),
           _HeaderCell('نوع المعاملة', flex: 25, shiftRight: 10),
           _HeaderCell('المرحلة الحالية', flex: 20, shiftRight: 10),
-          _HeaderCell('نسبة الإنجاز', flex: 15, shiftRight: 10),
+          _HeaderCell('نسبة الإنجاز', flex: 13, shiftRight: 10),
           _HeaderCell('الحالة', flex: 12, shiftRight: 10),
-          _HeaderCell('إجراء', flex: 10, shiftRight: 10),
+          _HeaderCell('إجراء', flex: 14, shiftRight: 10),
         ],
       ),
     );
@@ -248,7 +248,7 @@ class _TransactionRow extends StatelessWidget {
         children: [
           _BodyCell(
             item.idProcess,
-            flex: 18,
+            flex: 16,
             color: AppColors.forest,
             fontWeight: FontWeight.w700,
             shiftRight: 10,
@@ -267,7 +267,7 @@ class _TransactionRow extends StatelessWidget {
             shiftRight: 10,
           ),
           Expanded(
-            flex: 15,
+            flex: 13,
             child: Transform.translate(
               offset: const Offset(10, 0),
               child: _ProgressBadge(percent: item.progressPercent),
@@ -283,7 +283,7 @@ class _TransactionRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 10,
+            flex: 14,
             child: Transform.translate(
               offset: const Offset(10, 0),
               child: Center(
@@ -325,8 +325,9 @@ class _HeaderCell extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: AppTextStyles.bold,
+          style: AppTextStyles.labelLarge.copyWith(
+            fontWeight: AppTextStyles.semiBold,
+            height: 1,
           ),
         ),
       ),
@@ -358,11 +359,12 @@ class _BodyCell extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyMedium.copyWith(
+          style: AppTextStyles.labelLarge.copyWith(
             fontWeight: fontWeight,
-            color: color ?? AppColors.charcoal,
+            color: color ?? AppColors.charcoalDark,
+            height: 1.25,
           ),
         ),
       ),

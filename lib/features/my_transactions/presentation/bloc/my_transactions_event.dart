@@ -4,8 +4,8 @@ abstract class MyTransactionsEvent {
 
 /// تحميل المعاملات (أول صفحة) — يُستخدم عند فتح الشاشة أو تغيير الفلتر
 class LoadMyTransactions extends MyTransactionsEvent {
-  final String apiStatus; // 'all', 'pending_pickup', 'in_progress', 'completed', 'rejected'
-  const LoadMyTransactions({this.apiStatus = 'all'});
+  final String apiStatus; // 'pending_pickup', 'in_progress', 'completed', 'rejected'
+  const LoadMyTransactions({this.apiStatus = 'pending_pickup'});
 }
 
 /// تحميل المزيد من المعاملات (infinite scroll)

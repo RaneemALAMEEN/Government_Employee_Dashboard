@@ -49,7 +49,7 @@ class _MyTxFilterBarState extends State<MyTxFilterBar> {
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['الكل', 'بانتظار الاستلام', 'قيد التنفيذ', 'منجزة', 'تم الرفض'];
+    final filters = ['بانتظار الاستلام', 'قيد التنفيذ', 'منجزة', 'تم الرفض'];
 
     return LayoutBuilder(
       builder: (context, constraints) {

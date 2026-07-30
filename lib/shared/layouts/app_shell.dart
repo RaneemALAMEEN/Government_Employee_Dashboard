@@ -31,10 +31,14 @@ class _AppShellState extends State<AppShell> {
         builder: (context, constraints) {
           final isSmallScreen = constraints.maxWidth < 900;
 
-          // Reset user override if we cross the small screen threshold
           if (_wasSmallScreen != isSmallScreen) {
-            _wasSmallScreen = isSmallScreen;
-            _userCollapsedOverride = null;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              setState(() {
+                _wasSmallScreen = isSmallScreen;
+                _userCollapsedOverride = null;
+              });
+            });
           }
 
           final isCollapsed = _userCollapsedOverride ?? isSmallScreen;

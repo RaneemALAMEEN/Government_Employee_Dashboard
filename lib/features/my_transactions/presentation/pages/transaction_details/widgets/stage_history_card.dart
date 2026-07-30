@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/data/models/dynamic_widget_model.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../../../shared/theme/app_colors.dart';
-import '../../pdf_viewer_page.dart';
-import '../../image_viewer_page.dart';
 
 class StageHistoryCard extends StatelessWidget {
   final Map<String, dynamic> stage;
   final String Function(String) buildFileUrl;
-  final void Function(String path, String filename) onDownloadFile;
+  final void Function(String path, String filename, {String? documentType}) onDownloadFile;
 
   const StageHistoryCard({
     super.key,
@@ -34,6 +33,30 @@ class StageHistoryCard extends StatelessWidget {
     final completedBy =
         stage['completed_by_name']?.toString() ?? 'الموظف المختص';
     final completedAt = stage['completed_at']?.toString() ?? '';
+    final decision = stage['decision']?.toString();
+    final note = stage['note']?.toString();
+    final rejectionReason = stage['rejection_reason']?.toString();
+
+    // Decision display
+    String decisionLabel = '';
+    Color decisionBg = Colors.transparent;
+    Color decisionFg = Colors.transparent;
+    IconData decisionIcon = LucideIcons.circle;
+
+    if (decision == 'approve') {
+      decisionLabel = 'تمت الموافقة';
+      decisionBg = AppColors.forest.withValues(alpha: 0.08);
+      decisionFg = AppColors.forest;
+      decisionIcon = LucideIcons.circleCheck;
+    } else if (decision == 'reject') {
+      decisionLabel = 'رفض';
+      decisionBg = Colors.red.shade50;
+      decisionFg = Colors.red.shade700;
+      decisionIcon = LucideIcons.circleX;
+    }
+
+    // Set decision to null if it's submit so it won't be displayed
+    final displayDecision = (decision == 'submit') ? null : decision;
 
     return FadeInUp(
       duration: const Duration(milliseconds: 300),
@@ -43,7 +66,7 @@ class StageHistoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,6 +87,31 @@ class StageHistoryCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (displayDecision != null && displayDecision.isNotEmpty) ...[
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: decisionBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(decisionIcon, size: 14, color: decisionFg),
+                        const SizedBox(width: 4),
+                        Text(
+                          decisionLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: decisionFg,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 8),
@@ -74,7 +122,7 @@ class StageHistoryCard extends StatelessWidget {
                   'بواسطة: $completedBy',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.charcoal.withOpacity(0.6),
+                    color: AppColors.charcoal.withValues(alpha: 0.6),
                   ),
                 ),
                 const Spacer(),
@@ -83,13 +131,111 @@ class StageHistoryCard extends StatelessWidget {
                     'بتاريخ: $completedAt',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.charcoal.withOpacity(0.6),
+                      color: AppColors.charcoal.withValues(alpha: 0.6),
                     ),
                   ),
               ],
             ),
+
+            // Rejection reason
+            if (rejectionReason != null && rejectionReason.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade100),
+                ),
+                child: Row(
+                  textDirection: TextDirection.rtl,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(LucideIcons.messageCircleX,
+                        size: 16, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        textDirection: TextDirection.rtl,
+                        children: [
+                          Text(
+                            'سبب الرفض:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.red.shade800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            rejectionReason,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.red.shade700,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Note
+            if (note != null && note.trim().isNotEmpty && note != rejectionReason) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.goldLight.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  textDirection: TextDirection.rtl,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(LucideIcons.messageSquare,
+                        size: 16, color: AppColors.goldDark),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        textDirection: TextDirection.rtl,
+                        children: [
+                          const Text(
+                            'ملاحظة:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.charcoalDark,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            note,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.charcoal.withValues(alpha: 0.85),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 16),
-            Divider(height: 1, color: AppColors.charcoal.withOpacity(0.1)),
+            Divider(height: 1, color: AppColors.charcoal.withValues(alpha: 0.1)),
             const SizedBox(height: 16),
             ...widgets.map((widgetConfig) {
               final val = widgetConfig.widgetType == 'file_picker'
@@ -182,6 +328,9 @@ class StageHistoryCard extends StatelessWidget {
       BuildContext context, DynamicWidgetEntity widgetEntity, dynamic val) {
     final label = widgetEntity.data['label']?.toString() ?? 'مرفقات';
     final filesList = val is List ? val : [];
+    final stageName = stage['stage_name']?.toString() ??
+        stage['form_name']?.toString() ??
+        'مرحلة سابقة';
 
     if (filesList.isEmpty) {
       return const SizedBox.shrink();
@@ -269,23 +418,15 @@ class StageHistoryCard extends StatelessWidget {
                           ].contains(ext);
 
                           if (isImage) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => ImageViewerPage(
-                                  fileUrl: fileUrl,
-                                  title: filename,
-                                ),
-                              ),
-                            );
+                            context.push('/image-viewer', extra: {
+                              'fileUrl': fileUrl,
+                              'title': filename,
+                            });
                           } else {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => PdfViewerPage(
-                                  fileUrl: fileUrl,
-                                  title: filename,
-                                ),
-                              ),
-                            );
+                            context.push('/pdf-viewer', extra: {
+                              'fileUrl': fileUrl,
+                              'title': filename,
+                            });
                           }
                         }
                       },
@@ -298,7 +439,8 @@ class StageHistoryCard extends StatelessWidget {
                       onPressed: () {
                         final rawPath = file['path']?.toString() ?? file['url']?.toString() ?? '';
                         if (rawPath.isNotEmpty) {
-                          onDownloadFile(rawPath, filename);
+                          onDownloadFile(rawPath, filename,
+                              documentType: 'مرفق - $stageName');
                         }
                       },
                     ),

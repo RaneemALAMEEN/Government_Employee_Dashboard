@@ -1,3 +1,6 @@
+import 'package:government_employee_dashboard/features/my_transactions/presentation/pages/image_viewer_page.dart';
+import 'package:government_employee_dashboard/features/my_transactions/presentation/pages/pdf_viewer_page.dart';
+
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,11 +8,14 @@ import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../../../../shared/utils/app_file_downloader.dart';
+
 import '../../../../core/di/injection.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
@@ -18,7 +24,10 @@ import '../../../internal_transactions/domain/entities/dynamic_widget_entity.dar
 import '../../../internal_transactions/data/models/dynamic_widget_model.dart';
 import '../bloc/my_transactions_bloc.dart';
 import '../bloc/my_transactions_event.dart';
+import '../widgets/reject_transaction_dialog.dart';
 import '../widgets/secure_signature_dialog.dart';
+import '../widgets/transaction_signed_success_widget.dart';
+import '../widgets/transaction_error_widget.dart';
 
 import '../bloc/transaction_details/transaction_details_bloc.dart';
 import '../bloc/transaction_details/transaction_details_event.dart';
@@ -30,15 +39,18 @@ import 'transaction_details/widgets/employee_info_card.dart';
 import 'transaction_details/widgets/stage_history_card.dart';
 import 'transaction_details/widgets/lock_info_card.dart';
 import 'transaction_details/widgets/workflow_timeline_widget.dart';
+import 'transaction_details/widgets/transaction_info_card.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final String transactionId;
   final String? status;
+  final String? numericTransactionId;
 
   const TransactionDetailsPage({
     Key? key,
     required this.transactionId,
     this.status,
+    this.numericTransactionId,
   }) : super(key: key);
 
   @override
@@ -48,13 +60,18 @@ class TransactionDetailsPage extends StatefulWidget {
 class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   late final TransactionDetailsBloc _bloc;
   final Map<String, dynamic> _formValues = {};
+  final Set<String> _formErrors = {};
 
   @override
   void initState() {
     super.initState();
     _bloc = getIt<TransactionDetailsBloc>();
     _bloc.add(
-        LoadTransactionDetails(widget.transactionId, status: widget.status));
+        LoadTransactionDetails(
+          widget.transactionId,
+          status: widget.status,
+          numericTransactionId: widget.numericTransactionId,
+        ));
   }
 
   @override
@@ -62,12 +79,23 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     _bloc.close();
     super.dispose();
   }
+  /// Returns the applicant's full name from the current loaded state.
+  String _getApplicantName() {
+    final state = _bloc.state;
+    if (state is TransactionDetailsLoaded) {
+      final applicant = state.taskData['applicant'] as Map<String, dynamic>?;
+      if (applicant != null) {
+        final first = applicant['first_name']?.toString() ?? '';
+        final last = applicant['last_name']?.toString() ?? '';
+        return '$first $last'.trim();
+      }
+    }
+    return '';
+  }
 
-  Future<void> _downloadFile(String path, String filename) async {
+  Future<void> _downloadFile(String path, String filename, {String? documentType}) async {
     try {
       final dio = getIt<Dio>();
-      final dir = await getApplicationDocumentsDirectory();
-      final savePath = '${dir.path}/$filename';
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('جاري تحميل الملف...')),
@@ -75,12 +103,18 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
       final fileUrl = _buildFileUrl(path);
 
+      final savePath = await AppFileDownloader.getSavePath(
+        applicantName: _getApplicantName(),
+        documentType: documentType,
+        originalFilename: filename,
+      );
+
       await dio.download(fileUrl, savePath);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تحميل الملف بنجاح: $filename\nالمسار: $savePath'),
+            content: Text('تم تحميل الملف بنجاح\n$savePath'),
             backgroundColor: AppColors.forest,
           ),
         );
@@ -139,11 +173,81 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       List<Map<String, dynamic>> loadedTemplates = const [],
       Map<String, dynamic> templateFormValues = const {},
       int? expectedVersion}) async {
+    final sessionService = getIt<SessionService>();
+    final sessionPin = sessionService.sessionPin;
+    final username = sessionService.currentUserNotifier.value?.userName ?? '';
+
+    final usbSigningService = getIt.isRegistered<UsbSigningService>()
+        ? getIt<UsbSigningService>()
+        : UsbSigningService();
+
+    final detectedDir = await usbSigningService.findUsbKeysDirectory(username);
+
+    // 1. Auto-detection check: If USB keys folder is found AND session PIN exists, sign automatically!
+    if (detectedDir != null &&
+        detectedDir.isNotEmpty &&
+        sessionPin != null &&
+        sessionPin.isNotEmpty) {
+      _bloc.add(SubmitTransactionDetailsEvent(
+        taskId: widget.transactionId,
+        widgets: widgets,
+        formValues: _formValues,
+        formId: formId,
+        formName: formName,
+        isApprove: isApprove,
+        pin: sessionPin,
+        keysDirectoryPath: detectedDir,
+        templateIds: templateIds,
+        loadedTemplates: loadedTemplates,
+        templateFormValues: templateFormValues,
+        expectedVersion: expectedVersion,
+      ));
+      return;
+    }
+
+    // 2. Fallback check: If USB keys folder is missing or not inserted, show warning message!
+    if (detectedDir == null || detectedDir.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(LucideIcons.usb, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'يرجى إدخال وحدة الـ USB الخاصة بمفاتيح التوقيع الإلكتروني، فلن يتم التوقيع بدونها.',
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
+    /*
+    // Previous Manual Signature Dialog Fallback (Preserved for future use):
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => SecureSignatureDialog(
         transactionNumber: widget.transactionId,
+        initialPin: sessionPin,
+        initialKeysDirectory: detectedDir,
       ),
     );
 
@@ -165,6 +269,87 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         expectedVersion: expectedVersion,
       ));
     }
+    */
+  }
+
+  void _handleRejectAction(List<DynamicWidgetEntity> widgets, String formId,
+      String formName,
+      {List<int> templateIds = const [],
+      List<Map<String, dynamic>> loadedTemplates = const [],
+      Map<String, dynamic> templateFormValues = const {},
+      int? expectedVersion}) async {
+    final note = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const RejectTransactionDialog(),
+    );
+
+    if (note == null || note.trim().isEmpty) {
+      return;
+    }
+
+    final sessionService = getIt<SessionService>();
+    final sessionPin = sessionService.sessionPin;
+    final username = sessionService.currentUserNotifier.value?.userName ?? '';
+
+    final usbSigningService = getIt.isRegistered<UsbSigningService>()
+        ? getIt<UsbSigningService>()
+        : UsbSigningService();
+
+    final detectedDir = await usbSigningService.findUsbKeysDirectory(username);
+
+    if (detectedDir != null &&
+        detectedDir.isNotEmpty &&
+        sessionPin != null &&
+        sessionPin.isNotEmpty) {
+      _bloc.add(SubmitTransactionDetailsEvent(
+        taskId: widget.transactionId,
+        widgets: widgets,
+        formValues: _formValues,
+        formId: formId,
+        formName: formName,
+        isApprove: false,
+        note: note.trim(),
+        pin: sessionPin,
+        keysDirectoryPath: detectedDir,
+        templateIds: templateIds,
+        loadedTemplates: loadedTemplates,
+        templateFormValues: templateFormValues,
+        expectedVersion: expectedVersion,
+      ));
+      return;
+    }
+
+    if (detectedDir == null || detectedDir.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(LucideIcons.usb, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'يرجى إدخال وحدة الـ USB الخاصة بمفاتيح التوقيع الإلكتروني، فلن يتم تنفيذ الرفض بدونها.',
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
   }
 
   void _handleActionSuccess(
@@ -174,9 +359,79 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     );
     if (state.shouldReloadList) {
       if (getIt.isRegistered<MyTransactionsBloc>()) {
-        getIt<MyTransactionsBloc>().add(LoadMyTransactions());
+        getIt<MyTransactionsBloc>().add(const LoadMyTransactions());
       }
     }
+  }
+
+  bool _validateRequiredFields(List<DynamicWidgetModel> stageWidgets, TransactionDetailsLoaded? loadedState) {
+    bool isValid = true;
+    
+    setState(() {
+      _formErrors.clear();
+    });
+
+    // Validate stage widgets
+    for (var widget in stageWidgets) {
+      final isRequired = widget.data['is_required'] == true;
+      final id = widget.data['id']?.toString() ?? '';
+
+      // Skip decision and gateway fields
+      if (widget.data['is_gateway'] == true || id == 'decision') continue;
+
+      if (isRequired) {
+        final value = _formValues[id];
+        if (value == null || (value is String && value.trim().isEmpty) || (value is List && value.isEmpty)) {
+          isValid = false;
+          _formErrors.add(id);
+        }
+      }
+    }
+
+    // Validate template widgets
+    if (loadedState != null && loadedState.loadedTemplates.isNotEmpty) {
+      for (var template in loadedState.loadedTemplates) {
+        final configJson = template['config_json'] as Map<String, dynamic>? ?? {};
+        final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+        final templateValues = loadedState.templateFormValues;
+
+        for (var w in fields) {
+          final wMap = w is Map ? Map<String, dynamic>.from(w) : <String, dynamic>{};
+          final data = wMap['data'] ?? wMap;
+          final isRequired = data['is_required'] == true;
+          final id = data['id']?.toString() ?? '';
+
+          if (isRequired) {
+            final value = templateValues[id];
+            if (value == null || (value is String && value.trim().isEmpty) || (value is List && value.isEmpty)) {
+              isValid = false;
+              _formErrors.add(id);
+            }
+          }
+        }
+      }
+    }
+
+    if (!isValid) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(LucideIcons.alertCircle, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('يرجى تعبئة جميع الحقول المطلوبة والمحددة باللون الأحمر.',
+                    style: TextStyle(fontFamily: 'Cairo')),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.umber,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    return isValid;
   }
 
   @override
@@ -187,7 +442,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         backgroundColor: AppColors.goldLight,
         body: BlocConsumer<TransactionDetailsBloc, TransactionDetailsState>(
           listener: (context, state) {
-            if (state is TransactionDetailsFailure) {
+            if (state is TransactionSignedSuccess) {
+              if (getIt.isRegistered<MyTransactionsBloc>()) {
+                getIt<MyTransactionsBloc>().add(const LoadMyTransactions());
+              }
+            } else if (state is TransactionDetailsFailure) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                     content: Text(state.message),
@@ -198,7 +457,35 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             }
           },
           builder: (context, state) {
-// ... (in builder)
+            if (state is TransactionSignedSuccess) {
+              return TransactionSignedSuccessWidget(
+                taskId: state.taskId,
+                transactionId: state.transactionId,
+                message: state.message,
+                isApproved: state.isApproved,
+                onBack: () => context.go('/my-transactions'),
+                onViewCompleted: () {
+                  _bloc.add(LoadTransactionDetails(
+                    state.transactionId,
+                    status: state.isApproved ? 'منجزة' : 'تم الرفض',
+                  ));
+                },
+              );
+            }
+
+            if (state is TransactionSubmitError) {
+              return TransactionErrorWidget(
+                errorCode: state.errorCode,
+                title: state.title,
+                message: state.message,
+                suggestions: state.suggestions,
+                onBack: () => context.go('/my-transactions'),
+                onRetry: () {
+                  _bloc.add(LoadTransactionDetails(state.taskId));
+                },
+              );
+            }
+
             if (state is TransactionDetailsInitial ||
                 state is TransactionDetailsLoading) {
               final isWide = MediaQuery.of(context).size.width > 950;
@@ -401,6 +688,12 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             final rightContentList = [
               EmployeeInfoCard(applicant: applicant),
               const SizedBox(height: 20),
+              TransactionInfoCard(
+                taskData: data,
+                status: status,
+                transactionNumber: idProcess,
+              ),
+              const SizedBox(height: 20),
               if (data['final_document'] != null && 
                   ((data['final_document'] as Map<String, dynamic>)['file_url']?.toString() ?? 
                    (data['final_document'] as Map<String, dynamic>)['file_path']?.toString() ?? '').isNotEmpty) ...[
@@ -408,12 +701,74 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     data['final_document'] as Map<String, dynamic>),
                 const SizedBox(height: 20),
               ],
-              ...completedStages.map((stage) => StageHistoryCard(
-                    stage: Map<String, dynamic>.from(stage),
+              ...completedStages
+                  .where((stage) {
+                    final name = (stage as Map)['stage_name']?.toString() ?? '';
+                    final formName = stage['form_name']?.toString() ?? '';
+                    // Filter out internal system stages
+                    return !name.toUpperCase().contains('GENERATE_PDF') &&
+                        !formName.toUpperCase().contains('GENERATE_PDF');
+                  })
+                  .map((stage) => StageHistoryCard(
+                    stage: Map<String, dynamic>.from(stage as Map),
                     buildFileUrl: _buildFileUrl,
                     onDownloadFile: _downloadFile,
                   )),
               if (status != 'منجزة' && status != 'تم الرفض') ...[
+                // Banner when locked by another employee
+                if (isLocked && !lockedByMe) ...[
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        textDirection: TextDirection.rtl,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(LucideIcons.lock, color: Colors.red.shade700, size: 22),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'هذه المعاملة مقفلة حالياً',
+                                  textDirection: TextDirection.rtl,
+                                  style: AppTextStyles.labelLarge.copyWith(
+                                    fontWeight: AppTextStyles.bold,
+                                    color: Colors.red.shade800,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'تم قفل هذه المعاملة بواسطة موظف آخر ولا يمكنك اتخاذ أي إجراء عليها حتى يتم تحريرها.',
+                                  textDirection: TextDirection.rtl,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.red.shade700,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 if (!isLocked) ...[
                   const LockInfoCard(),
                   const SizedBox(height: 20),
@@ -425,9 +780,13 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       widgets: currentStageWidgets,
                       formName: formName,
                       formValues: _formValues,
+                      formErrors: _formErrors,
                       onChanged: (id, value) {
                         setState(() {
                           _formValues[id] = value;
+                          if (_formErrors.contains(id)) {
+                            _formErrors.remove(id);
+                          }
                         });
                       },
                     ),
@@ -462,22 +821,57 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: AbsorbPointer(
-                        absorbing: !(isLocked && lockedByMe),
-                        child: TemplateFormCard(
-                          templateName: templateName,
-                          templateFilePath: templateFilePath,
-                          onDownload: templateFilePath != null &&
-                                  templateFilePath.isNotEmpty
-                              ? () => _downloadFile(templateFilePath,
-                                  templateFilePath.split('/').last)
-                              : null,
-                          widgets: templateWidgets,
-                          formValues: loadedState!.templateFormValues,
-                          onChanged: (id, value) {
-                            _bloc.add(UpdateTemplateFormValue(id, value));
-                          },
-                        ),
+                      child: TemplateFormCard(
+                        templateName: templateName,
+                        templateFilePath: templateFilePath,
+                        isReadOnly: !(isLocked && lockedByMe),
+                        onDownload: templateFilePath != null &&
+                                templateFilePath.isNotEmpty
+                            ? () => _downloadFile(templateFilePath,
+                                templateFilePath.split('/').last,
+                                documentType: 'قالب - $templateName')
+                            : null,
+                        onView: templateFilePath != null &&
+                                templateFilePath.isNotEmpty
+                            ? () {
+                                final fullUrl =
+                                    _buildFileUrl(templateFilePath);
+                                final ext = templateFilePath
+                                    .split('.')
+                                    .last
+                                    .toLowerCase();
+                                final isImage = [
+                                  'jpg',
+                                  'jpeg',
+                                  'png',
+                                  'gif',
+                                  'bmp',
+                                  'webp'
+                                ].contains(ext);
+                                if (isImage) {
+                                  context.push('/image-viewer', extra: {
+                                    'fileUrl': fullUrl,
+                                    'title': templateName,
+                                  });
+                                } else {
+                                  context.push('/pdf-viewer', extra: {
+                                    'fileUrl': fullUrl,
+                                    'title': templateName,
+                                  });
+                                }
+                              }
+                            : null,
+                        widgets: templateWidgets,
+                        formValues: loadedState!.templateFormValues,
+                        formErrors: _formErrors,
+                        onChanged: (id, value) {
+                          _bloc.add(UpdateTemplateFormValue(id, value));
+                          if (_formErrors.contains(id)) {
+                            setState(() {
+                              _formErrors.remove(id);
+                            });
+                          }
+                        },
                       ),
                     );
                   }),
@@ -569,7 +963,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                           .add(PickupTransactionEvent(widget.transactionId)),
                       onRelease: () => _bloc
                           .add(ReleaseTransactionEvent(widget.transactionId)),
-                      onApprove: () => _showSignatureDialog(
+                      onApprove: () {
+                        if (!_validateRequiredFields(currentStageWidgets, loadedState)) return;
+                        _showSignatureDialog(
                           currentStageWidgets, formId, formName, true,
                           templateIds: templateIds,
                           loadedTemplates: loadedState?.loadedTemplates ?? [],
@@ -578,22 +974,20 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                           expectedVersion: data['expected_version'] != null
                               ? int.tryParse(
                                   data['expected_version'].toString())
-                              : null),
-                      onReject: () => _bloc.add(SubmitTransactionDetailsEvent(
-                        taskId: widget.transactionId,
-                        widgets: currentStageWidgets,
-                        formValues: _formValues,
-                        formId: formId,
-                        formName: formName,
-                        isApprove: false,
-                        templateIds: templateIds,
-                        loadedTemplates: loadedState?.loadedTemplates ?? [],
-                        templateFormValues:
-                            loadedState?.templateFormValues ?? {},
-                        expectedVersion: data['expected_version'] != null
-                            ? int.tryParse(data['expected_version'].toString())
-                            : null,
-                      )),
+                              : null);
+                      },
+                      onReject: () {
+                        if (!_validateRequiredFields(currentStageWidgets, loadedState)) return;
+                        _handleRejectAction(
+                          currentStageWidgets, formId, formName,
+                          templateIds: templateIds,
+                          loadedTemplates: loadedState?.loadedTemplates ?? [],
+                          templateFormValues:
+                              loadedState?.templateFormValues ?? {},
+                          expectedVersion: data['expected_version'] != null
+                              ? int.tryParse(data['expected_version'].toString())
+                              : null);
+                      },
                     ),
                     const SizedBox(height: 24),
                     layoutWidget,
@@ -678,7 +1072,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       final originalName =
                           finalDoc['original_name'] ?? 'certificate.pdf';
                       if (url.isNotEmpty) {
-                        _downloadFile(url, originalName);
+                        _downloadFile(url, originalName,
+                            documentType: 'الوثيقة النهائية');
                       }
                     },
                     icon: const Icon(LucideIcons.download),

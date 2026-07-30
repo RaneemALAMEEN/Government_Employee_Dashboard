@@ -101,96 +101,122 @@ class WorkflowTimelineWidget extends StatelessWidget {
               itemBuilder: (context, index) {
                 final step = steps[index];
                 final isLast = index == steps.length - 1;
+                final isCurrent = step['state'] == 'active' || step['state'] == 'active_edit';
 
-                return Row(
-                  textDirection: TextDirection.rtl,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      children: [
-                        _buildTimelineNode(step['state'] as String),
-                        if (!isLast)
-                          Container(
-                            width: 2,
-                            height: 60,
-                            color: const Color(0xFFE0E0E0),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        textDirection: TextDirection.rtl,
+                return Container(
+                  margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                  padding: isCurrent ? const EdgeInsets.all(10) : EdgeInsets.zero,
+                  decoration: isCurrent
+                      ? BoxDecoration(
+                          color: AppColors.forestLight.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.forest.withOpacity(0.3)),
+                        )
+                      : null,
+                  child: Row(
+                    textDirection: TextDirection.rtl,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
                         children: [
-                          Row(
-                            textDirection: TextDirection.rtl,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  step['title'] as String,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: step['state'] == 'checked'
-                                        ? AppColors.charcoalDark
-                                        : (step['state'] == 'active' ||
-                                                step['state'] == 'active_edit'
-                                            ? AppColors.forest
-                                            : AppColors.charcoal
-                                                .withOpacity(0.6)),
-                                  ),
-                                ),
-                              ),
-                              if ((step['time'] as String).isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  step['time'] as String,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.charcoal.withOpacity(0.5),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            step['operator'] as String,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: step['state'] == 'active' ||
-                                      step['state'] == 'active_edit'
-                                  ? AppColors.forestLight
-                                  : AppColors.charcoal.withOpacity(0.6),
-                              fontWeight: step['state'] == 'active' ||
-                                      step['state'] == 'active_edit'
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                          if ((step['details'] as String).isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                          _buildTimelineNode(step['state'] as String),
+                          if (!isLast)
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.goldLight.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                step['details'] as String,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  color: AppColors.charcoal.withOpacity(0.8),
-                                ),
-                              ),
+                              width: 2,
+                              height: 50,
+                              color: const Color(0xFFE0E0E0),
                             ),
-                          ],
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          textDirection: TextDirection.rtl,
+                          children: [
+                            Row(
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                if (isCurrent) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.gold,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'المرحلة الحالية',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.charcoalDark,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    step['title'] as String,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                                      color: step['state'] == 'checked'
+                                          ? AppColors.charcoalDark
+                                          : (isCurrent
+                                              ? AppColors.forest
+                                              : AppColors.charcoal.withOpacity(0.6)),
+                                    ),
+                                  ),
+                                ),
+                                if ((step['time'] as String).isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    step['time'] as String,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.charcoal.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              step['operator'] as String,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isCurrent
+                                    ? AppColors.forest
+                                    : AppColors.charcoal.withOpacity(0.6),
+                                fontWeight: isCurrent
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                            if ((step['details'] as String).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.goldLight.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  step['details'] as String,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: AppColors.charcoal.withOpacity(0.8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),

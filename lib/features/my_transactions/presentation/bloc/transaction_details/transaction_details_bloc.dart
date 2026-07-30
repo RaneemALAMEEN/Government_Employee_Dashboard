@@ -18,6 +18,8 @@ class TransactionDetailsBloc
   final SubmitTransaction submitTransaction;
   final MyTransactionsRepository repository;
 
+  String? _currentNumericTransactionId;
+
   TransactionDetailsBloc({
     required this.getTaskDetails,
     required this.getTransactionCertificate,
@@ -39,13 +41,25 @@ class TransactionDetailsBloc
   ) async {
     emit(TransactionDetailsLoading());
 
+    if (event.numericTransactionId != null &&
+        event.numericTransactionId!.isNotEmpty &&
+        int.tryParse(event.numericTransactionId!) != null &&
+        !event.numericTransactionId!.contains('-')) {
+      _currentNumericTransactionId = event.numericTransactionId;
+    } else if (int.tryParse(event.taskId.trim()) != null &&
+        !event.taskId.trim().contains('-')) {
+      _currentNumericTransactionId = event.taskId.trim();
+    }
+
     final isCompletedOrRejected = event.status == 'منجزة' ||
         event.status == 'تم الرفض' ||
         event.status == 'completed' ||
         event.status == 'rejected';
 
+    final targetId = _currentNumericTransactionId ?? event.taskId;
+
     final result = isCompletedOrRejected
-        ? await getTransactionCertificate(taskId: event.taskId)
+        ? await getTransactionCertificate(taskId: targetId)
         : await getTaskDetails(taskId: event.taskId);
 
     await result.fold(
@@ -66,6 +80,8 @@ class TransactionDetailsBloc
           taskData['applicant'] = {
             'first_name':
                 applicant['first_name_employee'] ?? applicant['first_name'],
+            'father_name':
+                applicant['father_name_employee'] ?? applicant['father_name'],
             'last_name':
                 applicant['last_name_employee'] ?? applicant['last_name'],
             'national_id':
@@ -121,13 +137,64 @@ class TransactionDetailsBloc
           );
         }
 
+        final extracted = _extractNumericTransactionId(taskData, '');
+        if (extracted.isNotEmpty &&
+            int.tryParse(extracted) != null &&
+            !extracted.contains('-')) {
+          _currentNumericTransactionId = extracted;
+        }
+
+        final extractedTxId = _currentNumericTransactionId ?? event.taskId;
+
         emit(TransactionDetailsLoaded(
           taskData: taskData,
           formValues: formValues,
           loadedTemplates: loadedTemplates,
+          transactionId: extractedTxId,
         ));
       },
     );
+  }
+
+  String _extractNumericTransactionId(
+      Map<String, dynamic> taskData, String defaultTaskId) {
+    final history =
+        taskData['transaction_history'] as Map<String, dynamic>? ?? {};
+    final historyData = history['data'] as Map<String, dynamic>? ?? {};
+
+    final candidates = [
+      taskData['transaction_id'],
+      taskData['id_transaction'],
+      taskData['id_process'],
+      taskData['process_id'],
+      history['id_process'],
+      history['id_transaction'],
+      history['transaction_id'],
+      history['id'],
+      historyData['id_process'],
+      historyData['transaction_id'],
+      historyData['id_transaction'],
+      historyData['id'],
+      taskData['id'],
+    ];
+
+    for (final val in candidates) {
+      if (val == null) continue;
+      if (val is int && val > 0) {
+        return val.toString();
+      }
+      final str = val.toString().trim();
+      if (str.isNotEmpty && int.tryParse(str) != null && !str.contains('-')) {
+        return str;
+      }
+    }
+
+    if (int.tryParse(defaultTaskId.trim()) != null &&
+        !defaultTaskId.trim().contains('-')) {
+      return defaultTaskId.trim();
+    }
+
+    return defaultTaskId;
   }
 
   Future<void> _onPickupTransaction(
@@ -192,6 +259,7 @@ class TransactionDetailsBloc
       formId: event.formId,
       formName: event.formName,
       isApprove: event.isApprove,
+      note: event.note,
       pin: event.pin,
       keysDirectoryPath: event.keysDirectoryPath,
       templateIds: event.templateIds,
@@ -202,20 +270,108 @@ class TransactionDetailsBloc
 
     result.fold(
       (failure) {
-        emit(TransactionDetailsFailure(failure.message));
-        if (failure.message.contains('تعارض في إصدار المعاملة') || failure.message.contains('VERSION_CONFLICT')) {
+        final msg = failure.message;
+
+        // Parse error code from message
+        String errorCode = 'UNKNOWN_ERROR';
+        String title = 'حدث خطأ أثناء معالجة المعاملة';
+        List<String> suggestions = [];
+
+        if (msg.contains('VERSION_CONFLICT') ||
+            msg.contains('تعارض في إصدار المعاملة') ||
+            msg.contains('409')) {
+          errorCode = 'VERSION_CONFLICT';
+          title = 'تعارض في إصدار المعاملة';
+          suggestions = [
+            'قام شخص آخر بالتعديل على هذه المعاملة قبلك',
+            'سيتم إعادة تحميل البيانات المحدّثة تلقائياً',
+            'يرجى مراجعة البيانات وإعادة التوقيع مرة أخرى',
+          ];
+        } else if (msg.contains('CAMUNDA_TASK_NOT_FOUND') ||
+            msg.contains('غير موجود في قائمة المهام') ||
+            msg.contains('404')) {
+          errorCode = 'TASK_NOT_FOUND';
+          title = 'المهمة لم تعد متاحة';
+          suggestions = [
+            'ربما تم إكمال هذه المعاملة مسبقاً من قبل موظف آخر',
+            'أو أن سير العمل قد انتقل لمرحلة أخرى',
+            'يرجى العودة إلى قائمة المعاملات والتحقق من الحالة',
+          ];
+        } else if (msg.contains('SIGNING') ||
+            msg.contains('signing') ||
+            msg.contains('التوقيع')) {
+          errorCode = 'SIGNING_ERROR';
+          title = 'خطأ في عملية التوقيع الإلكتروني';
+          suggestions = [
+            'تأكد من أن وحدة USB للتوقيع موصولة بشكل صحيح',
+            'تحقق من صلاحية مفاتيح التوقيع',
+            'حاول إعادة إدخال الفلاشة وإعادة المحاولة',
+          ];
+        } else if (msg.contains('LOCK') ||
+            msg.contains('locked') ||
+            msg.contains('مقفلة')) {
+          errorCode = 'LOCK_ERROR';
+          title = 'المعاملة مقفلة';
+          suggestions = [
+            'هذه المعاملة مقفلة حالياً من قبل موظف آخر',
+            'لا يمكنك اتخاذ إجراء عليها حتى يتم تحريرها',
+            'يرجى المحاولة لاحقاً أو التواصل مع الموظف المعني',
+          ];
+        } else {
+          suggestions = [
+            'حاول إعادة تحميل الصفحة والمحاولة مرة أخرى',
+            'تأكد من اتصالك بالشبكة',
+            'في حال استمرار المشكلة تواصل مع الدعم الفني',
+          ];
+        }
+
+        emit(TransactionSubmitError(
+          taskId: event.taskId,
+          errorCode: errorCode,
+          title: title,
+          message: msg,
+          suggestions: suggestions,
+        ));
+
+        // Auto-reload for version conflict
+        if (errorCode == 'VERSION_CONFLICT') {
           add(LoadTransactionDetails(event.taskId));
-        } else if (currentState is TransactionDetailsLoaded) {
-          emit(currentState);
         }
       },
-      (_) {
-        final successMsg = event.isApprove
-            ? 'تم توقيع وإكمال المعاملة بنجاح'
-            : 'تم رفض المعاملة بنجاح';
-        emit(TransactionDetailsActionSuccess(successMsg,
-            shouldReloadList: true));
-        add(LoadTransactionDetails(event.taskId));
+      (submitResponse) {
+        if (submitResponse is Map<String, dynamic>) {
+          final resData =
+              submitResponse['data'] as Map<String, dynamic>? ?? submitResponse;
+          final extracted = _extractNumericTransactionId(resData, '');
+          if (extracted.isNotEmpty &&
+              int.tryParse(extracted) != null &&
+              !extracted.contains('-')) {
+            _currentNumericTransactionId = extracted;
+          }
+        }
+
+        final String txId = _currentNumericTransactionId ??
+            (currentState is TransactionDetailsLoaded &&
+                    currentState.transactionId != null &&
+                    currentState.transactionId!.isNotEmpty
+                ? currentState.transactionId!
+                : event.taskId);
+
+        if (event.isApprove) {
+          emit(TransactionSignedSuccess(
+            taskId: event.taskId,
+            transactionId: txId,
+            message: 'تم توقيع المعاملة بنجاح',
+            isApproved: true,
+          ));
+        } else {
+          emit(TransactionSignedSuccess(
+            taskId: event.taskId,
+            transactionId: txId,
+            message: 'تم رفض المعاملة',
+            isApproved: false,
+          ));
+        }
       },
     );
   }
