@@ -49,4 +49,17 @@ class NotificationsRemoteDataSource {
       (_) {},
     );
   }
+
+  Future<void> markNotificationsAsRead(List<int> notificationIds) async {
+    if (notificationIds.isEmpty) return;
+    final result = await apiService.makeRequest(
+      method: ApiMethod.patch,
+      endPoint: _endPoints.markNotificationsAsRead,
+      body: {'notification_ids': notificationIds},
+    );
+    result.fold(
+      (failure) => throw ServerException(failure.message),
+      (_) {},
+    );
+  }
 }

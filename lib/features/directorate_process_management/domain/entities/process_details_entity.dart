@@ -118,6 +118,17 @@ class ProcessStageConfigEntity extends Equatable {
       actions.isEmpty &&
       !requiresDigitalSignature;
 
+  Set<int> get templateIds => {
+        ...templates
+            .map((template) => template.templateId)
+            .where((id) => id > 0),
+        ...actions
+            .where((action) => action.isGeneratePdf)
+            .map((action) => action.templateId)
+            .whereType<int>()
+            .where((id) => id > 0),
+      };
+
   @override
   List<Object?> get props => [
         formName,
@@ -219,11 +230,20 @@ class ProcessTemplateEntity extends Equatable {
 class ProcessActionEntity extends Equatable {
   final String code;
   final String name;
+  final int? templateId;
 
-  const ProcessActionEntity({required this.code, required this.name});
+  const ProcessActionEntity({
+    required this.code,
+    required this.name,
+    this.templateId,
+  });
+
+  bool get isGeneratePdf =>
+      code.toUpperCase() == 'GENERATE_PDF' ||
+      name.toUpperCase() == 'GENERATE_PDF';
 
   @override
-  List<Object?> get props => [code, name];
+  List<Object?> get props => [code, name, templateId];
 }
 
 class ProcessAssignmentEntity extends Equatable {

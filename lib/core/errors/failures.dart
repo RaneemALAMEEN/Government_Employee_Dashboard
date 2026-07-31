@@ -8,25 +8,26 @@ import 'package:equatable/equatable.dart';
 /// `failure.message` — they never inspect Dio or status codes.
 abstract class Failure extends Equatable {
   final String message;
+  final int? statusCode;
 
-  const Failure(this.message);
+  const Failure(this.message, {this.statusCode});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, statusCode];
 }
 
 /// Server-side or unexpected response error (4xx/5xx, malformed payload).
 class ServerFailure extends Failure {
-  const ServerFailure(super.message);
+  const ServerFailure(super.message, {super.statusCode});
 }
 
 /// Connectivity / timeout error — the request never reached a usable response.
 class NetworkFailure extends Failure {
-  const NetworkFailure(super.message);
+  const NetworkFailure(super.message, {super.statusCode});
 }
 
 /// Authentication / authorization error (401/403) after the interceptor has
 /// already had its chance to refresh the access token.
 class AuthFailure extends Failure {
-  const AuthFailure(super.message);
+  const AuthFailure(super.message, {super.statusCode});
 }

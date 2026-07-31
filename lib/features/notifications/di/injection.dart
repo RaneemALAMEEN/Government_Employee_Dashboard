@@ -5,6 +5,7 @@ import '../data/repositories/notifications_repository_impl.dart';
 import '../domain/repositories/notifications_repository.dart';
 import '../domain/usecases/get_my_notifications.dart';
 import '../domain/usecases/mark_notification_as_read.dart' as usecase;
+import '../domain/usecases/mark_notifications_as_read.dart';
 import '../presentation/bloc/notifications_bloc.dart';
 
 Future<void> setupNotificationsInjection() async {
@@ -30,11 +31,17 @@ Future<void> setupNotificationsInjection() async {
       () => usecase.MarkNotificationAsRead(getIt<NotificationsRepository>()),
     );
   }
+  if (!getIt.isRegistered<MarkNotificationsAsRead>()) {
+    getIt.registerLazySingleton(
+      () => MarkNotificationsAsRead(getIt<NotificationsRepository>()),
+    );
+  }
   if (!getIt.isRegistered<NotificationsBloc>()) {
     getIt.registerFactory(
       () => NotificationsBloc(
         getMyNotifications: getIt<GetMyNotifications>(),
         markNotificationAsRead: getIt<usecase.MarkNotificationAsRead>(),
+        markNotificationsAsRead: getIt<MarkNotificationsAsRead>(),
       ),
     );
   }

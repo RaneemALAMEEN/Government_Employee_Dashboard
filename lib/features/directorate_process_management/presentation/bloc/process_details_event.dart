@@ -15,3 +15,12 @@ class LoadProcessDetails extends ProcessDetailsEvent {
   @override
   List<Object?> get props => [processId];
 }
+
+class RetryProcessTemplate extends ProcessDetailsEvent {
+  final int templateId;
+
+  const RetryProcessTemplate({required this.templateId});
+
+  @override
+  List<Object?> get props => [templateId];
+}

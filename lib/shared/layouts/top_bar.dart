@@ -1,4 +1,5 @@
 import '../theme/app_text_styles.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../../core/services/session_service.dart';
 import '../../core/storage/secure_storage_service.dart';
 import '../../features/auth/presentation/widgets/change_pin_dialog.dart';
 import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
+import '../../features/notifications/presentation/bloc/notifications_event.dart';
 import '../../features/notifications/presentation/bloc/notifications_state.dart';
 import '../../features/notifications/presentation/widgets/notification_widgets.dart';
 import '../theme/app_colors.dart';
@@ -145,7 +147,8 @@ class _UserInfo extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ValueListenableBuilder(
-                    valueListenable: getIt<SessionService>().currentUserNotifier,
+                    valueListenable:
+                        getIt<SessionService>().currentUserNotifier,
                     builder: (context, user, _) {
                       return Text(
                         user?.userName ?? 'مستخدم',
@@ -223,10 +226,28 @@ class _NotificationButton extends StatefulWidget {
 class _NotificationButtonState extends State<_NotificationButton> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
+  late NotificationsBloc _notificationsBloc;
+  bool _isClosingPanel = false;
 
-  void _closePanel() {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _notificationsBloc = context.read<NotificationsBloc>();
+  }
+
+  Future<void> _closePanel({bool preserveSession = false}) async {
+    if (_overlayEntry == null || _isClosingPanel) return;
+    _isClosingPanel = true;
+    final closed = _notificationsBloc.stream.firstWhere(
+      (state) => !state.isPopupOpen && !state.isClosingPopupAndMarkingRead,
+    );
+    _notificationsBloc.add(
+      NotificationsPopupClosed(preserveSession: preserveSession),
+    );
+    await closed;
     _overlayEntry?.remove();
     _overlayEntry = null;
+    _isClosingPanel = false;
   }
 
   void _togglePanel() {
@@ -235,7 +256,8 @@ class _NotificationButtonState extends State<_NotificationButton> {
       return;
     }
 
-    final notificationsBloc = context.read<NotificationsBloc>();
+    final notificationsBloc = _notificationsBloc;
+    notificationsBloc.add(const NotificationsPopupOpened());
     _overlayEntry = OverlayEntry(
       builder: (overlayContext) => Stack(
         children: [
@@ -253,22 +275,22 @@ class _NotificationButtonState extends State<_NotificationButton> {
             offset: const Offset(0, 8),
             child: Directionality(
               textDirection: TextDirection.rtl,
-              child: BlocProvider.value(
-                value: notificationsBloc,
-                child: QuickNotificationsPanel(
-                  onClose: _closePanel,
-                  onViewAll: () {
-                    _closePanel();
-                    context.push('/notifications');
-                  },
-                  onNotificationTap: (notification) {
-                    handleNotificationTap(
-                      context,
-                      notification,
-                      beforeOpeningDetails: _closePanel,
-                    );
-                  },
-                ),
+              child: QuickNotificationsPanel(
+                bloc: notificationsBloc,
+                onClose: _closePanel,
+                onViewAll: () async {
+                  await _closePanel(preserveSession: true);
+                  if (!mounted) return;
+                  context.push('/notifications');
+                },
+                onNotificationTap: (notification) async {
+                  await _closePanel();
+                  if (!mounted) return;
+                  handleNotificationTap(
+                    context,
+                    notification,
+                  );
+                },
               ),
             ),
           ),
@@ -280,18 +302,27 @@ class _NotificationButtonState extends State<_NotificationButton> {
 
   @override
   void dispose() {
-    _closePanel();
+    if (_overlayEntry != null) {
+      _notificationsBloc.add(const NotificationsPopupClosed());
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (kDebugMode) {
+      final bloc = context.read<NotificationsBloc>();
+      debugPrint(
+        '[NotificationsBloc][Topbar] instance=${identityHashCode(bloc)}',
+      );
+    }
     return CompositedTransformTarget(
       link: _layerLink,
-      child: BlocBuilder<NotificationsBloc, NotificationsState>(
-        buildWhen: (previous, current) =>
-            previous.unreadCount != current.unreadCount,
-        builder: (context, state) => MouseRegion(
+      child: BlocSelector<NotificationsBloc, NotificationsState, int>(
+        selector: (state) => state.unreadCount,
+        builder: (context, unreadCount) => MouseRegion(
           cursor: SystemMouseCursors.click,
           child: Stack(
             clipBehavior: Clip.none,
@@ -313,7 +344,7 @@ class _NotificationButtonState extends State<_NotificationButton> {
                   ),
                 ),
               ),
-              if (state.unreadCount > 0)
+              if (unreadCount > 0)
                 Positioned(
                   top: -5,
                   right: -7,
@@ -329,9 +360,7 @@ class _NotificationButtonState extends State<_NotificationButton> {
                       border: Border.all(color: AppColors.surface, width: 1.5),
                     ),
                     child: Text(
-                      state.unreadCount > 99
-                          ? '99+'
-                          : state.unreadCount.toString(),
+                      unreadCount > 99 ? '99+' : unreadCount.toString(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppColors.surface,

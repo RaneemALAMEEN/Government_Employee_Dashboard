@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/storage/secure_storage_service.dart';
@@ -28,7 +29,7 @@ class StatisticsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw ServerException(failure.message),
+      (failure) => throw StatisticsDataSourceException(failure),
       (response) {
         if (response is! Map) {
           throw const ServerException('استجابة تفاصيل الموظف غير صالحة');
@@ -59,7 +60,7 @@ class StatisticsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw ServerException(failure.message),
+      (failure) => throw StatisticsDataSourceException(failure),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         final items = data['items'] as List? ?? [];
@@ -93,7 +94,7 @@ class StatisticsRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw ServerException(failure.message),
+      (failure) => throw StatisticsDataSourceException(failure),
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         final items = data['items'] as List? ?? [];
@@ -116,6 +117,12 @@ class StatisticsRemoteDataSource {
     }
     return storage.getDepartmentIds();
   }
+}
+
+class StatisticsDataSourceException implements Exception {
+  final Failure failure;
+
+  const StatisticsDataSourceException(this.failure);
 }
 
 dynamic _redactSensitiveData(dynamic value) {

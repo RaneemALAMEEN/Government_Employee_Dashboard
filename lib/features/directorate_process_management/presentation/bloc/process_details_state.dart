@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/process_details_entity.dart';
+import '../../../internal_transactions/domain/entities/document_template_entity.dart';
 
 sealed class ProcessDetailsState extends Equatable {
   const ProcessDetailsState();
@@ -19,11 +20,36 @@ class ProcessDetailsLoading extends ProcessDetailsState {
 
 class ProcessDetailsLoaded extends ProcessDetailsState {
   final ProcessDetailsEntity details;
+  final Map<int, DocumentTemplateEntity> templatesById;
+  final Set<int> loadingTemplateIds;
+  final Set<int> failedTemplateIds;
 
-  const ProcessDetailsLoaded({required this.details});
+  const ProcessDetailsLoaded({
+    required this.details,
+    this.templatesById = const {},
+    this.loadingTemplateIds = const {},
+    this.failedTemplateIds = const {},
+  });
+
+  ProcessDetailsLoaded copyWith({
+    Map<int, DocumentTemplateEntity>? templatesById,
+    Set<int>? loadingTemplateIds,
+    Set<int>? failedTemplateIds,
+  }) =>
+      ProcessDetailsLoaded(
+        details: details,
+        templatesById: templatesById ?? this.templatesById,
+        loadingTemplateIds: loadingTemplateIds ?? this.loadingTemplateIds,
+        failedTemplateIds: failedTemplateIds ?? this.failedTemplateIds,
+      );
 
   @override
-  List<Object?> get props => [details];
+  List<Object?> get props => [
+        details,
+        templatesById,
+        loadingTemplateIds,
+        failedTemplateIds,
+      ];
 }
 
 class ProcessDetailsError extends ProcessDetailsState {

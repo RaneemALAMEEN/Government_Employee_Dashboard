@@ -16,11 +16,13 @@ import '../../../../shared/theme/app_text_styles.dart';
 class PdfViewerPage extends StatefulWidget {
   final String fileUrl;
   final String title;
+  final bool readOnly;
 
   const PdfViewerPage({
     super.key,
     required this.fileUrl,
     required this.title,
+    this.readOnly = false,
   });
 
   @override
@@ -188,7 +190,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     if (_pdfBytes == null) return;
     try {
       final rawTitle = widget.title.trim();
-      final originalFilename = rawTitle.endsWith('.pdf') ? rawTitle : '$rawTitle.pdf';
+      final originalFilename =
+          rawTitle.endsWith('.pdf') ? rawTitle : '$rawTitle.pdf';
       final savePath = await AppFileDownloader.getSavePath(
         originalFilename: originalFilename,
       );
@@ -261,7 +264,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             ),
             title: Row(
               children: [
-                const Icon(LucideIcons.fileText, size: 21, color: AppColors.gold),
+                const Icon(LucideIcons.fileText,
+                    size: 21, color: AppColors.gold),
                 const SizedBox(width: 9),
                 Expanded(
                   child: Text(
@@ -365,7 +369,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CircularProgressIndicator(
-                          value: _downloadProgress > 0 ? _downloadProgress : null,
+                          value:
+                              _downloadProgress > 0 ? _downloadProgress : null,
                           color: AppColors.primary,
                         ),
                         const SizedBox(height: 16),
@@ -396,7 +401,8 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                           ),
                           child: SfPdfViewer.memory(
                             _pdfBytes!,
-                            key: ValueKey('pdf_${_reloadKey}_${_layoutMode.name}'),
+                            key: ValueKey(
+                                'pdf_${_reloadKey}_${_layoutMode.name}'),
                             controller: _controller,
                             pageLayoutMode: _layoutMode,
                             scrollDirection: PdfScrollDirection.vertical,
@@ -404,11 +410,22 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                             canShowScrollHead: true,
                             canShowScrollStatus: false,
                             enableDoubleTapZooming: true,
-                            enableTextSelection: true,
+                            enableTextSelection: !widget.readOnly,
+                            canShowTextSelectionMenu: !widget.readOnly,
+                            interactionMode: widget.readOnly
+                                ? PdfInteractionMode.pan
+                                : PdfInteractionMode.selection,
                             pageSpacing: 10,
                             onDocumentLoaded: (details) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 if (!mounted) return;
+                                if (widget.readOnly) {
+                                  for (final field
+                                      in _controller.getFormFields()) {
+                                    field.readOnly = true;
+                                  }
+                                  FocusManager.instance.primaryFocus?.unfocus();
+                                }
                                 setState(() {
                                   _pageCount = details.document.pages.count;
                                   _pageNumber = 1;
@@ -482,7 +499,8 @@ class _PdfErrorState extends StatelessWidget {
                 height: 70,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF4A1017), width: 2.5),
+                  border:
+                      Border.all(color: const Color(0xFF4A1017), width: 2.5),
                 ),
                 child: const Center(
                   child: Text(
@@ -526,7 +544,8 @@ class _PdfErrorState extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.forest,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   elevation: 0,
                   shape: const StadiumBorder(),
                   textStyle: AppTextStyles.labelLarge.copyWith(
@@ -539,4 +558,3 @@ class _PdfErrorState extends StatelessWidget {
         ),
       );
 }
-

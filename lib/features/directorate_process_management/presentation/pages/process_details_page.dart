@@ -5,6 +5,8 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/utils/app_file_url.dart';
+import '../../../internal_transactions/domain/entities/document_template_entity.dart';
 import '../../domain/entities/process_details_entity.dart';
 import '../bloc/process_details_bloc.dart';
 import '../bloc/process_details_event.dart';
@@ -61,7 +63,12 @@ class ProcessDetailsPage extends StatelessWidget {
           title: 'لا توجد تفاصيل متاحة لهذه العملية',
         );
       }
-      return _DetailsContent(details: state.details);
+      return _DetailsContent(
+        details: state.details,
+        templatesById: state.templatesById,
+        loadingTemplateIds: state.loadingTemplateIds,
+        failedTemplateIds: state.failedTemplateIds,
+      );
     }
     return const _MessageState(
       icon: LucideIcons.inbox,
@@ -104,8 +111,16 @@ class _BackButton extends StatelessWidget {
 
 class _DetailsContent extends StatelessWidget {
   final ProcessDetailsEntity details;
+  final Map<int, DocumentTemplateEntity> templatesById;
+  final Set<int> loadingTemplateIds;
+  final Set<int> failedTemplateIds;
 
-  const _DetailsContent({required this.details});
+  const _DetailsContent({
+    required this.details,
+    required this.templatesById,
+    required this.loadingTemplateIds,
+    required this.failedTemplateIds,
+  });
 
   @override
   Widget build(BuildContext context) => Column(
@@ -142,6 +157,9 @@ class _DetailsContent extends StatelessWidget {
                     index: entry.key,
                     stage: entry.value,
                     isLast: entry.key == details.stages.length - 1,
+                    templatesById: templatesById,
+                    loadingTemplateIds: loadingTemplateIds,
+                    failedTemplateIds: failedTemplateIds,
                   ),
                 ),
           const SizedBox(height: 22),
@@ -290,11 +308,17 @@ class _StageTimelineItem extends StatelessWidget {
   final int index;
   final ProcessStageEntity stage;
   final bool isLast;
+  final Map<int, DocumentTemplateEntity> templatesById;
+  final Set<int> loadingTemplateIds;
+  final Set<int> failedTemplateIds;
 
   const _StageTimelineItem({
     required this.index,
     required this.stage,
     required this.isLast,
+    required this.templatesById,
+    required this.loadingTemplateIds,
+    required this.failedTemplateIds,
   });
 
   @override
@@ -340,7 +364,12 @@ class _StageTimelineItem extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
-                  child: _StageCard(stage: stage),
+                  child: _StageCard(
+                    stage: stage,
+                    templatesById: templatesById,
+                    loadingTemplateIds: loadingTemplateIds,
+                    failedTemplateIds: failedTemplateIds,
+                  ),
                 ),
               ),
             ],
@@ -351,8 +380,16 @@ class _StageTimelineItem extends StatelessWidget {
 
 class _StageCard extends StatelessWidget {
   final ProcessStageEntity stage;
+  final Map<int, DocumentTemplateEntity> templatesById;
+  final Set<int> loadingTemplateIds;
+  final Set<int> failedTemplateIds;
 
-  const _StageCard({required this.stage});
+  const _StageCard({
+    required this.stage,
+    required this.templatesById,
+    required this.loadingTemplateIds,
+    required this.failedTemplateIds,
+  });
 
   @override
   Widget build(BuildContext context) => _SectionCard(
@@ -405,9 +442,145 @@ class _StageCard extends StatelessWidget {
               const SizedBox(height: 7),
               _FieldsGrid(widgets: stage.config.widgets),
             ],
+            if (stage.config.templateIds.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _StageTemplatesSection(
+                templateIds: stage.config.templateIds.toList(growable: false),
+                templatesById: templatesById,
+                loadingTemplateIds: loadingTemplateIds,
+                failedTemplateIds: failedTemplateIds,
+              ),
+            ],
           ],
         ),
       );
+}
+
+class _StageTemplatesSection extends StatelessWidget {
+  final List<int> templateIds;
+  final Map<int, DocumentTemplateEntity> templatesById;
+  final Set<int> loadingTemplateIds;
+  final Set<int> failedTemplateIds;
+
+  const _StageTemplatesSection({
+    required this.templateIds,
+    required this.templatesById,
+    required this.loadingTemplateIds,
+    required this.failedTemplateIds,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.lightPrimary.withValues(alpha: .22),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border.withValues(alpha: .22)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('القالب المرتبط', style: AppTextStyles.titleSmall),
+            const SizedBox(height: 9),
+            ...templateIds.map((id) => Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: _TemplateStatus(
+                    templateId: id,
+                    template: templatesById[id],
+                    isLoading: loadingTemplateIds.contains(id),
+                    hasFailed: failedTemplateIds.contains(id),
+                  ),
+                )),
+          ],
+        ),
+      );
+}
+
+class _TemplateStatus extends StatelessWidget {
+  final int templateId;
+  final DocumentTemplateEntity? template;
+  final bool isLoading;
+  final bool hasFailed;
+
+  const _TemplateStatus({
+    required this.templateId,
+    required this.template,
+    required this.isLoading,
+    required this.hasFailed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 9),
+          Text('جاري تحميل بيانات القالب...'),
+        ],
+      );
+    }
+    if (hasFailed || template == null) {
+      return Row(
+        children: [
+          const Expanded(child: Text('تعذر تحميل بيانات القالب')),
+          TextButton(
+            onPressed: () => context
+                .read<ProcessDetailsBloc>()
+                .add(RetryProcessTemplate(templateId: templateId)),
+            child: const Text('إعادة المحاولة'),
+          ),
+        ],
+      );
+    }
+    final item = template!;
+    final hasFile = item.filePath.trim().isNotEmpty;
+    return Row(
+      children: [
+        const Icon(LucideIcons.fileText, color: AppColors.primary, size: 19),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.name.trim().isEmpty ? 'قالب مستند' : item.name,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                hasFile
+                    ? _templateEngineLabel(item.engineType)
+                    : 'لا يتوفر ملف لهذا القالب',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasFile)
+          OutlinedButton.icon(
+            onPressed: () => context.push(
+              '/pdf-viewer',
+              extra: {
+                'fileUrl': buildAbsoluteFileUrl(item.filePath),
+                'title': item.name.trim().isEmpty ? 'عرض القالب' : item.name,
+                'readOnly': true,
+              },
+            ),
+            icon: const Icon(LucideIcons.eye, size: 17),
+            label: const Text('عرض القالب'),
+          ),
+      ],
+    );
+  }
 }
 
 class _CompactResponsibility extends StatelessWidget {
@@ -1265,6 +1438,17 @@ String _authTypeLabel(String value) {
       return 'مدير نظام';
     default:
       return _available(value);
+  }
+}
+
+String _templateEngineLabel(String value) {
+  switch (value.toUpperCase()) {
+    case 'ACROFORM':
+      return 'نموذج PDF';
+    case 'HTML':
+      return 'قالب مستند';
+    default:
+      return value.trim().isEmpty ? 'قالب PDF' : 'قالب PDF';
   }
 }
 

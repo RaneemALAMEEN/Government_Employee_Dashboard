@@ -42,9 +42,8 @@ import '../../shared/pages/coming_soon_page.dart';
 import '../../features/organization_hierarchy/presentation/pages/organization_hierarchy_page.dart';
 import '../../features/document_verification/presentation/bloc/document_verification_bloc.dart';
 import '../../features/document_verification/presentation/pages/document_verification_page.dart';
-import '../../features/notifications/presentation/bloc/notifications_bloc.dart';
-import '../../features/notifications/presentation/bloc/notifications_event.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/notifications/presentation/widgets/authenticated_notifications_scope.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -86,9 +85,7 @@ class AppRouter {
       ShellRoute(
         pageBuilder: (context, state, child) {
           return NoTransitionPage(
-            child: BlocProvider(
-              create: (_) =>
-                  getIt<NotificationsBloc>()..add(const LoadNotifications()),
+            child: AuthenticatedNotificationsScope(
               child: AppShell(child: child),
             ),
           );
@@ -173,15 +170,27 @@ class AppRouter {
             ),
           ),
           GoRoute(
-            path: '/internal-transaction-form',
+            path: '/internal-transaction-form/:processId',
             pageBuilder: (context, state) {
-              final processId = state.extra as int? ?? 0;
+              final processId =
+                  int.tryParse(state.pathParameters['processId'] ?? '') ?? 0;
+              final extra = state.extra is Map
+                  ? Map<String, dynamic>.from(state.extra as Map)
+                  : const <String, dynamic>{};
+              final parsedStageCount =
+                  int.tryParse(extra['stageCount']?.toString() ?? '');
 
               return NoTransitionPage(
                 child: BlocProvider(
                   create: (_) => getIt<InternalTransactionFormBloc>()
                     ..add(LoadInternalTransactionForm(processId)),
-                  child: InternalTransactionFormPage(processId: processId),
+                  child: InternalTransactionFormPage(
+                    processId: processId,
+                    initialProcessName: extra['processName']?.toString(),
+                    stageCount: parsedStageCount != null && parsedStageCount > 0
+                        ? parsedStageCount
+                        : null,
+                  ),
                 ),
               );
             },
@@ -297,17 +306,21 @@ class AppRouter {
             pageBuilder: (context, state) {
               String fileUrl = '';
               String title = 'عرض الوثيقة';
+              bool readOnly = false;
               if (state.extra is String) {
                 fileUrl = state.extra as String;
               } else if (state.extra is Map<String, dynamic>) {
                 final map = state.extra as Map<String, dynamic>;
-                fileUrl = map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
+                fileUrl =
+                    map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
                 title = map['title']?.toString() ?? 'عرض الوثيقة';
+                readOnly = map['readOnly'] == true;
               }
               return NoTransitionPage(
                 child: PdfViewerPage(
                   fileUrl: fileUrl,
                   title: title,
+                  readOnly: readOnly,
                 ),
               );
             },
@@ -321,7 +334,8 @@ class AppRouter {
                 fileUrl = state.extra as String;
               } else if (state.extra is Map<String, dynamic>) {
                 final map = state.extra as Map<String, dynamic>;
-                fileUrl = map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
+                fileUrl =
+                    map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
                 title = map['title']?.toString() ?? 'عرض الصورة';
               }
               return NoTransitionPage(

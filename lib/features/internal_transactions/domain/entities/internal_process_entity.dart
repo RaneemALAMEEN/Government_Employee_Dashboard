@@ -3,11 +3,13 @@ class InternalProcessEntity {
   final String name;
   final String code;
   final int priority;
+  final int? stageCount;
 
   const InternalProcessEntity({
     required this.processId,
     required this.name,
     required this.code,
     required this.priority,
+    this.stageCount,
   });
 }

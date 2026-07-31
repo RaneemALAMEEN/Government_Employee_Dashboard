@@ -13,6 +13,9 @@ class DynamicFormModel extends DynamicFormEntity {
     super.expectedVersion,
     super.templateIds,
     super.templates,
+    super.processName,
+    super.currentStageNumber,
+    super.totalStages,
   });
 
   factory DynamicFormModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +28,26 @@ class DynamicFormModel extends DynamicFormEntity {
         .whereType<Map<String, dynamic>>()
         .where((item) => item['widgets'] is List)
         .toList();
+    final stages = json['stages'] is List
+        ? json['stages'] as List
+        : config['stages'] is List
+            ? config['stages'] as List
+            : null;
+    final rawTotalStages = json['stages_count'] ??
+        json['steps_count'] ??
+        json['total_stages'] ??
+        config['stages_count'] ??
+        config['steps_count'] ??
+        config['total_stages'];
+    final parsedTotalStages =
+        int.tryParse(rawTotalStages?.toString() ?? '') ?? stages?.length;
+    final rawCurrentStage = json['stage_number'] ??
+        json['current_stage_number'] ??
+        json['stage_order'] ??
+        config['stage_number'] ??
+        config['current_stage_number'] ??
+        config['stage_order'];
+    final parsedCurrentStage = int.tryParse(rawCurrentStage?.toString() ?? '');
 
     return DynamicFormModel(
       transactionId: json['transaction_id'] ?? 0,
@@ -61,6 +84,13 @@ class DynamicFormModel extends DynamicFormEntity {
             ),
           )
           .toList(),
+      processName: (json['process_name'] ?? config['process_name'])?.toString(),
+      currentStageNumber: parsedCurrentStage != null && parsedCurrentStage > 0
+          ? parsedCurrentStage
+          : null,
+      totalStages: parsedTotalStages != null && parsedTotalStages > 0
+          ? parsedTotalStages
+          : null,
     );
   }
 }

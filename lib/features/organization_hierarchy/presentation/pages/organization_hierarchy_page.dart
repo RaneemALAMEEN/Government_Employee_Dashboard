@@ -4,11 +4,13 @@ import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../../../../shared/widgets/permission_denied_card.dart';
 import '../../domain/entities/org_node_entity.dart';
 import '../bloc/org_hierarchy_bloc.dart';
 import '../bloc/org_hierarchy_event.dart';
@@ -145,17 +147,7 @@ class _OrganizationHierarchyView extends StatelessWidget {
     return Scaffold(
       backgroundColor:
           Colors.transparent, // assuming it's inside main dashboard
-      body: BlocConsumer<OrgHierarchyBloc, OrgHierarchyState>(
-        listenWhen: (previous, current) => current is OrgHierarchyFailure,
-        listener: (context, state) {
-          final failure = state as OrgHierarchyFailure;
-          AppSnackBar.show(
-            context,
-            message: failure.message,
-            isError: true,
-            title: 'تعذر تحميل الهيكل التنظيمي',
-          );
-        },
+      body: BlocBuilder<OrgHierarchyBloc, OrgHierarchyState>(
         builder: (context, state) {
 // ... (in builder)
           if (state is OrgHierarchyLoading || state is OrgHierarchyInitial) {
@@ -196,7 +188,34 @@ class _OrganizationHierarchyView extends StatelessWidget {
           }
 
           if (state is OrgHierarchyFailure) {
+            final failure = state.failure;
+            if (failure.statusCode == 403) {
+              return const Directionality(
+                textDirection: TextDirection.rtl,
+                child: PermissionDeniedCard(
+                  title: 'لا تملك صلاحية عرض الهيكل التنظيمي',
+                  description: 'تواصل مع مسؤول النظام لمنحك الصلاحية المناسبة',
+                ),
+              );
+            }
+            if (failure.statusCode == 401) {
+              return const Center(
+                child: Text('انتهت الجلسة، جارٍ العودة لتسجيل الدخول...'),
+              );
+            }
+            if (failure is NetworkFailure) {
+              return AppErrorWidget(
+                title: 'الاتصال بالإنترنت',
+                message: 'لا يتوفر اتصال بالإنترنت',
+                onRetry: () => context
+                    .read<OrgHierarchyBloc>()
+                    .add(const LoadOrgHierarchy()),
+              );
+            }
             return AppErrorWidget(
+              title: 'تعذر تحميل الهيكل التنظيمي',
+              message: 'حدث خطأ من الخادم، حاول مرة أخرى',
+              icon: LucideIcons.serverOff,
               onRetry: () => context
                   .read<OrgHierarchyBloc>()
                   .add(const LoadOrgHierarchy()),

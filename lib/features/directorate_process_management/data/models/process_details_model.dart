@@ -230,14 +230,22 @@ class ProcessTemplateModel extends ProcessTemplateEntity {
 }
 
 class ProcessActionModel extends ProcessActionEntity {
-  const ProcessActionModel({required super.code, required super.name});
+  const ProcessActionModel({
+    required super.code,
+    required super.name,
+    super.templateId,
+  });
 
   factory ProcessActionModel.fromDynamic(dynamic item) {
     if (item is Map) {
       final json = Map<String, dynamic>.from(item);
+      final payload = _map(json['payload']);
       return ProcessActionModel(
         code: _string(json['code'] ?? json['action'] ?? json['type']),
         name: _string(json['name'] ?? json['label']),
+        templateId: _nullableInt(
+          payload['template_id'] ?? json['template_id'],
+        ),
       );
     }
     return ProcessActionModel(code: _string(item), name: '');

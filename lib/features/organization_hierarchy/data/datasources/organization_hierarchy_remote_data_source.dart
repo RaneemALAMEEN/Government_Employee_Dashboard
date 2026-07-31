@@ -1,5 +1,6 @@
 import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
 import '../models/department_leaf_model.dart';
@@ -79,7 +80,7 @@ class OrganizationHierarchyRemoteDataSource {
     );
 
     return result.fold(
-      (failure) => throw ServerException(failure.message),
+      (failure) => throw OrganizationHierarchyDataSourceException(failure),
       (response) {
         if (response is! Map) {
           throw const ServerException('استجابة الخادم غير صالحة.');
@@ -88,4 +89,10 @@ class OrganizationHierarchyRemoteDataSource {
       },
     );
   }
+}
+
+class OrganizationHierarchyDataSourceException implements Exception {
+  final Failure failure;
+
+  const OrganizationHierarchyDataSourceException(this.failure);
 }

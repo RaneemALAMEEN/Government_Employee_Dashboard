@@ -11,4 +11,7 @@ abstract class NotificationsRepository {
   });
 
   Future<Either<Failure, Unit>> markNotificationAsRead(int notificationId);
+  Future<Either<Failure, Unit>> markNotificationsAsRead(
+    List<int> notificationIds,
+  );
 }

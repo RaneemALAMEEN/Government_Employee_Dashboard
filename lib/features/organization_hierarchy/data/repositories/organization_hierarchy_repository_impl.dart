@@ -45,6 +45,8 @@ class OrganizationHierarchyRepositoryImpl
   ) async {
     try {
       return Right(await request());
+    } on OrganizationHierarchyDataSourceException catch (error) {
+      return Left(error.failure);
     } on ServerException catch (error) {
       return Left(ServerFailure(error.message));
     } catch (_) {

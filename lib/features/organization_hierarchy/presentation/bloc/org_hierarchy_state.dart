@@ -1,3 +1,4 @@
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/org_node_entity.dart';
 
 abstract class OrgHierarchyState {
@@ -23,7 +24,7 @@ class OrgHierarchyLoaded extends OrgHierarchyState {
 }
 
 class OrgHierarchyFailure extends OrgHierarchyState {
-  final String message;
+  final Failure failure;
 
-  const OrgHierarchyFailure(this.message);
+  const OrgHierarchyFailure(this.failure);
 }

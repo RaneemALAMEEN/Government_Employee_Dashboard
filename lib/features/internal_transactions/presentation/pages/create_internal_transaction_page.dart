@@ -418,9 +418,12 @@ class _ProcessCardState extends State<_ProcessCard> {
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () {
-            context.go(
-              '/internal-transaction-form',
-              extra: widget.process.processId,
+            context.push(
+              '/internal-transaction-form/${widget.process.processId}',
+              extra: {
+                'processName': widget.process.name,
+                'stageCount': widget.process.stageCount,
+              },
             );
           },
           child: Column(
@@ -459,24 +462,10 @@ class _ProcessCardState extends State<_ProcessCard> {
                 ],
               ),
               const Spacer(),
-              Row(
-                children: List.generate(
-                  5,
-                  (index) => Expanded(
-                    child: Container(
-                      height: 4,
-                      margin: EdgeInsets.only(left: index == 4 ? 0 : 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.charcoal.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
               Text(
-                '5 خطوات',
+                widget.process.stageCount == null
+                    ? 'عرض مراحل المعاملة'
+                    : '${widget.process.stageCount} خطوات',
                 textAlign: TextAlign.left,
                 style: AppTextStyles.labelLarge.copyWith(
                   fontWeight: AppTextStyles.medium,

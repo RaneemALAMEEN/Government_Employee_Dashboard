@@ -120,10 +120,6 @@ Future<void> main() async {
   if (_isDesktop) {
     await TrayService.instance.init();
   }
-  // يبدأ الاتصال؛ يعيد المحاولة تلقائيًّا. قبل تسجيل الدخول لا يوجد توكن فيرفضه
-  // الخادم، ثم يتعافى ذاتيًّا (إعادة محاولة كل 60ث) ويلتقط التوكن بعد الدخول.
-  await getIt<PushSocket>().start();
-
   runApp(const GovernmentEmployeeApp());
 
   if (_isDesktop) {
@@ -151,7 +147,8 @@ class GovernmentEmployeeApp extends StatelessWidget {
           create: (_) => getIt<DashboardBloc>()..add(LoadDashboardEvent()),
         ),
         BlocProvider<MyTransactionsBloc>(
-          create: (_) => getIt<MyTransactionsBloc>()..add(LoadMyTransactions()),
+          create: (_) =>
+              getIt<MyTransactionsBloc>()..add(const LoadMyTransactions()),
         ),
         BlocProvider<DeptTxBloc>(
           create: (_) => getIt<DeptTxBloc>()..add(const LoadDeptTx()),

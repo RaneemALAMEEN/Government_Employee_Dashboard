@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/failures.dart';
 import '../../../../core/services/session_service.dart';
 import '../../domain/entities/department_leaf_entity.dart';
 import '../../domain/entities/department_role_entity.dart';
@@ -36,16 +37,17 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
     final resolvedOrganizationId = await sessionService.resolveOrganizationId();
 
     if (resolvedOrganizationId <= 0) {
-      emit(const OrgHierarchyFailure(
+      emit(const OrgHierarchyFailure(AuthFailure(
         'تعذر تحديد المؤسسة من جلسة الدخول. يرجى تسجيل الخروج والدخول مجدداً.',
-      ));
+        statusCode: 401,
+      )));
       return;
     }
 
     final result = await getDepartmentLeaves(resolvedOrganizationId);
     if (emit.isDone) return;
     result.fold(
-      (failure) => emit(OrgHierarchyFailure(failure.message)),
+      (failure) => emit(OrgHierarchyFailure(failure)),
       (leaves) => emit(OrgHierarchyLoaded(
         organizationId: resolvedOrganizationId,
         nodes: _buildDepartmentTree(leaves),
@@ -82,17 +84,7 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
     if (latest is! OrgHierarchyLoaded) return;
 
     result.fold(
-      (failure) => emit(OrgHierarchyLoaded(
-        organizationId: latest.organizationId,
-        nodes: _updateNode(
-          latest.nodes,
-          target.id,
-          (node) => node.copyWith(
-            loadingChildren: false,
-            childrenError: failure.message,
-          ),
-        ),
-      )),
+      (failure) => emit(OrgHierarchyFailure(failure)),
       (roles) => emit(OrgHierarchyLoaded(
         organizationId: latest.organizationId,
         nodes: _updateNode(
@@ -145,17 +137,7 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
     if (latest is! OrgHierarchyLoaded) return;
 
     result.fold(
-      (failure) => emit(OrgHierarchyLoaded(
-        organizationId: latest.organizationId,
-        nodes: _updateNode(
-          latest.nodes,
-          nodeId,
-          (node) => node.copyWith(
-            loadingChildren: false,
-            childrenError: failure.message,
-          ),
-        ),
-      )),
+      (failure) => emit(OrgHierarchyFailure(failure)),
       (employees) => emit(OrgHierarchyLoaded(
         organizationId: latest.organizationId,
         nodes: _updateNode(

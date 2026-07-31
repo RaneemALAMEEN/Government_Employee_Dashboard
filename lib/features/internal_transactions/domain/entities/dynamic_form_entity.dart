@@ -11,6 +11,9 @@ class DynamicFormEntity {
   final List<DynamicWidgetEntity> widgets;
   final List<int> templateIds;
   final List<DynamicFormTemplateEntity> templates;
+  final String? processName;
+  final int? currentStageNumber;
+  final int? totalStages;
 
   const DynamicFormEntity({
     required this.transactionId,
@@ -23,6 +26,9 @@ class DynamicFormEntity {
     this.expectedVersion,
     this.templateIds = const [],
     this.templates = const [],
+    this.processName,
+    this.currentStageNumber,
+    this.totalStages,
   });
 }
 

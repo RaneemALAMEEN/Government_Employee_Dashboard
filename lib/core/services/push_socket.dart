@@ -77,6 +77,8 @@ class PushSocket {
   final SecureStorageService _storage;
   final TokenRefreshService _refreshService;
   final NotificationService _notifications;
+  final StreamController<PushMessage> _messagesController =
+      StreamController<PushMessage>.broadcast(sync: true);
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -125,6 +127,9 @@ class PushSocket {
   @visibleForTesting
   bool get hasPendingReconnect => _reconnectTimer?.isActive ?? false;
 
+  /// Valid notification messages received from the documented WebSocket.
+  Stream<PushMessage> get messages => _messagesController.stream;
+
   /// يبدأ الاتصال (idempotent). الاستدعاء المتكرر لا يفتح اتصالًا ثانيًا.
   Future<void> start() async {
     if (_active) return;
@@ -141,7 +146,8 @@ class PushSocket {
 
     final wsBase = dotenv.env['WS_URL'];
     if (wsBase == null || wsBase.isEmpty) {
-      debugPrint('[PushSocket] WS_URL غير مُعرَّف في ملف البيئة — تخطّي الاتصال.');
+      debugPrint(
+          '[PushSocket] WS_URL غير مُعرَّف في ملف البيئة — تخطّي الاتصال.');
       return;
     }
 
@@ -244,6 +250,7 @@ class PushSocket {
     final message = PushMessage.tryParse(data);
     if (message == null) return; // رسالة غير صالحة أو إطار تحكّم — تجاهُل آمن.
 
+    _messagesController.add(message);
     _notifications.show(
       title: message.title,
       body: message.body,

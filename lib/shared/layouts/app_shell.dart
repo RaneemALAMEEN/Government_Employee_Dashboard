@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import 'responsive_layout.dart';
 import 'side_menu.dart';
 import 'top_bar.dart';
 
@@ -20,8 +21,39 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   bool? _userCollapsedOverride;
   bool _wasSmallScreen = false;
+  bool _showSidebarLabels = true;
+  Timer? _sidebarSequenceTimer;
 
-  static const double sidebarWidth = 255;
+  static const double sidebarWidth = 270;
+
+  @override
+  void dispose() {
+    _sidebarSequenceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _toggleSidebar(bool isCollapsed) {
+    _sidebarSequenceTimer?.cancel();
+    if (!isCollapsed) {
+      // Remove every wide child before the width starts shrinking.
+      setState(() => _showSidebarLabels = false);
+      _sidebarSequenceTimer = Timer(const Duration(milliseconds: 80), () {
+        if (!mounted) return;
+        setState(() => _userCollapsedOverride = true);
+      });
+      return;
+    }
+
+    // Expand the container first, then restore labels near the end.
+    setState(() {
+      _userCollapsedOverride = false;
+      _showSidebarLabels = false;
+    });
+    _sidebarSequenceTimer = Timer(const Duration(milliseconds: 180), () {
+      if (!mounted) return;
+      setState(() => _showSidebarLabels = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +69,7 @@ class _AppShellState extends State<AppShell> {
               setState(() {
                 _wasSmallScreen = isSmallScreen;
                 _userCollapsedOverride = null;
+                _showSidebarLabels = !isSmallScreen;
               });
             });
           }
@@ -44,9 +77,12 @@ class _AppShellState extends State<AppShell> {
           final isCollapsed = _userCollapsedOverride ?? isSmallScreen;
 
           final double currentSidebarWidth = isCollapsed ? 72 : sidebarWidth;
-          final double availableWidth = constraints.maxWidth - currentSidebarWidth;
-          final double minContentWidth = 600.0;
-          final double contentWidth = availableWidth < minContentWidth ? minContentWidth : availableWidth;
+          final double availableWidth =
+              constraints.maxWidth - currentSidebarWidth;
+          const double minContentWidth = 600.0;
+          final double contentWidth = availableWidth < minContentWidth
+              ? minContentWidth
+              : availableWidth;
 
           final content = SizedBox(
             width: contentWidth,
@@ -60,18 +96,16 @@ class _AppShellState extends State<AppShell> {
           );
 
           return Row(
+            textDirection: TextDirection.rtl,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
                 width: currentSidebarWidth,
-                child: SideMenu(
+                child: AppSidebar(
                   isCollapsed: isCollapsed,
-                  onToggleCollapse: () {
-                    setState(() {
-                      _userCollapsedOverride = !isCollapsed;
-                    });
-                  },
+                  showLabels: !isCollapsed && _showSidebarLabels,
+                  onToggleCollapse: () => _toggleSidebar(isCollapsed),
                 ),
               ),
               Expanded(

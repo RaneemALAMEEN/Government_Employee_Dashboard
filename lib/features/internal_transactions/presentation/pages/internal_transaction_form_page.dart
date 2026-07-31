@@ -25,10 +25,14 @@ import '../widgets/transaction_success_summary.dart';
 
 class InternalTransactionFormPage extends StatefulWidget {
   final int processId;
+  final String? initialProcessName;
+  final int? stageCount;
 
   const InternalTransactionFormPage({
     super.key,
     required this.processId,
+    this.initialProcessName,
+    this.stageCount,
   });
 
   @override
@@ -196,8 +200,13 @@ class _InternalTransactionFormPageState
                   child: Directionality(
                     textDirection: TextDirection.ltr,
                     child: IconButton.outlined(
-                      onPressed: () =>
-                          context.go('/create-internal-transaction'),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/create-internal-transaction');
+                        }
+                      },
                       tooltip: 'العودة لاختيار المعاملة',
                       icon: const Icon(Icons.arrow_forward),
                       color: AppColors.forest,
@@ -209,6 +218,8 @@ class _InternalTransactionFormPageState
                   duration: const Duration(milliseconds: 400),
                   child: _FormHeader(
                     form: form,
+                    processName: widget.initialProcessName,
+                    stageCount: widget.stageCount,
                     hasTemplate:
                         state.template != null || form.templates.isNotEmpty,
                   ),
@@ -300,25 +311,53 @@ class _InternalTransactionFormPageState
 class _FormHeader extends StatelessWidget {
   final DynamicFormEntity form;
   final bool hasTemplate;
+  final String? processName;
+  final int? stageCount;
 
   const _FormHeader({
     required this.form,
     required this.hasTemplate,
+    this.processName,
+    this.stageCount,
   });
 
   @override
   Widget build(BuildContext context) {
     final widgetsCount = form.widgets.length;
+    final detailsProcessName = form.processName?.trim();
+    final routeProcessName = processName?.trim();
+    final resolvedProcessName =
+        detailsProcessName != null && detailsProcessName.isNotEmpty
+            ? detailsProcessName
+            : routeProcessName;
+    final title = resolvedProcessName != null && resolvedProcessName.isNotEmpty
+        ? resolvedProcessName
+        : 'تفاصيل المعاملة';
+    final resolvedStageCount = form.totalStages ?? stageCount;
+    final currentStageNumber = form.currentStageNumber;
+    final stageLabel = resolvedStageCount == null
+        ? 'المرحلة الحالية — ${form.formName}'
+        : currentStageNumber == null
+            ? 'المرحلة الحالية من $resolvedStageCount — ${form.formName}'
+            : 'المرحلة $currentStageNumber من $resolvedStageCount — ${form.formName}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          form.formName,
+          title,
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: AppColors.forest,
                 fontWeight: FontWeight.w900,
               ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          stageLabel,
+          style: AppTextStyles.titleSmall.copyWith(
+            color: AppColors.goldDark,
+            fontWeight: AppTextStyles.semiBold,
+          ),
         ),
         const SizedBox(height: 10),
         Wrap(
@@ -519,9 +558,7 @@ class _TemplateInfo extends StatelessWidget {
                   ),
                   Expanded(
                     child: _pdfUrl.isEmpty
-                        ? const Center(
-                            child: Text('لا يوجد ملف لعرضه'),
-                          )
+                        ? const Center(child: Text('لا يوجد ملف لعرضه'))
                         : _ReadOnlyPdfViewer(url: _pdfUrl),
                   ),
                 ],
@@ -628,8 +665,7 @@ class _ReadOnlyPdfViewer extends StatelessWidget {
       for (var i = 0; i < fields.count; i++) {
         fields[i].flatten();
       }
-      final bytes = Uint8List.fromList(await parsedDocument.save());
-      return bytes;
+      return Uint8List.fromList(await parsedDocument.save());
     } catch (_) {
       return sourceBytes;
     } finally {
@@ -647,7 +683,6 @@ class _ReadOnlyPdfViewer extends StatelessWidget {
             child: CircularProgressIndicator(color: AppColors.forest),
           );
         }
-
         if (snapshot.hasError || snapshot.data == null) {
           return Center(
             child: Text(
@@ -659,7 +694,6 @@ class _ReadOnlyPdfViewer extends StatelessWidget {
             ),
           );
         }
-
         return SfPdfViewer.memory(
           snapshot.data!,
           canShowScrollHead: true,

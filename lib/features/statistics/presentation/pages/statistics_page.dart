@@ -9,6 +9,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../../../../shared/widgets/permission_denied_card.dart';
 import '../../domain/entities/statistics_employee_entity.dart';
 import '../../domain/entities/statistics_process_entity.dart';
 import '../bloc/statistics_bloc.dart';
@@ -52,95 +53,159 @@ class _StatisticsViewState extends State<_StatisticsView>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<StatisticsBloc, StatisticsState>(
-      listenWhen: (previous, current) =>
-          current is StatisticsLoaded &&
-          current.isFallback &&
-          (previous is! StatisticsLoaded || !previous.isFallback),
-      listener: (context, state) {
-        final loaded = state as StatisticsLoaded;
-        AppSnackBar.show(
-          context,
-          message: loaded.warningMessage ??
-              'تعذر تحميل الإحصائيات من الخادم، يتم عرض بيانات تجريبية مؤقتة.',
-          isError: true,
-          title: 'تعذر تحميل الإحصائيات',
-        );
-      },
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              FadeInDown(
-                duration: const Duration(milliseconds: 400),
-                child: const _Header(),
-              ),
-              const SizedBox(height: 22),
-              FadeInUp(
-                duration: const Duration(milliseconds: 400),
-                delay: const Duration(milliseconds: 100),
-                child: _Tabs(controller: _tabController),
-              ),
-              const SizedBox(height: 22),
-              BlocBuilder<StatisticsBloc, StatisticsState>(
-                builder: (context, state) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FadeInDown(
+              duration: const Duration(milliseconds: 400),
+              child: const _Header(),
+            ),
+            const SizedBox(height: 22),
+            FadeInUp(
+              duration: const Duration(milliseconds: 400),
+              delay: const Duration(milliseconds: 100),
+              child: _Tabs(controller: _tabController),
+            ),
+            const SizedBox(height: 22),
+            BlocBuilder<StatisticsBloc, StatisticsState>(
+              builder: (context, state) {
 // ... (inside build)
-                  if (state is StatisticsLoading ||
-                      state is StatisticsInitial) {
-                    return const Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
-                            SizedBox(width: 16),
-                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
-                            SizedBox(width: 16),
-                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
-                            SizedBox(width: 16),
-                            Expanded(child: CustomSkeletonLoader(width: double.infinity, height: 160)),
-                          ],
-                        ),
-                        SizedBox(height: 24),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(flex: 7, child: CustomSkeletonLoader(width: double.infinity, height: 400)),
-                            SizedBox(width: 24),
-                            Expanded(flex: 3, child: CustomSkeletonLoader(width: double.infinity, height: 400)),
-                          ],
-                        ),
-                      ],
-                    );
-                  }
-
-                  final loaded = state as StatisticsLoaded;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                if (state is StatisticsLoading || state is StatisticsInitial) {
+                  return const Column(
                     children: [
-                      SizedBox(
-                        height: 760,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _EmployeeStatsView(employees: loaded.employees),
-                            _TransactionStatsView(
-                              processes: loaded.processes,
-                              fromDate: loaded.processFromDate,
-                              toDate: loaded.processToDate,
-                            ),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                              child: CustomSkeletonLoader(
+                                  width: double.infinity, height: 160)),
+                          SizedBox(width: 16),
+                          Expanded(
+                              child: CustomSkeletonLoader(
+                                  width: double.infinity, height: 160)),
+                          SizedBox(width: 16),
+                          Expanded(
+                              child: CustomSkeletonLoader(
+                                  width: double.infinity, height: 160)),
+                          SizedBox(width: 16),
+                          Expanded(
+                              child: CustomSkeletonLoader(
+                                  width: double.infinity, height: 160)),
+                        ],
+                      ),
+                      SizedBox(height: 24),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                              flex: 7,
+                              child: CustomSkeletonLoader(
+                                  width: double.infinity, height: 400)),
+                          SizedBox(width: 24),
+                          Expanded(
+                              flex: 3,
+                              child: CustomSkeletonLoader(
+                                  width: double.infinity, height: 400)),
+                        ],
                       ),
                     ],
                   );
-                },
+                }
+
+                final loaded = state as StatisticsLoaded;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: 760,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _EmployeeStatsView(
+                            employees: loaded.employees,
+                            status: loaded.employeesStatus,
+                          ),
+                          _TransactionStatsView(
+                            processes: loaded.processes,
+                            status: loaded.transactionsStatus,
+                            fromDate: loaded.processFromDate,
+                            toDate: loaded.processToDate,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatisticsSectionState extends StatelessWidget {
+  final StatisticsSectionStatus status;
+  final String emptyMessage;
+
+  const _StatisticsSectionState({
+    required this.status,
+    required this.emptyMessage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final forbidden = status == StatisticsSectionStatus.forbidden;
+    if (forbidden) {
+      return const PermissionDeniedCard(
+        title: 'لا تملك صلاحية عرض هذه الإحصائيات',
+        description: 'تواصل مع مسؤول النظام لمنحك الصلاحية المناسبة',
+      );
+    }
+    final empty = status == StatisticsSectionStatus.empty;
+    final icon = empty ? LucideIcons.inbox : LucideIcons.triangleAlert;
+    final title = empty ? emptyMessage : 'تعذر تحميل الإحصائيات';
+    final description =
+        empty ? null : 'تعذر جلب البيانات من الخادم. حاول التحديث لاحقاً.';
+
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 42),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gold.withValues(alpha: .25)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 42, color: AppColors.goldDark),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.titleLarge.copyWith(
+                color: AppColors.charcoalDark,
+                fontWeight: AppTextStyles.bold,
+              ),
+            ),
+            if (description != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.goldDark,
+                ),
               ),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -263,11 +328,21 @@ class _TabLabel extends StatelessWidget {
 
 class _EmployeeStatsView extends StatelessWidget {
   final List<StatisticsEmployeeEntity> employees;
+  final StatisticsSectionStatus status;
 
-  const _EmployeeStatsView({required this.employees});
+  const _EmployeeStatsView({
+    required this.employees,
+    required this.status,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (status != StatisticsSectionStatus.success) {
+      return _StatisticsSectionState(
+        status: status,
+        emptyMessage: 'لا يوجد موظفون ضمن هذه الدائرة حالياً',
+      );
+    }
     final active =
         employees.fold<int>(0, (sum, item) => sum + item.activeTotal);
     final completed =
@@ -344,11 +419,13 @@ class _EmployeeStatsView extends StatelessWidget {
 
 class _TransactionStatsView extends StatefulWidget {
   final List<StatisticsProcessEntity> processes;
+  final StatisticsSectionStatus status;
   final String? fromDate;
   final String? toDate;
 
   const _TransactionStatsView({
     required this.processes,
+    required this.status,
     required this.fromDate,
     required this.toDate,
   });
@@ -408,6 +485,12 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.status != StatisticsSectionStatus.success) {
+      return _StatisticsSectionState(
+        status: widget.status,
+        emptyMessage: 'لا توجد بيانات معاملات متاحة حالياً',
+      );
+    }
     final processes = widget.processes;
     final pending = processes.fold<int>(
       0,

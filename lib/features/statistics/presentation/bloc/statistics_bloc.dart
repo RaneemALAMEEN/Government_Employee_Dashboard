@@ -1,9 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/errors/failures.dart';
+import '../../../../core/services/session_service.dart';
 import '../../domain/entities/statistics_employee_entity.dart';
 import '../../domain/entities/statistics_process_entity.dart';
-import '../../../../core/di/injection.dart';
-import '../../../../core/services/session_service.dart';
 import '../../domain/usecases/get_department_employees_stats.dart';
 import '../../domain/usecases/get_process_definition_stats.dart';
 import 'statistics_event.dart';
@@ -43,129 +44,63 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         getIt<SessionService>().activeRoleNotifier.value?.departmentId;
     final departmentIds = departmentId != null ? [departmentId] : <int>[];
 
-    final employeesResult =
-        await getDepartmentEmployeesStats(departmentIds: departmentIds);
-    final processesResult = await getProcessDefinitionStats(
+    final employeesFuture =
+        getDepartmentEmployeesStats(departmentIds: departmentIds);
+    final processesFuture = getProcessDefinitionStats(
       departmentIds: departmentIds,
       fromDate: _processFromDate,
       toDate: _processToDate,
     );
+    final employeesResult = await employeesFuture;
+    final processesResult = await processesFuture;
 
-    var isFallback = false;
-    String? warningMessage;
+    var employees = const <StatisticsEmployeeEntity>[];
+    var processes = const <StatisticsProcessEntity>[];
+    var employeesStatus = StatisticsSectionStatus.initial;
+    var transactionsStatus = StatisticsSectionStatus.initial;
+    String? employeesErrorMessage;
+    String? transactionsErrorMessage;
 
-    final employees = employeesResult.fold(
+    employeesResult.fold(
       (failure) {
-        isFallback = true;
-        warningMessage = failure.message;
-        return _fallbackEmployees;
+        employeesStatus = _failureStatus(failure);
+        employeesErrorMessage = failure.message;
       },
-      (items) => items,
+      (items) {
+        employees = items;
+        employeesStatus = items.isEmpty
+            ? StatisticsSectionStatus.empty
+            : StatisticsSectionStatus.success;
+      },
     );
 
-    final processes = processesResult.fold(
+    processesResult.fold(
       (failure) {
-        isFallback = true;
-        warningMessage ??= failure.message;
-        return _fallbackProcesses;
+        transactionsStatus = _failureStatus(failure);
+        transactionsErrorMessage = failure.message;
       },
-      (items) => items,
+      (items) {
+        processes = items;
+        transactionsStatus = items.isEmpty
+            ? StatisticsSectionStatus.empty
+            : StatisticsSectionStatus.success;
+      },
     );
 
-    emit(
-      StatisticsLoaded(
-        employees: employees,
-        processes: processes,
-        isFallback: isFallback,
-        warningMessage: warningMessage,
-        processFromDate: _processFromDate,
-        processToDate: _processToDate,
-      ),
-    );
+    emit(StatisticsLoaded(
+      employees: employees,
+      processes: processes,
+      employeesStatus: employeesStatus,
+      transactionsStatus: transactionsStatus,
+      employeesErrorMessage: employeesErrorMessage,
+      transactionsErrorMessage: transactionsErrorMessage,
+      processFromDate: _processFromDate,
+      processToDate: _processToDate,
+    ));
   }
+
+  StatisticsSectionStatus _failureStatus(Failure failure) =>
+      failure.statusCode == 403
+          ? StatisticsSectionStatus.forbidden
+          : StatisticsSectionStatus.failure;
 }
-
-const _fallbackEmployees = [
-  StatisticsEmployeeEntity(
-    id: 'EMP-2019-001',
-    employeeId: null,
-    assignmentId: 101,
-    fullName: 'أحمد الحسن',
-    departmentName: 'شعبة الموارد البشرية',
-    roleName: 'موظف معاملات',
-    pendingPickup: 6,
-    inProgress: 2,
-    activeTotal: 8,
-    completed: 34,
-    workloadPercent: 45,
-    status: 'active',
-    statusLabel: 'نشط',
-  ),
-  StatisticsEmployeeEntity(
-    id: 'EMP-2020-012',
-    employeeId: null,
-    assignmentId: 102,
-    fullName: 'سارة يعقوب',
-    departmentName: 'شعبة الموارد البشرية',
-    roleName: 'موظف معاملات',
-    pendingPickup: 0,
-    inProgress: 0,
-    activeTotal: 0,
-    completed: 12,
-    workloadPercent: 0,
-    status: 'inactive',
-    statusLabel: 'غير نشط',
-  ),
-  StatisticsEmployeeEntity(
-    id: 'EMP-2020-044',
-    employeeId: null,
-    assignmentId: 115,
-    fullName: 'عمر الدرويش',
-    departmentName: 'شعبة الأرشيف',
-    roleName: 'مراجع',
-    pendingPickup: 3,
-    inProgress: 5,
-    activeTotal: 8,
-    completed: 67,
-    workloadPercent: 72,
-    status: 'overloaded',
-    statusLabel: 'مثقل',
-  ),
-];
-
-const _fallbackProcesses = [
-  StatisticsProcessEntity(
-    processDefinitionId: 5,
-    processName: 'طلب إجازة سنوية',
-    processCode: 'LEAVE_ANNUAL_V1',
-    transactionTypeName: 'إجازة',
-    transactionTypeCode: 'LEAVE',
-    isActive: true,
-    approvalStatus: 'APPROVED',
-    pendingPickup: 4,
-    inProgress: 12,
-    completed: 156,
-    rejected: 3,
-    departments: [
-      'شعبة الموارد البشرية',
-      'دائرة الشؤون الإدارية',
-    ],
-  ),
-  StatisticsProcessEntity(
-    processDefinitionId: 8,
-    processName: 'طلب شهادة حسن سيرة',
-    processCode: 'GOOD_CONDUCT_V2',
-    transactionTypeName: 'شهادة',
-    transactionTypeCode: 'CERTIFICATE',
-    isActive: true,
-    approvalStatus: 'APPROVED',
-    pendingPickup: 0,
-    inProgress: 5,
-    completed: 89,
-    rejected: 1,
-    departments: [
-      'دائرة المالية',
-      'شعبة الأرشيف',
-    ],
-  ),
-];

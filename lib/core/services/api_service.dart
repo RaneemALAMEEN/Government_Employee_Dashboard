@@ -104,15 +104,24 @@ class ApiService {
         return ServerFailure(serverMessage ?? "طلب غير صالح.");
       case 401:
         // The interceptor already tried to refresh / redirect to /login.
-        return AuthFailure(serverMessage ?? "انتهت الجلسة، يرجى تسجيل الدخول.");
+        return AuthFailure(
+          serverMessage ?? "انتهت الجلسة، يرجى تسجيل الدخول.",
+          statusCode: 401,
+        );
       case 403:
-        return const AuthFailure("ليس لديك إذن للوصول إلى هذا المورد.");
+        return const AuthFailure(
+          "ليس لديك إذن للوصول إلى هذا المورد.",
+          statusCode: 403,
+        );
       case 404:
         return const ServerFailure("تعذر العثور على المورد المطلوب.");
       case 405:
         return const ServerFailure("طريقة الطلب غير مسموح بها.");
       case 500:
-        return const ServerFailure("حدث خطأ تقني، يرجى المحاولة لاحقًا.");
+        return const ServerFailure(
+          "حدث خطأ تقني، يرجى المحاولة لاحقًا.",
+          statusCode: 500,
+        );
       case 502:
       case 503:
       case 504:

@@ -20,6 +20,8 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
       return Right(
         await remoteDataSource.getEmployeeDetails(employeeId: employeeId),
       );
+    } on StatisticsDataSourceException catch (e) {
+      return Left(e.failure);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -34,6 +36,8 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
       final data = await remoteDataSource.getEmployeesByDepartments(
           departmentIds: departmentIds);
       return Right(data);
+    } on StatisticsDataSourceException catch (e) {
+      return Left(e.failure);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -55,6 +59,8 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
         toDate: toDate,
       );
       return Right(data);
+    } on StatisticsDataSourceException catch (e) {
+      return Left(e.failure);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

@@ -7,6 +7,7 @@ import '../domain/usecases/get_process_definitions.dart';
 import '../domain/usecases/get_process_details.dart';
 import '../domain/usecases/get_complaint_process_definitions.dart';
 import '../domain/usecases/get_transaction_types.dart';
+import '../../internal_transactions/domain/usecases/get_document_template_usecase.dart';
 import '../presentation/bloc/directorate_process_bloc.dart';
 import '../presentation/bloc/directorate_complaints_bloc.dart';
 import '../presentation/bloc/process_details_bloc.dart';
@@ -58,6 +59,7 @@ Future<void> setupDirectorateProcessManagementInjection() async {
     getIt.registerFactory(
       () => ProcessDetailsBloc(
         getProcessDetails: getIt<GetProcessDetails>(),
+        getDocumentTemplate: getIt<GetDocumentTemplateUseCase>(),
       ),
     );
   }
