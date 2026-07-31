@@ -364,13 +364,13 @@ class _SidebarItemState extends State<SidebarItem>
                 scale: selected ? 1.12 : (_hovered ? 1.06 : 1),
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
-                child: AnimatedSwitcher(
+                child: TweenAnimationBuilder<Color?>(
                   duration: const Duration(milliseconds: 220),
-                  child: Icon(
+                  tween: ColorTween(end: foreground),
+                  builder: (context, color, _) => Icon(
                     widget.item.icon,
-                    key: ValueKey(selected),
                     size: 21,
-                    color: foreground,
+                    color: color,
                   ),
                 ),
               ),
@@ -471,7 +471,8 @@ class _SidebarActionState extends State<_SidebarAction> {
       builder: (context, constraints) {
         final availableWidth =
             constraints.hasBoundedWidth ? constraints.maxWidth : 180.0;
-        final buttonWidth = widget.compact ? 48.0 : availableWidth;
+        final showActionLabel = !widget.compact && availableWidth >= 120;
+        final buttonWidth = showActionLabel ? availableWidth : 48.0;
 
         return _SidebarTooltip(
           visible: widget.compact,
@@ -498,7 +499,7 @@ class _SidebarActionState extends State<_SidebarAction> {
                   width: buttonWidth,
                   height: widget.compact ? 48 : 52,
                   padding: EdgeInsets.symmetric(
-                    horizontal: widget.compact ? 0 : 16,
+                    horizontal: showActionLabel ? 16 : 0,
                   ),
                   decoration: BoxDecoration(
                     color: _pressed
@@ -514,11 +515,10 @@ class _SidebarActionState extends State<_SidebarAction> {
                       width: 1,
                     ),
                   ),
-                  child: widget.compact
-                      ? Center(child: _buildIcon(active, foreground))
-                      : Row(
+                  child: showActionLabel
+                      ? Row(
                           children: [
-                            _buildIcon(active, foreground),
+                            _buildIcon(foreground),
                             const SizedBox(width: 10),
                             Expanded(
                               child: AnimatedDefaultTextStyle(
@@ -538,7 +538,8 @@ class _SidebarActionState extends State<_SidebarAction> {
                               ),
                             ),
                           ],
-                        ),
+                        )
+                      : Center(child: _buildIcon(foreground)),
                 ),
               ),
             ),
@@ -548,7 +549,7 @@ class _SidebarActionState extends State<_SidebarAction> {
     );
   }
 
-  Widget _buildIcon(bool active, Color foreground) {
+  Widget _buildIcon(Color foreground) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: _hovered ? -3 : 0),
       duration: const Duration(milliseconds: 180),
@@ -557,12 +558,12 @@ class _SidebarActionState extends State<_SidebarAction> {
         offset: Offset(value, 0),
         child: child,
       ),
-      child: AnimatedSwitcher(
+      child: TweenAnimationBuilder<Color?>(
         duration: const Duration(milliseconds: 160),
-        child: Icon(
+        tween: ColorTween(end: foreground),
+        builder: (context, color, _) => Icon(
           widget.icon,
-          key: ValueKey('${widget.emphasized}-$active'),
-          color: foreground,
+          color: color,
           size: 20,
         ),
       ),
