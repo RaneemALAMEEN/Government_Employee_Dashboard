@@ -51,29 +51,29 @@ class _InternalTransactionFormPageState
         ? getIt<UsbSigningService>()
         : UsbSigningService();
 
-    final detectedDir = await usbSigningService.findUsbKeysDirectory(username);
+    final discoveryResult = await usbSigningService.findUsbKeysDirectory(username);
 
-    if (detectedDir != null &&
-        detectedDir.isNotEmpty &&
+    if (discoveryResult.status == UsbDiscoveryStatus.success &&
+        discoveryResult.path != null &&
         sessionPin != null &&
         sessionPin.isNotEmpty) {
       return {
         'pin': sessionPin,
-        'keysDirectoryPath': detectedDir,
+        'keysDirectoryPath': discoveryResult.path!,
       };
     }
 
-    if (detectedDir == null || detectedDir.isEmpty) {
+    if (discoveryResult.status != UsbDiscoveryStatus.success) {
       if (!mounted) return null;
       _showSnackBar(
-        'يرجى إدخال وحدة الـ USB الخاصة بمفاتيح التوقيع الإلكتروني، فلن يتم التوقيع بدونها.',
+        discoveryResult.errorMessage ?? 'تعذر العثور على المفاتيح',
         isError: true,
       );
-      return null;
+      return null; // Added early return since manual fallback is disabled
     }
 
     /*
-    // Previous Manual Signature Dialog Fallback (Preserved for future use):
+    // Manual Signature Dialog Fallback:
     if (!mounted) return null;
 
     return showDialog<Map<String, String>>(
@@ -82,11 +82,10 @@ class _InternalTransactionFormPageState
       builder: (_) => SecureSignatureDialog(
         transactionNumber: widget.processId.toString(),
         initialPin: sessionPin,
-        initialKeysDirectory: detectedDir,
+        initialKeysDirectory: discoveryResult.path,
       ),
     );
     */
-    return null;
   }
 
   Future<void> _submit() async {

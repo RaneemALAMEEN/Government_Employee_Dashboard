@@ -66,12 +66,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   void initState() {
     super.initState();
     _bloc = getIt<TransactionDetailsBloc>();
-    _bloc.add(
-        LoadTransactionDetails(
-          widget.transactionId,
-          status: widget.status,
-          numericTransactionId: widget.numericTransactionId,
-        ));
+    _bloc.add(LoadTransactionDetails(
+      widget.transactionId,
+      status: widget.status,
+      numericTransactionId: widget.numericTransactionId,
+    ));
   }
 
   @override
@@ -79,6 +78,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     _bloc.close();
     super.dispose();
   }
+
   /// Returns the applicant's full name from the current loaded state.
   String _getApplicantName() {
     final state = _bloc.state;
@@ -93,7 +93,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     return '';
   }
 
-  Future<void> _downloadFile(String path, String filename, {String? documentType}) async {
+  Future<void> _downloadFile(String path, String filename,
+      {String? documentType}) async {
     try {
       final dio = getIt<Dio>();
 
@@ -181,11 +182,12 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         ? getIt<UsbSigningService>()
         : UsbSigningService();
 
-    final detectedDir = await usbSigningService.findUsbKeysDirectory(username);
+    final discoveryResult =
+        await usbSigningService.findUsbKeysDirectory(username);
 
     // 1. Auto-detection check: If USB keys folder is found AND session PIN exists, sign automatically!
-    if (detectedDir != null &&
-        detectedDir.isNotEmpty &&
+    if (discoveryResult.status == UsbDiscoveryStatus.success &&
+        discoveryResult.path != null &&
         sessionPin != null &&
         sessionPin.isNotEmpty) {
       _bloc.add(SubmitTransactionDetailsEvent(
@@ -196,7 +198,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         formName: formName,
         isApprove: isApprove,
         pin: sessionPin,
-        keysDirectoryPath: detectedDir,
+        keysDirectoryPath: discoveryResult.path!,
         templateIds: templateIds,
         loadedTemplates: loadedTemplates,
         templateFormValues: templateFormValues,
@@ -206,18 +208,18 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     }
 
     // 2. Fallback check: If USB keys folder is missing or not inserted, show warning message!
-    if (detectedDir == null || detectedDir.isEmpty) {
+    if (discoveryResult.status != UsbDiscoveryStatus.success) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
-            children: const [
-              Icon(LucideIcons.usb, color: Colors.white, size: 20),
-              SizedBox(width: 12),
+            children: [
+              const Icon(LucideIcons.usb, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'يرجى إدخال وحدة الـ USB الخاصة بمفاتيح التوقيع الإلكتروني، فلن يتم التوقيع بدونها.',
-                  style: TextStyle(
+                  discoveryResult.errorMessage ?? 'تعذر العثور على المفاتيح',
+                  style: const TextStyle(
                     fontFamily: AppTextStyles.fontFamily,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -234,11 +236,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
           ),
         ),
       );
-      return;
+      return; // Added early return since manual fallback is disabled
     }
 
     /*
-    // Previous Manual Signature Dialog Fallback (Preserved for future use):
+    // Manual Signature Dialog Fallback:
     if (!mounted) return;
 
     final result = await showDialog<Map<String, String>>(
@@ -247,7 +249,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       builder: (ctx) => SecureSignatureDialog(
         transactionNumber: widget.transactionId,
         initialPin: sessionPin,
-        initialKeysDirectory: detectedDir,
+        initialKeysDirectory: discoveryResult.path,
       ),
     );
 
@@ -261,8 +263,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         formId: formId,
         formName: formName,
         isApprove: isApprove,
-        pin: result['pin'],
-        keysDirectoryPath: result['keysDirectoryPath'],
+        pin: result['pin']!,
+        keysDirectoryPath: result['keysDirectoryPath']!,
         templateIds: templateIds,
         loadedTemplates: loadedTemplates,
         templateFormValues: templateFormValues,
@@ -272,8 +274,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     */
   }
 
-  void _handleRejectAction(List<DynamicWidgetEntity> widgets, String formId,
-      String formName,
+  void _handleRejectAction(
+      List<DynamicWidgetEntity> widgets, String formId, String formName,
       {List<int> templateIds = const [],
       List<Map<String, dynamic>> loadedTemplates = const [],
       Map<String, dynamic> templateFormValues = const {},
@@ -296,10 +298,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         ? getIt<UsbSigningService>()
         : UsbSigningService();
 
-    final detectedDir = await usbSigningService.findUsbKeysDirectory(username);
+    final discoveryResult =
+        await usbSigningService.findUsbKeysDirectory(username);
 
-    if (detectedDir != null &&
-        detectedDir.isNotEmpty &&
+    if (discoveryResult.status == UsbDiscoveryStatus.success &&
+        discoveryResult.path != null &&
         sessionPin != null &&
         sessionPin.isNotEmpty) {
       _bloc.add(SubmitTransactionDetailsEvent(
@@ -311,7 +314,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         isApprove: false,
         note: note.trim(),
         pin: sessionPin,
-        keysDirectoryPath: detectedDir,
+        keysDirectoryPath: discoveryResult.path!,
         templateIds: templateIds,
         loadedTemplates: loadedTemplates,
         templateFormValues: templateFormValues,
@@ -320,18 +323,18 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       return;
     }
 
-    if (detectedDir == null || detectedDir.isEmpty) {
+    if (discoveryResult.status != UsbDiscoveryStatus.success) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
-            children: const [
-              Icon(LucideIcons.usb, color: Colors.white, size: 20),
-              SizedBox(width: 12),
+            children: [
+              const Icon(LucideIcons.usb, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'يرجى إدخال وحدة الـ USB الخاصة بمفاتيح التوقيع الإلكتروني، فلن يتم تنفيذ الرفض بدونها.',
-                  style: TextStyle(
+                  discoveryResult.errorMessage ?? 'تعذر العثور على المفاتيح',
+                  style: const TextStyle(
                     fontFamily: AppTextStyles.fontFamily,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -348,8 +351,43 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
           ),
         ),
       );
-      return;
+      return; // Added early return since manual fallback is disabled
     }
+
+    /*
+    // Manual Signature Dialog Fallback:
+    if (!mounted) return;
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SecureSignatureDialog(
+        transactionNumber: widget.transactionId,
+        initialPin: sessionPin,
+        initialKeysDirectory: discoveryResult.path,
+      ),
+    );
+
+    if (result != null &&
+        result.containsKey('pin') &&
+        result.containsKey('keysDirectoryPath')) {
+      _bloc.add(SubmitTransactionDetailsEvent(
+        taskId: widget.transactionId,
+        widgets: widgets,
+        formValues: _formValues,
+        formId: formId,
+        formName: formName,
+        isApprove: false,
+        note: note.trim(),
+        pin: result['pin']!,
+        keysDirectoryPath: result['keysDirectoryPath']!,
+        templateIds: templateIds,
+        loadedTemplates: loadedTemplates,
+        templateFormValues: templateFormValues,
+        expectedVersion: expectedVersion,
+      ));
+    }
+    */
   }
 
   void _handleActionSuccess(
@@ -364,9 +402,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     }
   }
 
-  bool _validateRequiredFields(List<DynamicWidgetModel> stageWidgets, TransactionDetailsLoaded? loadedState) {
+  bool _validateRequiredFields(List<DynamicWidgetModel> stageWidgets,
+      TransactionDetailsLoaded? loadedState) {
     bool isValid = true;
-    
+
     setState(() {
       _formErrors.clear();
     });
@@ -381,7 +420,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
       if (isRequired) {
         final value = _formValues[id];
-        if (value == null || (value is String && value.trim().isEmpty) || (value is List && value.isEmpty)) {
+        if (value == null ||
+            (value is String && value.trim().isEmpty) ||
+            (value is List && value.isEmpty)) {
           isValid = false;
           _formErrors.add(id);
         }
@@ -391,19 +432,25 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     // Validate template widgets
     if (loadedState != null && loadedState.loadedTemplates.isNotEmpty) {
       for (var template in loadedState.loadedTemplates) {
-        final configJson = template['config_json'] as Map<String, dynamic>? ?? {};
-        final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+        final configJson =
+            template['config_json'] as Map<String, dynamic>? ?? {};
+        final fields = configJson['widgets'] as List? ??
+            configJson['fields'] as List? ??
+            [];
         final templateValues = loadedState.templateFormValues;
 
         for (var w in fields) {
-          final wMap = w is Map ? Map<String, dynamic>.from(w) : <String, dynamic>{};
+          final wMap =
+              w is Map ? Map<String, dynamic>.from(w) : <String, dynamic>{};
           final data = wMap['data'] ?? wMap;
           final isRequired = data['is_required'] == true;
           final id = data['id']?.toString() ?? '';
 
           if (isRequired) {
             final value = templateValues[id];
-            if (value == null || (value is String && value.trim().isEmpty) || (value is List && value.isEmpty)) {
+            if (value == null ||
+                (value is String && value.trim().isEmpty) ||
+                (value is List && value.isEmpty)) {
               isValid = false;
               _formErrors.add(id);
             }
@@ -421,7 +468,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               Icon(LucideIcons.alertCircle, color: Colors.white),
               SizedBox(width: 8),
               Expanded(
-                child: Text('يرجى تعبئة جميع الحقول المطلوبة والمحددة باللون الأحمر.',
+                child: Text(
+                    'يرجى تعبئة جميع الحقول المطلوبة والمحددة باللون الأحمر.',
                     style: TextStyle(fontFamily: 'Cairo')),
               ),
             ],
@@ -694,22 +742,25 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 transactionNumber: idProcess,
               ),
               const SizedBox(height: 20),
-              if (data['final_document'] != null && 
-                  ((data['final_document'] as Map<String, dynamic>)['file_url']?.toString() ?? 
-                   (data['final_document'] as Map<String, dynamic>)['file_path']?.toString() ?? '').isNotEmpty) ...[
+              if (data['final_document'] != null &&
+                  ((data['final_document'] as Map<String, dynamic>)['file_url']
+                              ?.toString() ??
+                          (data['final_document']
+                                  as Map<String, dynamic>)['file_path']
+                              ?.toString() ??
+                          '')
+                      .isNotEmpty) ...[
                 _buildFinalDocumentCard(
                     data['final_document'] as Map<String, dynamic>),
                 const SizedBox(height: 20),
               ],
-              ...completedStages
-                  .where((stage) {
-                    final name = (stage as Map)['stage_name']?.toString() ?? '';
-                    final formName = stage['form_name']?.toString() ?? '';
-                    // Filter out internal system stages
-                    return !name.toUpperCase().contains('GENERATE_PDF') &&
-                        !formName.toUpperCase().contains('GENERATE_PDF');
-                  })
-                  .map((stage) => StageHistoryCard(
+              ...completedStages.where((stage) {
+                final name = (stage as Map)['stage_name']?.toString() ?? '';
+                final formName = stage['form_name']?.toString() ?? '';
+                // Filter out internal system stages
+                return !name.toUpperCase().contains('GENERATE_PDF') &&
+                    !formName.toUpperCase().contains('GENERATE_PDF');
+              }).map((stage) => StageHistoryCard(
                     stage: Map<String, dynamic>.from(stage as Map),
                     buildFileUrl: _buildFileUrl,
                     onDownloadFile: _downloadFile,
@@ -735,7 +786,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                               color: Colors.red.shade100,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(LucideIcons.lock, color: Colors.red.shade700, size: 22),
+                            child: Icon(LucideIcons.lock,
+                                color: Colors.red.shade700, size: 22),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -834,8 +886,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         onView: templateFilePath != null &&
                                 templateFilePath.isNotEmpty
                             ? () {
-                                final fullUrl =
-                                    _buildFileUrl(templateFilePath);
+                                final fullUrl = _buildFileUrl(templateFilePath);
                                 final ext = templateFilePath
                                     .split('.')
                                     .last
@@ -964,29 +1015,32 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       onRelease: () => _bloc
                           .add(ReleaseTransactionEvent(widget.transactionId)),
                       onApprove: () {
-                        if (!_validateRequiredFields(currentStageWidgets, loadedState)) return;
+                        if (!_validateRequiredFields(
+                            currentStageWidgets, loadedState)) return;
                         _showSignatureDialog(
-                          currentStageWidgets, formId, formName, true,
-                          templateIds: templateIds,
-                          loadedTemplates: loadedState?.loadedTemplates ?? [],
-                          templateFormValues:
-                              loadedState?.templateFormValues ?? {},
-                          expectedVersion: data['expected_version'] != null
-                              ? int.tryParse(
-                                  data['expected_version'].toString())
-                              : null);
+                            currentStageWidgets, formId, formName, true,
+                            templateIds: templateIds,
+                            loadedTemplates: loadedState?.loadedTemplates ?? [],
+                            templateFormValues:
+                                loadedState?.templateFormValues ?? {},
+                            expectedVersion: data['expected_version'] != null
+                                ? int.tryParse(
+                                    data['expected_version'].toString())
+                                : null);
                       },
                       onReject: () {
-                        if (!_validateRequiredFields(currentStageWidgets, loadedState)) return;
+                        if (!_validateRequiredFields(
+                            currentStageWidgets, loadedState)) return;
                         _handleRejectAction(
-                          currentStageWidgets, formId, formName,
-                          templateIds: templateIds,
-                          loadedTemplates: loadedState?.loadedTemplates ?? [],
-                          templateFormValues:
-                              loadedState?.templateFormValues ?? {},
-                          expectedVersion: data['expected_version'] != null
-                              ? int.tryParse(data['expected_version'].toString())
-                              : null);
+                            currentStageWidgets, formId, formName,
+                            templateIds: templateIds,
+                            loadedTemplates: loadedState?.loadedTemplates ?? [],
+                            templateFormValues:
+                                loadedState?.templateFormValues ?? {},
+                            expectedVersion: data['expected_version'] != null
+                                ? int.tryParse(
+                                    data['expected_version'].toString())
+                                : null);
                       },
                     ),
                     const SizedBox(height: 24),
@@ -1041,52 +1095,55 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
             ),
             const SizedBox(height: 24),
-            if ((finalDoc['file_url']?.toString() ?? finalDoc['file_path']?.toString() ?? '').isNotEmpty)
+            if ((finalDoc['file_url']?.toString() ??
+                    finalDoc['file_path']?.toString() ??
+                    '')
+                .isNotEmpty)
               Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final url =
-                          finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
-                      if (url.isNotEmpty) {
-                        final fullUrl = _buildFileUrl(url);
-                        context.push('/pdf-viewer', extra: fullUrl);
-                      }
-                    },
-                    icon: const Icon(LucideIcons.eye),
-                    label: const Text('عرض الوثيقة'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gold,
-                      foregroundColor: AppColors.charcoal,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final url =
+                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                        if (url.isNotEmpty) {
+                          final fullUrl = _buildFileUrl(url);
+                          context.push('/pdf-viewer', extra: fullUrl);
+                        }
+                      },
+                      icon: const Icon(LucideIcons.eye),
+                      label: const Text('عرض الوثيقة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.charcoal,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final url =
-                          finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
-                      final originalName =
-                          finalDoc['original_name'] ?? 'certificate.pdf';
-                      if (url.isNotEmpty) {
-                        _downloadFile(url, originalName,
-                            documentType: 'الوثيقة النهائية');
-                      }
-                    },
-                    icon: const Icon(LucideIcons.download),
-                    label: const Text('تحميل الوثيقة'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.forest,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final url =
+                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
+                        final originalName =
+                            finalDoc['original_name'] ?? 'certificate.pdf';
+                        if (url.isNotEmpty) {
+                          _downloadFile(url, originalName,
+                              documentType: 'الوثيقة النهائية');
+                        }
+                      },
+                      icon: const Icon(LucideIcons.download),
+                      label: const Text('تحميل الوثيقة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.forest,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
