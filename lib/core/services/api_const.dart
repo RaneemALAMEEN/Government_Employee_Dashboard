@@ -26,7 +26,7 @@ class EndPoints {
   String get logout =>
       'api/auth/logout'; // { refreshToken } → revokes refresh token
   String get myTransactions => 'api/transaction/my';
-  String get typeProcess => 'api/typeProcess';
+  String get typeProcess => 'api/typeProcess/employee';
 
   String processDefinitionsAuth(int typeProcessId) =>
       'api/process_definitions/auth/$typeProcessId';

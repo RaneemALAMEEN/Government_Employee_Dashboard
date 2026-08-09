@@ -219,15 +219,23 @@ class InternalTransactionsRemoteDataSource {
     required int transactionId,
     required Map<String, dynamic> payload,
   }) async {
+    final endpoint = _endPoints.completeSignedTransaction(transactionId);
+    debugPrint('[SigningFlow] complete endpoint request = POST $endpoint');
     final result = await apiService.makeRequest(
       method: ApiMethod.post,
-      endPoint: _endPoints.completeSignedTransaction(transactionId),
+      endPoint: endpoint,
       body: payload,
     );
 
     return result.fold(
-      (failure) => throw ServerException(failure.message),
-      (response) => response as Map<String, dynamic>,
+      (failure) {
+        debugPrint('[SigningFlow] complete endpoint succeeded = false');
+        throw ServerException(failure.message);
+      },
+      (response) {
+        debugPrint('[SigningFlow] complete endpoint succeeded = true');
+        return response as Map<String, dynamic>;
+      },
     );
   }
 

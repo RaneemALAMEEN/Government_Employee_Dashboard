@@ -27,64 +27,86 @@ class SubmitTransaction {
     int? expectedVersion,
   }) async {
     try {
-      final isSubmitDocuments = formId.contains('sign') || formId.contains('document');
-      
+      final isSubmitDocuments =
+          formId.contains('sign') || formId.contains('document');
+
       // 1. Set Programmatic Decision Value
       _setProgrammaticDecisionValue(widgets, formValues, isApprove);
-      
+
       // 2. Upload Files and Build Payload
       final payloadResult = await _buildSubmitPayload(widgets, formValues);
       if (payloadResult.isLeft()) return payloadResult;
-      
+
       final payload = payloadResult.getOrElse(() => {});
       final decisionValue = isApprove ? 'approve' : 'reject';
-      
+
       // 3. Build templates payload — use loaded templates or fallback to fetch
       final templatesPayload = <Map<String, dynamic>>[];
       for (final templateId in templateIds) {
         final templateWidgets = <Map<String, dynamic>>[];
-        
-        final existingTemplate = loadedTemplates.cast<Map<String, dynamic>?>().firstWhere(
-          (t) => (t?['id'] == templateId || t?['template_id'] == templateId),
-          orElse: () => null,
-        );
+
+        final existingTemplate = loadedTemplates
+            .cast<Map<String, dynamic>?>()
+            .firstWhere(
+              (t) =>
+                  (t?['id'] == templateId || t?['template_id'] == templateId),
+              orElse: () => null,
+            );
 
         if (existingTemplate != null) {
-          final configJson = existingTemplate['config_json'] as Map<String, dynamic>? ?? {};
-          final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
+          final configJson =
+              existingTemplate['config_json'] as Map<String, dynamic>? ?? {};
+          final fields = configJson['widgets'] as List? ??
+              configJson['fields'] as List? ??
+              [];
           for (final field in fields) {
             if (field is Map<String, dynamic>) {
-              final fieldId = field['data']?['id']?.toString() ?? field['id']?.toString() ?? '';
+              final fieldId = field['data']?['id']?.toString() ??
+                  field['id']?.toString() ??
+                  '';
               templateWidgets.add({
-                'widget_type': field['widget_type'] ?? field['type'] ?? 'text_field',
+                'widget_type':
+                    field['widget_type'] ?? field['type'] ?? 'text_field',
                 'data': field['data'] ?? field,
                 'value': templateFormValues[fieldId] ?? field['value'] ?? '',
               });
             }
           }
         } else {
-          final templateResult = await repository.getDocumentTemplate(templateId: templateId);
+          final templateResult =
+              await repository.getDocumentTemplate(templateId: templateId);
           templateResult.fold(
             (_) {}, // If template fetch fails, send empty widgets
             (templateResponse) {
-              final templateData = templateResponse['data'] as Map<String, dynamic>? ?? templateResponse;
-              final configJson = templateData['config_json'] as Map<String, dynamic>? ?? {};
-              final fields = configJson['widgets'] as List? ?? configJson['fields'] as List? ?? [];
-              
+              final templateData =
+                  templateResponse['data'] as Map<String, dynamic>? ??
+                      templateResponse;
+              final configJson =
+                  templateData['config_json'] as Map<String, dynamic>? ?? {};
+              final fields = configJson['widgets'] as List? ??
+                  configJson['fields'] as List? ??
+                  [];
+
               for (final field in fields) {
                 if (field is Map<String, dynamic>) {
-                  final fieldId = field['data']?['id']?.toString() ?? field['id']?.toString() ?? '';
+                  final fieldId = field['data']?['id']?.toString() ??
+                      field['id']?.toString() ??
+                      '';
                   templateWidgets.add({
-                    'widget_type': field['widget_type'] ?? field['type'] ?? 'text_field',
+                    'widget_type':
+                        field['widget_type'] ?? field['type'] ?? 'text_field',
                     'data': field['data'] ?? field,
-                    'value': templateFormValues[fieldId] ?? formValues[fieldId] ?? field['value'] ?? '',
+                    'value': templateFormValues[fieldId] ??
+                        formValues[fieldId] ??
+                        field['value'] ??
+                        '',
                   });
                 }
               }
             },
           );
         }
-        
+
         templatesPayload.add({
           'id': templateId,
           'widgets': templateWidgets,
@@ -103,7 +125,10 @@ class SubmitTransaction {
       };
 
       // 4. Handle Signature if required (when pin/keys exist)
-      if (pin != null && keysDirectoryPath != null && pin.isNotEmpty && keysDirectoryPath.isNotEmpty) {
+      if (pin != null &&
+          keysDirectoryPath != null &&
+          pin.isNotEmpty &&
+          keysDirectoryPath.isNotEmpty) {
         // Request Signing Challenge
         final challengeResult = await repository.createSigningChallenge(
           taskId: taskId,
@@ -111,27 +136,38 @@ class SubmitTransaction {
           decision: decisionValue,
           isSubmitDocuments: isSubmitDocuments,
         );
-        
+
         if (challengeResult.isLeft()) return challengeResult;
-        
-        final challengeData = challengeResult.getOrElse(() => {})['data'] as Map<String, dynamic>? ?? {};
+
+        final challengeData = challengeResult.getOrElse(() => {})['data']
+                as Map<String, dynamic>? ??
+            {};
         final message = challengeData['message']?.toString() ?? '';
         final challengeId = challengeData['challenge_id']?.toString() ?? '';
-        
+        if (message.isEmpty || challengeId.isEmpty) {
+          return const Left(
+            ServerFailure(
+                'استجابة طلب التوقيع غير مكتملة، يرجى المحاولة مجدداً.'),
+          );
+        }
+
         // Generate Signature
         try {
           final signature = await usbSigningService.signMessageFromUsb(
             keysDirectoryPath: keysDirectoryPath,
             pin: pin,
             message: message,
+            expectedKeyFingerprint:
+                challengeData['key_fingerprint']?.toString(),
           );
-          
+
           completePayload['signature'] = {
             'challenge_id': challengeId,
             'signature': signature,
           };
         } catch (e) {
-          return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+          return Left(
+              ServerFailure(e.toString().replaceFirst('Exception: ', '')));
         }
       }
 
@@ -146,8 +182,8 @@ class SubmitTransaction {
     }
   }
 
-  void _setProgrammaticDecisionValue(
-      List<DynamicWidgetEntity> widgets, Map<String, dynamic> formValues, bool isApprove) {
+  void _setProgrammaticDecisionValue(List<DynamicWidgetEntity> widgets,
+      Map<String, dynamic> formValues, bool isApprove) {
     for (final widget in widgets) {
       final wData = widget.data;
       if (wData['is_gateway'] == true || wData['id'] == 'decision') {
@@ -182,9 +218,13 @@ class SubmitTransaction {
           }
           if (selectedValue == null && options.isNotEmpty) {
             if (isApprove) {
-              selectedValue = (options.last['key'] ?? options.last['value'] ?? '').toString();
+              selectedValue =
+                  (options.last['key'] ?? options.last['value'] ?? '')
+                      .toString();
             } else {
-              selectedValue = (options.first['key'] ?? options.first['value'] ?? '').toString();
+              selectedValue =
+                  (options.first['key'] ?? options.first['value'] ?? '')
+                      .toString();
             }
           }
           if (selectedValue != null) {
@@ -198,7 +238,8 @@ class SubmitTransaction {
   }
 
   Future<Either<Failure, Map<String, dynamic>>> _buildSubmitPayload(
-      List<DynamicWidgetEntity> widgets, Map<String, dynamic> formValues) async {
+      List<DynamicWidgetEntity> widgets,
+      Map<String, dynamic> formValues) async {
     final widgetsPayload = <Map<String, dynamic>>[];
 
     for (final widget in widgets) {
@@ -248,14 +289,16 @@ class SubmitTransaction {
 
       final uploadedResult = await repository.uploadTransactionFile(
         filePath: filePath.toString(),
-        typeDocId: typeDocId is int ? typeDocId : int.tryParse(typeDocId.toString()) ?? 1,
+        typeDocId: typeDocId is int
+            ? typeDocId
+            : int.tryParse(typeDocId.toString()) ?? 1,
         key: widgetId,
       );
 
       if (uploadedResult.isLeft()) {
         return Left(uploadedResult.fold((l) => l, (r) => throw Exception()));
       }
-      
+
       uploadedFiles.add(uploadedResult.getOrElse(() => {}));
     }
 

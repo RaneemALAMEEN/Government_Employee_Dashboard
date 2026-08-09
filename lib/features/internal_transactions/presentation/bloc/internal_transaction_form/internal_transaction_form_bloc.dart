@@ -218,11 +218,24 @@ class InternalTransactionFormBloc
         },
         (challenge) async {
           final message = challenge['message']?.toString() ?? '';
+          final challengeId = challenge['challenge_id']?.toString() ?? '';
+          final transactionId = challenge['transaction_id'];
+          if (message.isEmpty || challengeId.isEmpty || transactionId is! int) {
+            emit(
+              state.copyWith(
+                submitting: false,
+                errorMessage:
+                    'استجابة طلب التوقيع غير مكتملة، يرجى المحاولة مجدداً.',
+              ),
+            );
+            return;
+          }
 
           final signature = await usbSigningService.signMessageFromUsb(
             keysDirectoryPath: event.keysDirectoryPath,
             pin: event.pin,
             message: message,
+            expectedKeyFingerprint: challenge['key_fingerprint']?.toString(),
           );
 
           if (signature.isEmpty) {
@@ -241,12 +254,10 @@ class InternalTransactionFormBloc
                 ? payload['decision']
                 : 'approve',
             'signature': {
-              'challenge_id': challenge['challenge_id']?.toString() ?? '',
+              'challenge_id': challengeId,
               'signature': signature,
             },
           };
-
-          final transactionId = challenge['transaction_id'] as int;
 
           final completeResult = await completeSignedTransaction(
             transactionId: transactionId,
