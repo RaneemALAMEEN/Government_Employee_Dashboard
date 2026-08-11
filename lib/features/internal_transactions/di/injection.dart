@@ -19,6 +19,9 @@ import '../../../core/services/usb_signing_service.dart';
 import '../presentation/bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../presentation/bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
 
+import '../../../core/cache/services/cache_manager.dart';
+import '../../../core/cache/services/user_scope_service.dart';
+
 void setupInternalTransactionsInjection(GetIt getIt) {
   if (!getIt.isRegistered<InternalTransactionsRemoteDataSource>()) {
     getIt.registerLazySingleton<InternalTransactionsRemoteDataSource>(
@@ -30,6 +33,12 @@ void setupInternalTransactionsInjection(GetIt getIt) {
     getIt.registerLazySingleton<InternalTransactionsRepository>(
       () => InternalTransactionsRepositoryImpl(
         getIt<InternalTransactionsRemoteDataSource>(),
+        cacheManager: getIt.isRegistered<CacheManager>()
+            ? getIt<CacheManager>()
+            : null,
+        userScopeService: getIt.isRegistered<UserScopeService>()
+            ? getIt<UserScopeService>()
+            : null,
       ),
     );
   }

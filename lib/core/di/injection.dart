@@ -1,6 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/internal_transactions/di/injection.dart';
+import '../cache/cache_config.dart';
+import '../cache/change_detection_strategy.dart';
+import '../cache/services/cache_manager.dart';
+import '../cache/services/cache_policy_executor.dart';
+import '../cache/services/cache_version_manager.dart';
+import '../cache/services/file_cache_manager.dart';
+import '../cache/services/isar_service.dart';
+import '../cache/services/ttl_manager.dart';
+import '../cache/services/user_scope_service.dart';
+import '../cache/services/websocket_cache_sync_bus.dart';
 import '../network/dio_client.dart';
 import '../services/api_service.dart';
 import '../services/push_socket.dart';
@@ -20,6 +30,81 @@ Future<void> setupCoreInjection() async {
   if (!getIt.isRegistered<SessionService>()) {
     getIt.registerLazySingleton<SessionService>(
       () => SessionService(getIt<SecureStorageService>()),
+    );
+  }
+
+  // === Client Caching Infrastructure Services (Feature-Agnostic) ===
+  if (!getIt.isRegistered<CacheConfig>()) {
+    getIt.registerLazySingleton<CacheConfig>(
+      () => CacheConfig.defaultConfig(),
+    );
+  }
+
+  if (!getIt.isRegistered<IsarService>()) {
+    getIt.registerLazySingleton<IsarService>(
+      () => IsarService(),
+    );
+  }
+
+  if (!getIt.isRegistered<UserScopeService>()) {
+    getIt.registerLazySingleton<UserScopeService>(
+      () => UserScopeService(getIt<SessionService>()),
+    );
+  }
+
+  if (!getIt.isRegistered<TTLManager>()) {
+    getIt.registerLazySingleton<TTLManager>(
+      () => TTLManager(getIt<CacheConfig>()),
+    );
+  }
+
+  if (!getIt.isRegistered<CacheVersionManager>()) {
+    getIt.registerLazySingleton<CacheVersionManager>(
+      () => CacheVersionManager(getIt<CacheConfig>()),
+    );
+  }
+
+  if (!getIt.isRegistered<CacheManager>()) {
+    getIt.registerLazySingleton<CacheManager>(
+      () => CacheManager(
+        isarService: getIt<IsarService>(),
+        ttlManager: getIt<TTLManager>(),
+        versionManager: getIt<CacheVersionManager>(),
+        userScope: getIt<UserScopeService>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<ChangeDetectionStrategy>()) {
+    getIt.registerLazySingleton<ChangeDetectionStrategy>(
+      () => const ChangeDetectionStrategy(),
+    );
+  }
+
+  if (!getIt.isRegistered<CachePolicyExecutor>()) {
+    getIt.registerLazySingleton<CachePolicyExecutor>(
+      () => CachePolicyExecutor(
+        cacheManager: getIt<CacheManager>(),
+        ttlManager: getIt<TTLManager>(),
+        changeDetection: getIt<ChangeDetectionStrategy>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<FileCacheManager>()) {
+    getIt.registerLazySingleton<FileCacheManager>(
+      () => FileCacheManager(
+        isarService: getIt<IsarService>(),
+        userScope: getIt<UserScopeService>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<WebSocketCacheSyncBus>()) {
+    getIt.registerLazySingleton<WebSocketCacheSyncBus>(
+      () => WebSocketCacheSyncBus(
+        cacheManager: getIt<CacheManager>(),
+      ),
     );
   }
 
@@ -59,5 +144,5 @@ Future<void> setupCoreInjection() async {
     );
   }
 
-    setupInternalTransactionsInjection(getIt);
-}
+  setupInternalTransactionsInjection(getIt);
+}

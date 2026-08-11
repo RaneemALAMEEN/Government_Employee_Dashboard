@@ -40,6 +40,7 @@ import 'transaction_details/widgets/stage_history_card.dart';
 import 'transaction_details/widgets/lock_info_card.dart';
 import 'transaction_details/widgets/workflow_timeline_widget.dart';
 import 'transaction_details/widgets/transaction_info_card.dart';
+import 'transaction_details/widgets/task_assignment_card.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final String transactionId;
@@ -61,6 +62,26 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   late final TransactionDetailsBloc _bloc;
   final Map<String, dynamic> _formValues = {};
   final Set<String> _formErrors = {};
+
+  int? _assignmentOrgId;
+  int? _assignmentDepartmentId;
+  int? _assignmentRoleId;
+  String? _assignmentError;
+
+  bool _checkIsAssignment(
+      Map<String, dynamic> data, Map<String, dynamic>? currentStage, Map<String, dynamic>? config) {
+    for (final target in [currentStage, config, data]) {
+      if (target == null) continue;
+      final val = target['is_assignment'] ?? target['has_assignments'];
+      if (val == true || val == 1 || val == '1' || val == 'true' || val == 'TRUE') {
+        return true;
+      }
+      if (target['assignments'] is List) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -170,7 +191,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
   void _showSignatureDialog(List<DynamicWidgetEntity> widgets, String formId,
       String formName, bool isApprove,
-      {List<int> templateIds = const [],
+      {List<Map<String, dynamic>>? assignments,
+      List<int> templateIds = const [],
       List<Map<String, dynamic>> loadedTemplates = const [],
       Map<String, dynamic> templateFormValues = const {},
       int? expectedVersion}) async {
@@ -203,6 +225,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         loadedTemplates: loadedTemplates,
         templateFormValues: templateFormValues,
         expectedVersion: expectedVersion,
+        assignments: assignments,
       ));
       return;
     }
@@ -276,7 +299,8 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
   void _handleRejectAction(
       List<DynamicWidgetEntity> widgets, String formId, String formName,
-      {List<int> templateIds = const [],
+      {List<Map<String, dynamic>>? assignments,
+      List<int> templateIds = const [],
       List<Map<String, dynamic>> loadedTemplates = const [],
       Map<String, dynamic> templateFormValues = const {},
       int? expectedVersion}) async {
@@ -319,6 +343,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         loadedTemplates: loadedTemplates,
         templateFormValues: templateFormValues,
         expectedVersion: expectedVersion,
+        assignments: assignments,
       ));
       return;
     }
@@ -845,6 +870,27 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   ),
                   const SizedBox(height: 20),
                 ],
+                if (status != 'منجزة' &&
+                    status != 'تم الرفض' &&
+                    _checkIsAssignment(data, currentStage, config)) ...[
+                  TaskAssignmentCard(
+                    isEnabled: isLocked && lockedByMe,
+                    errorText: _assignmentError,
+                    initialDepartmentId: _assignmentDepartmentId,
+                    initialRoleId: _assignmentRoleId,
+                    onAssignmentChanged: (orgId, deptId, roleId) {
+                      setState(() {
+                        _assignmentOrgId = orgId;
+                        _assignmentDepartmentId = deptId;
+                        _assignmentRoleId = roleId;
+                        if (deptId != null && roleId != null) {
+                          _assignmentError = null;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 if (loadedState != null &&
                     loadedState.loadedTemplates.isNotEmpty) ...[
                   ...loadedState.loadedTemplates.map((template) {
@@ -1017,8 +1063,40 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       onApprove: () {
                         if (!_validateRequiredFields(
                             currentStageWidgets, loadedState)) return;
+                        final isAssignment =
+                            _checkIsAssignment(data, currentStage, config);
+                        if (isAssignment) {
+                          if (_assignmentDepartmentId == null ||
+                              _assignmentRoleId == null) {
+                            setState(() {
+                              _assignmentError =
+                                  'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة'),
+                                backgroundColor: AppColors.umber,
+                              ),
+                            );
+                            return;
+                          }
+                        }
+                        final List<Map<String, dynamic>>? assignmentsPayload =
+                            isAssignment &&
+                                    _assignmentDepartmentId != null &&
+                                    _assignmentRoleId != null
+                                ? [
+                                    {
+                                      'organization_id': _assignmentOrgId ?? 1,
+                                      'department_id': _assignmentDepartmentId,
+                                      'role_id': _assignmentRoleId,
+                                    }
+                                  ]
+                                : null;
                         _showSignatureDialog(
                             currentStageWidgets, formId, formName, true,
+                            assignments: assignmentsPayload,
                             templateIds: templateIds,
                             loadedTemplates: loadedState?.loadedTemplates ?? [],
                             templateFormValues:
@@ -1031,8 +1109,40 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       onReject: () {
                         if (!_validateRequiredFields(
                             currentStageWidgets, loadedState)) return;
+                        final isAssignment =
+                            _checkIsAssignment(data, currentStage, config);
+                        if (isAssignment) {
+                          if (_assignmentDepartmentId == null ||
+                              _assignmentRoleId == null) {
+                            setState(() {
+                              _assignmentError =
+                                  'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة'),
+                                backgroundColor: AppColors.umber,
+                              ),
+                            );
+                            return;
+                          }
+                        }
+                        final List<Map<String, dynamic>>? assignmentsPayload =
+                            isAssignment &&
+                                    _assignmentDepartmentId != null &&
+                                    _assignmentRoleId != null
+                                ? [
+                                    {
+                                      'organization_id': _assignmentOrgId ?? 1,
+                                      'department_id': _assignmentDepartmentId,
+                                      'role_id': _assignmentRoleId,
+                                    }
+                                  ]
+                                : null;
                         _handleRejectAction(
                             currentStageWidgets, formId, formName,
+                            assignments: assignmentsPayload,
                             templateIds: templateIds,
                             loadedTemplates: loadedState?.loadedTemplates ?? [],
                             templateFormValues:

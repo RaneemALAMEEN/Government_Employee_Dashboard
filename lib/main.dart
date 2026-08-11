@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
+import 'core/cache/services/isar_service.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
@@ -97,6 +98,7 @@ Future<void> main() async {
   await dotenv.load(fileName: "env/dev.env");
 
   await setupCoreInjection();
+  await getIt<IsarService>().init();
   await setupAuthInjection();
   await setupDashboardInjection();
   await setupMyTransactionsInjection();

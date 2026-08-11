@@ -1,23 +1,10 @@
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/foundation.dart';
-import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/enums/api_method.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_const.dart';
 import '../../../../core/services/api_service.dart';
-import '../../domain/entities/dynamic_form_entity.dart';
-import '../../domain/entities/internal_category_entity.dart';
-import '../../domain/entities/internal_processes_page_entity.dart';
-import '../../domain/entities/internal_transaction_counts_entity.dart';
-import '../../domain/entities/internal_transactions_page_entity.dart';
-import '../models/document_template_model.dart';
-import '../models/dynamic_form_model.dart';
-import '../models/internal_category_model.dart';
-import '../models/internal_processes_page_model.dart';
-import '../models/internal_transaction_first_stage_model.dart';
-import '../models/internal_transaction_counts_model.dart';
-import '../models/internal_transactions_page_model.dart';
 
 class InternalTransactionsRemoteDataSource {
   final ApiService apiService;
@@ -26,7 +13,7 @@ class InternalTransactionsRemoteDataSource {
 
   static const _endPoints = EndPoints();
 
-  Future<List<InternalCategoryEntity>> getCategories() async {
+  Future<Map<String, dynamic>> getCategories() async {
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.typeProcess,
@@ -35,16 +22,15 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        final data = response['data'] as List? ?? [];
-
-        return data
-            .map((item) => InternalCategoryModel.fromJson(item))
-            .toList();
+        if (response is Map<String, dynamic>) {
+          return response;
+        }
+        return {'data': response};
       },
     );
   }
 
-  Future<DynamicFormEntity> getStageConfig({
+  Future<Map<String, dynamic>> getStageConfig({
     required int processId,
   }) async {
     final result = await apiService.makeRequest(
@@ -55,8 +41,10 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        final data = response['data'] as Map<String, dynamic>? ?? response;
-        return DynamicFormModel.fromJson(data);
+        if (response is Map<String, dynamic>) {
+          return response;
+        }
+        return <String, dynamic>{};
       },
     );
   }
@@ -116,7 +104,7 @@ class InternalTransactionsRemoteDataSource {
     );
   }
 
-  Future<InternalProcessesPageEntity> getProcessesByCategory({
+  Future<Map<String, dynamic>> getProcessesByCategory({
     required int categoryId,
     required int page,
     required int limit,
@@ -133,13 +121,17 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        final data = response['data'] as Map<String, dynamic>? ?? {};
-        return InternalProcessesPageModel.fromJson(data);
+        if (response is Map<String, dynamic>) {
+          final data = response['data'];
+          if (data is Map<String, dynamic>) return data;
+          return response;
+        }
+        return <String, dynamic>{};
       },
     );
   }
 
-  Future<InternalTransactionCountsEntity> getMyTransactionCounts() async {
+  Future<Map<String, dynamic>> getMyTransactionCounts() async {
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: _endPoints.myTransactionCounts,
@@ -148,13 +140,17 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        final data = response['data'] as Map<String, dynamic>? ?? {};
-        return InternalTransactionCountsModel.fromJson(data);
+        if (response is Map<String, dynamic>) {
+          final data = response['data'];
+          if (data is Map<String, dynamic>) return data;
+          return response;
+        }
+        return <String, dynamic>{};
       },
     );
   }
 
-  Future<InternalTransactionsPageEntity> getMyTransactions({
+  Future<Map<String, dynamic>> getMyTransactions({
     required int page,
     required int limit,
     String? status,
@@ -172,13 +168,17 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        final data = response['data'] as Map<String, dynamic>? ?? {};
-        return InternalTransactionsPageModel.fromJson(data);
+        if (response is Map<String, dynamic>) {
+          final data = response['data'];
+          if (data is Map<String, dynamic>) return data;
+          return response;
+        }
+        return <String, dynamic>{};
       },
     );
   }
 
-  Future<InternalTransactionFirstStageModel> getFirstStageTransaction({
+  Future<Map<String, dynamic>> getFirstStageTransaction({
     required int transactionId,
   }) async {
     final result = await apiService.makeRequest(
@@ -188,9 +188,10 @@ class InternalTransactionsRemoteDataSource {
 
     return result.fold(
       (failure) => throw ServerException(failure.message),
-      (response) => InternalTransactionFirstStageModel.fromJson(
-        response as Map<String, dynamic>,
-      ),
+      (response) {
+        if (response is Map<String, dynamic>) return response;
+        return <String, dynamic>{};
+      },
     );
   }
 
@@ -239,7 +240,7 @@ class InternalTransactionsRemoteDataSource {
     );
   }
 
-  Future<DocumentTemplateEntity> getDocumentTemplate({
+  Future<Map<String, dynamic>> getDocumentTemplate({
     required int templateId,
   }) async {
     final result = await apiService.makeRequest(
@@ -250,9 +251,8 @@ class InternalTransactionsRemoteDataSource {
     return result.fold(
       (failure) => throw ServerException(failure.message),
       (response) {
-        return DocumentTemplateModel.fromJson(
-          response as Map<String, dynamic>,
-        );
+        if (response is Map<String, dynamic>) return response;
+        return <String, dynamic>{};
       },
     );
   }
