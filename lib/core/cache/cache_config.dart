@@ -36,7 +36,6 @@ class CacheConfig {
       featureTtls: {
         'dashboard': Duration(minutes: 2),
         'my_transactions': Duration(minutes: 1),
-        'internal_transactions': Duration(minutes: 1),
         'department_transactions': Duration(minutes: 1),
         'notifications': Duration.zero, // WebSocket-driven updates
         'statistics': Duration(minutes: 5),

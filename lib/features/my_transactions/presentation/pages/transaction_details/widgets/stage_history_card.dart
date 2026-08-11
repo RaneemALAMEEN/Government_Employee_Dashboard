@@ -6,6 +6,7 @@ import 'package:government_employee_dashboard/features/internal_transactions/dom
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../../../shared/theme/app_colors.dart';
+import '../../../../../../shared/utils/app_file_downloader.dart';
 
 class StageHistoryCard extends StatelessWidget {
   final Map<String, dynamic> stage;
@@ -357,8 +358,26 @@ class StageHistoryCard extends StatelessWidget {
             runSpacing: 12,
             children: filesList.map((fileMap) {
               final file = fileMap as Map;
-              final filename =
-                  file['original_name']?.toString() ?? 'ملف_مرفق.pdf';
+              final rawPath = file['url']?.toString() ?? file['path']?.toString() ?? '';
+              final realExt = AppFileDownloader.extractExtension(
+                rawPath,
+                fallbackExtension: 'png',
+              );
+              final isImage = [
+                'jpg',
+                'jpeg',
+                'png',
+                'gif',
+                'bmp',
+                'webp'
+              ].contains(realExt);
+
+              var filename = file['original_name']?.toString() ?? file['name']?.toString() ?? '';
+              if (filename.isEmpty || filename == 'ملف_مرفق.pdf' || filename == 'ملف_مرفق') {
+                filename = isImage ? 'صورة_مرفقة.$realExt' : 'مستند_مرفق.$realExt';
+              } else if (isImage && filename.toLowerCase().endsWith('.pdf')) {
+                filename = '${filename.substring(0, filename.length - 4)}.$realExt';
+              }
 
               return Container(
                 width: 320,
@@ -375,12 +394,12 @@ class StageHistoryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDEEEF),
+                        color: isImage ? const Color(0xFFEFF6FF) : const Color(0xFFFDEEEF),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(
-                        LucideIcons.fileText,
-                        color: Color(0xFFC62828),
+                      child: Icon(
+                        isImage ? LucideIcons.image : LucideIcons.fileText,
+                        color: isImage ? const Color(0xFF1D4ED8) : const Color(0xFFC62828),
                         size: 18,
                       ),
                     ),
@@ -404,19 +423,8 @@ class StageHistoryCard extends StatelessWidget {
                           size: 16, color: AppColors.forest),
                       tooltip: 'عرض الملف',
                       onPressed: () {
-                        final rawPath = file['url']?.toString() ?? file['path']?.toString() ?? '';
                         if (rawPath.isNotEmpty) {
                           final fileUrl = buildFileUrl(rawPath);
-                          final ext = rawPath.split('.').last.toLowerCase();
-                          final isImage = [
-                            'jpg',
-                            'jpeg',
-                            'png',
-                            'gif',
-                            'bmp',
-                            'webp'
-                          ].contains(ext);
-
                           if (isImage) {
                             context.push('/image-viewer', extra: {
                               'fileUrl': fileUrl,
@@ -437,7 +445,6 @@ class StageHistoryCard extends StatelessWidget {
                           size: 16, color: AppColors.goldDark),
                       tooltip: 'تحميل الملف',
                       onPressed: () {
-                        final rawPath = file['path']?.toString() ?? file['url']?.toString() ?? '';
                         if (rawPath.isNotEmpty) {
                           onDownloadFile(rawPath, filename,
                               documentType: 'مرفق - $stageName');

@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:government_employee_dashboard/features/my_transactions/presentation/pages/image_viewer_page.dart';
 import 'package:government_employee_dashboard/features/my_transactions/presentation/pages/pdf_viewer_page.dart';
 
@@ -125,13 +128,29 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
       final fileUrl = _buildFileUrl(path);
 
+      final response = await dio.get<List<int>>(
+        fileUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes =
+          response.data != null ? Uint8List.fromList(response.data!) : null;
+      final contentType = response.headers.value('content-type');
+
       final savePath = await AppFileDownloader.getSavePath(
         applicantName: _getApplicantName(),
         documentType: documentType,
         originalFilename: filename,
+        contentType: contentType,
+        bytes: bytes,
       );
 
-      await dio.download(fileUrl, savePath);
+      if (bytes != null && bytes.isNotEmpty) {
+        final file = File(savePath);
+        await file.writeAsBytes(bytes);
+      } else {
+        await dio.download(fileUrl, savePath);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -933,10 +952,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                                 templateFilePath.isNotEmpty
                             ? () {
                                 final fullUrl = _buildFileUrl(templateFilePath);
-                                final ext = templateFilePath
-                                    .split('.')
-                                    .last
-                                    .toLowerCase();
+                                final ext = AppFileDownloader.extractExtension(
+                                  templateFilePath,
+                                  fallbackExtension: templateName,
+                                );
                                 final isImage = [
                                   'jpg',
                                   'jpeg',
