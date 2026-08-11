@@ -7,6 +7,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../shared/utils/app_file_downloader.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sfpdf;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../../../core/di/injection.dart';
@@ -22,7 +23,7 @@ class PdfViewerPage extends StatefulWidget {
     super.key,
     required this.fileUrl,
     required this.title,
-    this.readOnly = false,
+    this.readOnly = true,
   });
 
   @override
@@ -48,6 +49,28 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     _loadPdf();
   }
 
+  Future<Uint8List> _flattenPdfFormFields(Uint8List sourceBytes) async {
+    if (!widget.readOnly) return sourceBytes;
+    sfpdf.PdfDocument? document;
+    try {
+      final parsedDocument = sfpdf.PdfDocument(inputBytes: sourceBytes);
+      document = parsedDocument;
+      final fields = parsedDocument.form.fields;
+      if (fields.count > 0) {
+        for (var i = 0; i < fields.count; i++) {
+          fields[i].flatten();
+        }
+        final savedBytes = await parsedDocument.save();
+        return Uint8List.fromList(savedBytes);
+      }
+      return sourceBytes;
+    } catch (_) {
+      return sourceBytes;
+    } finally {
+      document?.dispose();
+    }
+  }
+
   Future<void> _loadPdf() async {
     try {
       // 1. Check local disk cache first for instant opening (0ms network delay)
@@ -58,9 +81,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       if (await cacheFile.exists()) {
         final cachedBytes = await cacheFile.readAsBytes();
         if (_hasPdfSignature(cachedBytes)) {
+          final processedBytes = await _flattenPdfFormFields(cachedBytes);
           if (!mounted) return;
           setState(() {
-            _pdfBytes = cachedBytes;
+            _pdfBytes = processedBytes;
             _isLoading = false;
             _errorMessage = null;
           });
@@ -102,9 +126,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
         await cacheFile.writeAsBytes(pdfBytes);
       } catch (_) {}
 
+      final processedBytes = await _flattenPdfFormFields(pdfBytes);
       if (!mounted) return;
       setState(() {
-        _pdfBytes = pdfBytes;
+        _pdfBytes = processedBytes;
         _isLoading = false;
         _errorMessage = null;
       });

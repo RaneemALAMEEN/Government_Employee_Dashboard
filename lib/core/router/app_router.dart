@@ -306,7 +306,7 @@ class AppRouter {
             pageBuilder: (context, state) {
               String fileUrl = '';
               String title = 'عرض الوثيقة';
-              bool readOnly = false;
+              bool readOnly = true;
               if (state.extra is String) {
                 fileUrl = state.extra as String;
               } else if (state.extra is Map<String, dynamic>) {
@@ -314,7 +314,7 @@ class AppRouter {
                 fileUrl =
                     map['fileUrl']?.toString() ?? map['url']?.toString() ?? '';
                 title = map['title']?.toString() ?? 'عرض الوثيقة';
-                readOnly = map['readOnly'] == true;
+                readOnly = map['readOnly'] ?? true;
               }
               return NoTransitionPage(
                 child: PdfViewerPage(

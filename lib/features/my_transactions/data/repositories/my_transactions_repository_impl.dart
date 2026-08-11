@@ -1,16 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/cache/collections/cache_entry.dart';
 import '../../../../core/cache/services/cache_manager.dart';
 import '../../../../core/cache/services/user_scope_service.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/errors/failures.dart';
 
 import '../../domain/entities/my_transaction_entity.dart';
 import '../../domain/entities/my_transactions_paginated_result.dart';
 import '../../domain/repositories/my_transactions_repository.dart';
+import '../../presentation/bloc/my_transactions_bloc.dart';
+import '../../presentation/bloc/my_transactions_event.dart';
 import '../datasources/my_transactions_remote_data_source.dart';
 import '../models/my_transaction_model.dart';
 
@@ -113,6 +117,9 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
   }) {
     Future.microtask(() async {
       try {
+        final existingEntry = await cacheManager?.readRawEntry(scopedKey);
+        final existingJsonStr = existingEntry?.jsonData;
+
         debugPrint(
           '[MyTransactionsRepositoryImpl] Triggering background API refresh for $scopedKey...',
         );
@@ -131,6 +138,8 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
           (data) async {
             if (data is Map && cacheManager != null) {
               final mapData = Map<String, dynamic>.from(data);
+              final newJsonStr = jsonEncode(mapData);
+
               await cacheManager!.write<Map<String, dynamic>>(
                 cacheKey: scopedKey,
                 data: mapData,
@@ -140,6 +149,18 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
               debugPrint(
                 '[MyTransactionsRepositoryImpl] Background refresh updated cache for $scopedKey',
               );
+
+              if (existingJsonStr != newJsonStr) {
+                debugPrint(
+                  '[MyTransactionsRepositoryImpl] Background refresh detected data change for $scopedKey. Triggering silent UI update.',
+                );
+                if (getIt.isRegistered<MyTransactionsBloc>()) {
+                  getIt<MyTransactionsBloc>().add(RefreshMyTransactionsSilently(
+                    status: status,
+                    data: _parsePaginatedResult(mapData),
+                  ));
+                }
+              }
             }
           },
         );
@@ -279,12 +300,30 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
 
   @override
   Future<Either<Failure, dynamic>> pickupTask({required String taskId}) async {
-    return await remoteDataSource.pickupTask(taskId: taskId);
+    final result = await remoteDataSource.pickupTask(taskId: taskId);
+    if (result.isRight()) {
+      final rawKey = 'task_details_$taskId';
+      final scopedKey = userScopeService?.buildScopedKey(rawKey) ?? rawKey;
+      await cacheManager?.invalidate(scopedKey);
+      await cacheManager?.invalidateByPrefix('task_details');
+      await cacheManager?.invalidateByPrefix('my_transactions');
+      debugPrint('[MyTransactionsRepositoryImpl] Invalidated task_details ($scopedKey) and my_transactions cache prefix after pickupTask.');
+    }
+    return result;
   }
 
   @override
   Future<Either<Failure, dynamic>> releaseTask({required String taskId}) async {
-    return await remoteDataSource.releaseTask(taskId: taskId);
+    final result = await remoteDataSource.releaseTask(taskId: taskId);
+    if (result.isRight()) {
+      final rawKey = 'task_details_$taskId';
+      final scopedKey = userScopeService?.buildScopedKey(rawKey) ?? rawKey;
+      await cacheManager?.invalidate(scopedKey);
+      await cacheManager?.invalidateByPrefix('task_details');
+      await cacheManager?.invalidateByPrefix('my_transactions');
+      debugPrint('[MyTransactionsRepositoryImpl] Invalidated task_details ($scopedKey) and my_transactions cache prefix after releaseTask.');
+    }
+    return result;
   }
 
   @override
@@ -309,11 +348,20 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
     required Map<String, dynamic> payload,
     bool isSubmitDocuments = false,
   }) async {
-    return await remoteDataSource.completeTask(
+    final result = await remoteDataSource.completeTask(
       taskId: taskId,
       payload: payload,
       isSubmitDocuments: isSubmitDocuments,
     );
+    if (result.isRight()) {
+      final rawKey = 'task_details_$taskId';
+      final scopedKey = userScopeService?.buildScopedKey(rawKey) ?? rawKey;
+      await cacheManager?.invalidate(scopedKey);
+      await cacheManager?.invalidateByPrefix('task_details');
+      await cacheManager?.invalidateByPrefix('my_transactions');
+      debugPrint('[MyTransactionsRepositoryImpl] Invalidated task_details ($scopedKey) and my_transactions cache prefix after completeTask.');
+    }
+    return result;
   }
 
   @override
@@ -321,11 +369,13 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   }) async {
     final result = await remoteDataSource.uploadTransactionFile(
       filePath: filePath,
       typeDocId: typeDocId,
       key: key,
+      onSendProgress: onSendProgress,
     );
     return result.map((r) {
       if (r is Map) {

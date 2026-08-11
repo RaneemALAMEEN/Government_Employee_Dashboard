@@ -65,6 +65,7 @@ class InternalTransactionsRemoteDataSource {
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   }) async {
     debugPrint(
       '[TransactionAttachment] بدء الرفع إلى '
@@ -82,6 +83,7 @@ class InternalTransactionsRemoteDataSource {
       method: ApiMethod.post,
       endPoint: _endPoints.uploadTransactionFile,
       formData: formData,
+      onSendProgress: onSendProgress,
     );
 
     return result.fold(

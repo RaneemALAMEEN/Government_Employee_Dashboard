@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' as dio;
 import '../../../../core/errors/failures.dart';
 import '../entities/my_transactions_paginated_result.dart';
 
@@ -36,6 +37,7 @@ abstract class MyTransactionsRepository {
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> getDocumentTemplate({

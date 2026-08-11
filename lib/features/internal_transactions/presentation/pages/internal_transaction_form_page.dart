@@ -14,7 +14,6 @@ import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
-import '../../../my_transactions/presentation/widgets/secure_signature_dialog.dart';
 import '../../domain/entities/document_template_entity.dart';
 import '../../domain/entities/dynamic_form_entity.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
@@ -86,6 +85,7 @@ class _InternalTransactionFormPageState
       ),
     );
     */
+    return null;
   }
 
   Future<void> _submit() async {
@@ -501,7 +501,7 @@ class _TemplateInfo extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (_) {
+      builder: (dialogContext) {
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Dialog(
@@ -517,9 +517,9 @@ class _TemplateInfo extends StatelessWidget {
                   Container(
                     height: 58,
                     padding: const EdgeInsets.symmetric(horizontal: 18),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.forest,
-                      borderRadius: const BorderRadius.vertical(
+                      borderRadius: BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
                     ),
@@ -542,9 +542,9 @@ class _TemplateInfo extends StatelessWidget {
                         ),
                         IconButton(
                           onPressed: () {
-                            if (Navigator.of(context, rootNavigator: true)
+                            if (Navigator.of(dialogContext, rootNavigator: true)
                                 .canPop()) {
-                              Navigator.of(context, rootNavigator: true).pop();
+                              Navigator.of(dialogContext, rootNavigator: true).pop();
                             }
                           },
                           icon: const Icon(
