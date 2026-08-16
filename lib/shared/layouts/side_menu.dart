@@ -138,20 +138,6 @@ class _AppSidebarState extends State<AppSidebar>
               widget.isCollapsed ? 10 : 18,
               12,
               widget.isCollapsed ? 10 : 18,
-              8,
-            ),
-            child: _SidebarAction(
-              icon: LucideIcons.refreshCw,
-              label: 'تغيير الدور',
-              compact: !widget.showLabels,
-              onTap: () => _changeRole(context),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              widget.isCollapsed ? 10 : 18,
-              0,
-              widget.isCollapsed ? 10 : 18,
               18,
             ),
             child: _SidebarAction(
@@ -163,24 +149,6 @@ class _AppSidebarState extends State<AppSidebar>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _changeRole(BuildContext context) {
-    getIt<SessionService>().cycleRole();
-    final newRole = getIt<SessionService>().activeRoleNotifier.value;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'تم تغيير الدور إلى: ${newRole?.roleName ?? ""}',
-          textAlign: TextAlign.right,
-          textDirection: TextDirection.rtl,
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: AppTextStyles.semiBold,
-          ),
-        ),
-        duration: const Duration(seconds: 2),
       ),
     );
   }

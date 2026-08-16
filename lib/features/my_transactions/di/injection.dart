@@ -1,3 +1,5 @@
+import '../../../core/cache/services/cache_manager.dart';
+import '../../../core/cache/services/user_scope_service.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/usb_signing_service.dart';
@@ -22,7 +24,15 @@ Future<void> setupMyTransactionsInjection() async {
 
   if (!getIt.isRegistered<MyTransactionsRepository>()) {
     getIt.registerLazySingleton<MyTransactionsRepository>(
-      () => MyTransactionsRepositoryImpl(getIt<MyTransactionsRemoteDataSource>()),
+      () => MyTransactionsRepositoryImpl(
+        getIt<MyTransactionsRemoteDataSource>(),
+        cacheManager: getIt.isRegistered<CacheManager>()
+            ? getIt<CacheManager>()
+            : null,
+        userScopeService: getIt.isRegistered<UserScopeService>()
+            ? getIt<UserScopeService>()
+            : null,
+      ),
     );
   }
 

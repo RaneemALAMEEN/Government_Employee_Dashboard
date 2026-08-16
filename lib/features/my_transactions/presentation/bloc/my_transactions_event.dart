@@ -41,3 +41,12 @@ class CancelPickupTransaction extends MyTransactionsEvent {
   final String txnNumber;
   const CancelPickupTransaction(this.txnNumber);
 }
+
+class RefreshMyTransactionsSilently extends MyTransactionsEvent {
+  final String status;
+  final dynamic data;
+  const RefreshMyTransactionsSilently({
+    required this.status,
+    required this.data,
+  });
+}

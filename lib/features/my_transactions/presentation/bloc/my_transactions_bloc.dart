@@ -30,6 +30,7 @@ class MyTransactionsBloc
     on<RejectTransaction>(_onRejectTransaction);
     on<PickupTransaction>(_onPickupTransaction);
     on<CancelPickupTransaction>(_onCancelPickupTransaction);
+    on<RefreshMyTransactionsSilently>(_onRefreshMyTransactionsSilently);
   }
 
   Future<void> _onLoadMyTransactions(
@@ -42,6 +43,18 @@ class MyTransactionsBloc
             orElse: () => const MapEntry('بانتظار الاستلام', 'pending_pickup'))
         .key;
     await _fetchDataAndEmit(apiStatus, arabicFilter, emit);
+    _warmUpAllStatusCaches();
+  }
+
+  /// Pre-fetches and caches all transaction categories in background for full offline availability
+  void _warmUpAllStatusCaches() {
+    Future.microtask(() async {
+      for (final status in _filterToApiStatus.values) {
+        try {
+          await getMyTransactions(status: status, limit: _pageLimit);
+        } catch (_) {}
+      }
+    });
   }
 
   /// تغيير الفلتر — يعيد تحميل البيانات من API
@@ -315,6 +328,36 @@ class MyTransactionsBloc
     }
 
     return _Stats(awaiting, urgent, completed);
+  }
+
+  void _onRefreshMyTransactionsSilently(
+    RefreshMyTransactionsSilently event,
+    Emitter<MyTransactionsState> emit,
+  ) {
+    if (state is MyTransactionsLoaded && event.data is MyTransactionsPaginatedResult) {
+      final loadedState = state as MyTransactionsLoaded;
+      final paginated = event.data as MyTransactionsPaginatedResult;
+      if (loadedState.apiStatusFilter == event.status) {
+        final stats = _calculateStats(paginated.items);
+        emit(loadedState.copyWith(
+          transactions: paginated.items,
+          nextCursor: paginated.nextCursor,
+          hasMore: paginated.hasNext,
+          isLoadingMore: false,
+          awaitingSignatureCount: event.status == 'pending_pickup' && paginated.totalCount > 0
+              ? paginated.totalCount
+              : (stats.awaitingSignature > loadedState.awaitingSignatureCount
+                  ? stats.awaitingSignature
+                  : loadedState.awaitingSignatureCount),
+          urgentCount: stats.urgent > loadedState.urgentCount
+              ? stats.urgent
+              : loadedState.urgentCount,
+          completedMonthCount: stats.completed > loadedState.completedMonthCount
+              ? stats.completed
+              : loadedState.completedMonthCount,
+        ));
+      }
+    }
   }
 }
 

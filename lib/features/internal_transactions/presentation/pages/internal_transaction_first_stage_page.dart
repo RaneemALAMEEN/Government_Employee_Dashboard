@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:animate_do/animate_do.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -489,13 +492,31 @@ class _FileCardState extends State<_FileCard> {
     if (_downloading || _absoluteUrl.isEmpty) return;
     setState(() => _downloading = true);
     try {
-      final extension =
-          widget.file.isPdf ? '.pdf' : _fileExtension(_absoluteUrl);
+      final dio = getIt<Dio>();
+      final response = await dio.get<List<int>>(
+        _absoluteUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes =
+          response.data != null ? Uint8List.fromList(response.data!) : null;
+      final contentType = response.headers.value('content-type');
+
       final savePath = await AppFileDownloader.getSavePath(
         documentType: widget.file.label,
-        originalFilename: '${widget.file.label}$extension',
+        originalFilename: widget.file.label,
+        contentType: contentType,
+        bytes: bytes,
+        fallbackExtension: widget.file.isPdf ? 'pdf' : null,
       );
-      await getIt<Dio>().download(_absoluteUrl, savePath);
+
+      if (bytes != null && bytes.isNotEmpty) {
+        final file = File(savePath);
+        await file.writeAsBytes(bytes);
+      } else {
+        await dio.download(_absoluteUrl, savePath);
+      }
+
       if (mounted) {
         AppSnackBar.show(context, message: 'تم تحميل الملف بنجاح');
       }

@@ -25,6 +25,7 @@ class SubmitTransaction {
     List<Map<String, dynamic>> loadedTemplates = const [],
     Map<String, dynamic> templateFormValues = const {},
     int? expectedVersion,
+    List<Map<String, dynamic>>? assignments,
   }) async {
     try {
       final isSubmitDocuments =
@@ -114,7 +115,7 @@ class SubmitTransaction {
       }
 
       // 4. Complete Task payload structure
-      final completePayload = {
+      final completePayload = <String, dynamic>{
         'form_id': formId,
         'form_name': formName,
         'widgets': payload['widgets'],
@@ -122,6 +123,8 @@ class SubmitTransaction {
         'note': note ?? '',
         'decision': decisionValue,
         if (expectedVersion != null) 'expected_version': expectedVersion,
+        if (assignments != null && assignments.isNotEmpty)
+          'assignments': assignments,
       };
 
       // 4. Handle Signature if required (when pin/keys exist)

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/errors/exceptions.dart';
@@ -119,12 +120,14 @@ class InternalTransactionsRepositoryImpl
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   }) async {
     try {
       final data = await remoteDataSource.uploadTransactionFile(
         filePath: filePath,
         typeDocId: typeDocId,
         key: key,
+        onSendProgress: onSendProgress,
       );
       return Right(data);
     } on ServerException catch (e) {

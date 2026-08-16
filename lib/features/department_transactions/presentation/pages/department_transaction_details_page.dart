@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -77,13 +80,29 @@ class _DepartmentTransactionDetailsPageState
 
       final fileUrl = _buildFileUrl(path);
 
+      final response = await dio.get<List<int>>(
+        fileUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes =
+          response.data != null ? Uint8List.fromList(response.data!) : null;
+      final contentType = response.headers.value('content-type');
+
       final savePath = await AppFileDownloader.getSavePath(
         applicantName: _getApplicantName(),
         documentType: documentType,
         originalFilename: filename,
+        contentType: contentType,
+        bytes: bytes,
       );
 
-      await dio.download(fileUrl, savePath);
+      if (bytes != null && bytes.isNotEmpty) {
+        final file = File(savePath);
+        await file.writeAsBytes(bytes);
+      } else {
+        await dio.download(fileUrl, savePath);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

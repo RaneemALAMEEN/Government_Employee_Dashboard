@@ -266,6 +266,7 @@ class TransactionDetailsBloc
       templateFormValues: event.templateFormValues,
       loadedTemplates: event.loadedTemplates,
       expectedVersion: event.expectedVersion,
+      assignments: event.assignments,
     );
 
     result.fold(

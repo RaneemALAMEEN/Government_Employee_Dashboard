@@ -28,6 +28,7 @@ class ApiService {
     dio.FormData? formData,
     Map<String, dynamic>? headers,
     dio.CancelToken? cancelToken,
+    dio.ProgressCallback? onSendProgress,
   }) async {
     try {
       final fullUrl = endPoint.startsWith('http')
@@ -42,6 +43,7 @@ class ApiService {
         data: formData ?? body,
         queryParameters: queryParameters,
         cancelToken: cancelToken,
+        onSendProgress: onSendProgress,
         options: dio.Options(
           method: method.value,
           headers: headers,

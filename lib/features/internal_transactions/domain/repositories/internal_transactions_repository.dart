@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
 
 import '../../../../core/errors/failures.dart';
@@ -40,6 +41,7 @@ abstract class InternalTransactionsRepository {
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> createSigningChallenge({

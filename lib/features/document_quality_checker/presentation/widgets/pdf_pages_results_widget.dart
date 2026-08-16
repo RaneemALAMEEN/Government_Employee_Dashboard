@@ -185,11 +185,20 @@ class _PageScoreRow extends StatelessWidget {
             child: Row(
               textDirection: TextDirection.ltr,
               children: [
-                _MiniStat(icon: LucideIcons.focus, label: 'وضوح', value: '${result.blurScore.round()}'),
+                _MiniStat(
+                    icon: LucideIcons.focus,
+                    label: 'وضوح',
+                    value: '${result.blurScore.round()}'),
                 const SizedBox(width: 10),
-                _MiniStat(icon: LucideIcons.maximize2, label: 'دقة', value: result.resolutionText),
+                _MiniStat(
+                    icon: LucideIcons.maximize2,
+                    label: 'دقة',
+                    value: result.resolutionText),
                 const SizedBox(width: 10),
-                _MiniStat(icon: LucideIcons.sun, label: 'إضاءة', value: '${result.brightnessScore.round()}'),
+                _MiniStat(
+                    icon: LucideIcons.sun,
+                    label: 'إضاءة',
+                    value: '${result.brightnessScore.round()}'),
               ],
             ),
           ),

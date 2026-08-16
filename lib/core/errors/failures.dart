@@ -31,3 +31,9 @@ class NetworkFailure extends Failure {
 class AuthFailure extends Failure {
   const AuthFailure(super.message, {super.statusCode});
 }
+
+/// Local cache read/write or storage failure.
+class CacheFailure extends Failure {
+  const CacheFailure(super.message, {super.statusCode});
+}
+

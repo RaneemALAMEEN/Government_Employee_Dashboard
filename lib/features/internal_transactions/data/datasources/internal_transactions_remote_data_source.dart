@@ -65,6 +65,7 @@ class InternalTransactionsRemoteDataSource {
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   }) async {
     debugPrint(
       '[TransactionAttachment] بدء الرفع إلى '
@@ -82,6 +83,7 @@ class InternalTransactionsRemoteDataSource {
       method: ApiMethod.post,
       endPoint: _endPoints.uploadTransactionFile,
       formData: formData,
+      onSendProgress: onSendProgress,
     );
 
     return result.fold(
@@ -219,23 +221,15 @@ class InternalTransactionsRemoteDataSource {
     required int transactionId,
     required Map<String, dynamic> payload,
   }) async {
-    final endpoint = _endPoints.completeSignedTransaction(transactionId);
-    debugPrint('[SigningFlow] complete endpoint request = POST $endpoint');
     final result = await apiService.makeRequest(
       method: ApiMethod.post,
-      endPoint: endpoint,
+      endPoint: _endPoints.completeSignedTransaction(transactionId),
       body: payload,
     );
 
     return result.fold(
-      (failure) {
-        debugPrint('[SigningFlow] complete endpoint succeeded = false');
-        throw ServerException(failure.message);
-      },
-      (response) {
-        debugPrint('[SigningFlow] complete endpoint succeeded = true');
-        return response as Map<String, dynamic>;
-      },
+      (failure) => throw ServerException(failure.message),
+      (response) => response as Map<String, dynamic>,
     );
   }
 

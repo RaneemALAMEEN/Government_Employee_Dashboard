@@ -120,6 +120,7 @@ class MyTransactionsRemoteDataSource {
     required String filePath,
     required int typeDocId,
     required String key,
+    dio.ProgressCallback? onSendProgress,
   }) async {
     final formData = dio.FormData.fromMap({
       'file': await dio.MultipartFile.fromFile(filePath),
@@ -131,6 +132,7 @@ class MyTransactionsRemoteDataSource {
       method: ApiMethod.post,
       endPoint: '/api/transaction/files/upload',
       formData: formData,
+      onSendProgress: onSendProgress,
     );
   }
 
