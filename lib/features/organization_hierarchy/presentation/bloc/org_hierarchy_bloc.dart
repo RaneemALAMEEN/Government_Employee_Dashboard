@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/failures.dart';
@@ -6,25 +9,35 @@ import '../../domain/entities/department_leaf_entity.dart';
 import '../../domain/entities/department_role_entity.dart';
 import '../../domain/entities/org_node_entity.dart';
 import '../../domain/entities/organization_employee_entity.dart';
+import '../../domain/entities/organization_search_entity.dart';
 import '../../domain/usecases/get_department_leaves.dart';
 import '../../domain/usecases/get_department_roles.dart';
 import '../../domain/usecases/get_organization_employees.dart';
+import '../../domain/usecases/search_organization.dart';
 import 'org_hierarchy_event.dart';
 import 'org_hierarchy_state.dart';
 
 class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
   final SessionService sessionService;
+  final SearchOrganization searchOrganization;
   final GetDepartmentLeaves getDepartmentLeaves;
   final GetDepartmentRoles getDepartmentRoles;
   final GetOrganizationEmployees getOrganizationEmployees;
+  Timer? _searchDebounce;
+  CancelToken? _searchCancelToken;
+  int _searchGeneration = 0;
 
   OrgHierarchyBloc({
     required this.sessionService,
+    required this.searchOrganization,
     required this.getDepartmentLeaves,
     required this.getDepartmentRoles,
     required this.getOrganizationEmployees,
   }) : super(const OrgHierarchyInitial()) {
     on<LoadOrgHierarchy>(_onLoadHierarchy);
+    on<SearchOrganizationHierarchy>(_onSearchHierarchy);
+    on<RetryOrganizationSearch>(_onRetrySearch);
+    on<ExecuteOrganizationSearch>(_onExecuteSearch);
     on<LoadDepartmentRoles>(_onLoadDepartmentRoles);
     on<LoadRoleEmployees>(_onLoadRoleEmployees);
   }
@@ -55,6 +68,92 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
     );
   }
 
+  void _onSearchHierarchy(
+    SearchOrganizationHierarchy event,
+    Emitter<OrgHierarchyState> emit,
+  ) {
+    final current = state;
+    if (current is! OrgHierarchyLoaded) return;
+    final query = event.query.trim();
+    _searchDebounce?.cancel();
+    _searchCancelToken?.cancel('organization search changed');
+    _searchCancelToken = null;
+    _searchGeneration++;
+
+    if (query.length < 2) {
+      emit(current.copyWith(
+        searchQuery: query,
+        searchStatus: OrganizationSearchStatus.idle,
+        searchNodes: const [],
+        clearSearchFailure: true,
+      ));
+      return;
+    }
+
+    emit(current.copyWith(
+      searchQuery: query,
+      searchStatus: OrganizationSearchStatus.loading,
+      clearSearchFailure: true,
+    ));
+    final generation = _searchGeneration;
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => add(ExecuteOrganizationSearch(query, generation)),
+    );
+  }
+
+  void _onRetrySearch(
+    RetryOrganizationSearch event,
+    Emitter<OrgHierarchyState> emit,
+  ) {
+    final current = state;
+    if (current is OrgHierarchyLoaded && current.isSearching) {
+      add(SearchOrganizationHierarchy(current.searchQuery));
+    }
+  }
+
+  Future<void> _onExecuteSearch(
+    ExecuteOrganizationSearch event,
+    Emitter<OrgHierarchyState> emit,
+  ) async {
+    final query = event.query;
+    final generation = event.generation;
+    final current = state;
+    if (current is! OrgHierarchyLoaded ||
+        generation != _searchGeneration ||
+        current.searchQuery != query) {
+      return;
+    }
+    final cancelToken = CancelToken();
+    _searchCancelToken = cancelToken;
+    final result = await searchOrganization(
+      organizationId: current.organizationId,
+      query: query,
+      limit: 20,
+      cancelToken: cancelToken,
+    );
+    if (generation != _searchGeneration || cancelToken.isCancelled) return;
+    final latest = state;
+    if (latest is! OrgHierarchyLoaded || latest.searchQuery != query) return;
+
+    result.fold(
+      (failure) => emit(latest.copyWith(
+        searchStatus: OrganizationSearchStatus.failure,
+        searchFailure: failure,
+      )),
+      (response) {
+        final nodes = _buildSearchTree(response);
+        emit(latest.copyWith(
+          searchStatus: nodes.isEmpty
+              ? OrganizationSearchStatus.empty
+              : OrganizationSearchStatus.success,
+          searchNodes: nodes,
+          clearSearchFailure: true,
+        ));
+      },
+    );
+  }
+
   Future<void> _onLoadDepartmentRoles(
     LoadDepartmentRoles event,
     Emitter<OrgHierarchyState> emit,
@@ -66,8 +165,7 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
       return;
     }
 
-    emit(OrgHierarchyLoaded(
-      organizationId: current.organizationId,
+    emit(current.copyWith(
       nodes: _updateNode(
         current.nodes,
         target.id,
@@ -85,8 +183,7 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
 
     result.fold(
       (failure) => emit(OrgHierarchyFailure(failure)),
-      (roles) => emit(OrgHierarchyLoaded(
-        organizationId: latest.organizationId,
+      (roles) => emit(latest.copyWith(
         nodes: _updateNode(
           latest.nodes,
           target.id,
@@ -115,8 +212,7 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
       return;
     }
 
-    emit(OrgHierarchyLoaded(
-      organizationId: current.organizationId,
+    emit(current.copyWith(
       nodes: _updateNode(
         current.nodes,
         nodeId,
@@ -138,8 +234,7 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
 
     result.fold(
       (failure) => emit(OrgHierarchyFailure(failure)),
-      (employees) => emit(OrgHierarchyLoaded(
-        organizationId: latest.organizationId,
+      (employees) => emit(latest.copyWith(
         nodes: _updateNode(
           latest.nodes,
           nodeId,
@@ -203,6 +298,95 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
     );
   }
 
+  List<OrgNodeEntity> _buildSearchTree(OrganizationSearchEntity response) {
+    final departments = <int, _SearchDepartmentNode>{};
+
+    for (final department in response.departments) {
+      departments.putIfAbsent(
+        department.id,
+        () => _SearchDepartmentNode(department.id, department.name),
+      );
+    }
+
+    for (final role in response.roles) {
+      final departmentId = role.departmentId;
+      final departmentName = role.departmentName;
+      if (departmentId == null || departmentName == null) continue;
+      final department = departments.putIfAbsent(
+        departmentId,
+        () => _SearchDepartmentNode(departmentId, departmentName),
+      );
+      department.expand = true;
+      department.roles.putIfAbsent(
+        role.id,
+        () => _SearchRoleNode(role.id, role.name, role.code),
+      );
+    }
+
+    for (final employee in response.employees) {
+      for (final assignment in employee.assignments) {
+        final department = departments.putIfAbsent(
+          assignment.departmentId,
+          () => _SearchDepartmentNode(
+            assignment.departmentId,
+            assignment.departmentName,
+          ),
+        );
+        department.expand = true;
+        final role = department.roles.putIfAbsent(
+          assignment.roleId,
+          () => _SearchRoleNode(
+            assignment.roleId,
+            assignment.roleName,
+            assignment.roleCode,
+          ),
+        );
+        role.expand = true;
+        role.employees.putIfAbsent(
+          employee.id,
+          () => _searchEmployeeNode(employee, assignment),
+        );
+      }
+    }
+
+    return departments.values.map((item) => item.toEntity()).toList();
+  }
+
+  OrgNodeEntity _searchEmployeeNode(
+    OrganizationSearchEmployeeEntity employee,
+    OrganizationSearchAssignmentEntity assignment,
+  ) {
+    return OrgNodeEntity(
+      id: 'search_employee_${employee.id}_${assignment.assignmentId}',
+      title: employee.fullName,
+      subtitle: employee.email.isEmpty ? employee.userName : employee.email,
+      type: OrgNodeType.employee,
+      employee: OrganizationEmployeeEntity(
+        assignmentId: assignment.assignmentId,
+        organizationDepartmentRolesId: assignment.odrId,
+        priority: 0,
+        isActive: employee.isActive,
+        userId: employee.id,
+        userName: employee.userName,
+        email: employee.email,
+        phoneNumber: '',
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        fatherName: employee.fatherName,
+        motherName: employee.motherName,
+        nationalId: employee.nationalId,
+        userIsActive: employee.isActive,
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _searchDebounce?.cancel();
+    _searchCancelToken?.cancel('organization hierarchy closed');
+    return super.close();
+  }
+
   OrgNodeEntity? _findNode(List<OrgNodeEntity> nodes, String id) {
     for (final node in nodes) {
       if (node.id == id) return node;
@@ -223,6 +407,48 @@ class OrgHierarchyBloc extends Bloc<OrgHierarchyEvent, OrgHierarchyState> {
       return node.copyWith(children: _updateNode(node.children, id, update));
     }).toList();
   }
+}
+
+class _SearchDepartmentNode {
+  final int id;
+  final String name;
+  final Map<int, _SearchRoleNode> roles = {};
+  bool expand = false;
+
+  _SearchDepartmentNode(this.id, this.name);
+
+  OrgNodeEntity toEntity() => OrgNodeEntity(
+        id: 'search_department_$id',
+        title: name,
+        type: OrgNodeType.department,
+        departmentId: id,
+        childrenLoaded: true,
+        initiallyExpanded: expand,
+        children: roles.values.map((item) => item.toEntity(id)).toList(),
+      );
+}
+
+class _SearchRoleNode {
+  final int id;
+  final String name;
+  final String code;
+  final Map<int, OrgNodeEntity> employees = {};
+  bool expand = false;
+
+  _SearchRoleNode(this.id, this.name, this.code);
+
+  OrgNodeEntity toEntity(int departmentId) => OrgNodeEntity(
+        id: 'search_role_${departmentId}_$id',
+        title: name,
+        subtitle: code.isEmpty ? null : code,
+        type: OrgNodeType.role,
+        departmentId: departmentId,
+        roleId: id,
+        roleCode: code,
+        childrenLoaded: true,
+        initiallyExpanded: expand,
+        children: employees.values.toList(),
+      );
 }
 
 class _MutableDepartmentNode {

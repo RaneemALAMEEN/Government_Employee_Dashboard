@@ -24,7 +24,21 @@ class OrgNodeWidget extends StatefulWidget {
 }
 
 class _OrgNodeWidgetState extends State<OrgNodeWidget> {
-  bool _expanded = false;
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.node.initiallyExpanded;
+  }
+
+  @override
+  void didUpdateWidget(covariant OrgNodeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.node.initiallyExpanded != widget.node.initiallyExpanded) {
+      _expanded = widget.node.initiallyExpanded;
+    }
+  }
 
   bool get _expandable =>
       widget.node.children.isNotEmpty || widget.node.canLoadChildren;

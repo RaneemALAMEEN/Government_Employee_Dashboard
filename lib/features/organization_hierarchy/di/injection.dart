@@ -8,6 +8,7 @@ import '../domain/repositories/organization_hierarchy_repository.dart';
 import '../domain/usecases/get_department_leaves.dart';
 import '../domain/usecases/get_department_roles.dart';
 import '../domain/usecases/get_organization_employees.dart';
+import '../domain/usecases/search_organization.dart';
 import '../presentation/bloc/org_hierarchy_bloc.dart';
 
 Future<void> setupOrganizationHierarchyInjection(GetIt getIt) async {
@@ -42,11 +43,17 @@ Future<void> setupOrganizationHierarchyInjection(GetIt getIt) async {
       ),
     );
   }
+  if (!getIt.isRegistered<SearchOrganization>()) {
+    getIt.registerLazySingleton(
+      () => SearchOrganization(getIt<OrganizationHierarchyRepository>()),
+    );
+  }
 
   if (!getIt.isRegistered<OrgHierarchyBloc>()) {
     getIt.registerFactory(
       () => OrgHierarchyBloc(
         sessionService: getIt<SessionService>(),
+        searchOrganization: getIt<SearchOrganization>(),
         getDepartmentLeaves: getIt<GetDepartmentLeaves>(),
         getDepartmentRoles: getIt<GetDepartmentRoles>(),
         getOrganizationEmployees: getIt<GetOrganizationEmployees>(),

@@ -16,6 +16,7 @@ class OrgNodeEntity {
   final bool loadingChildren;
   final String? childrenError;
   final List<OrgNodeEntity> children;
+  final bool initiallyExpanded;
 
   const OrgNodeEntity({
     required this.id,
@@ -31,6 +32,7 @@ class OrgNodeEntity {
     this.loadingChildren = false,
     this.childrenError,
     this.children = const [],
+    this.initiallyExpanded = false,
   });
 
   OrgNodeEntity copyWith({
@@ -39,6 +41,7 @@ class OrgNodeEntity {
     bool? loadingChildren,
     String? childrenError,
     bool clearChildrenError = false,
+    bool? initiallyExpanded,
   }) {
     return OrgNodeEntity(
       id: id,
@@ -55,6 +58,7 @@ class OrgNodeEntity {
       childrenError:
           clearChildrenError ? null : childrenError ?? this.childrenError,
       children: children ?? this.children,
+      initiallyExpanded: initiallyExpanded ?? this.initiallyExpanded,
     );
   }
 }

@@ -31,11 +31,14 @@ class EndPoints {
   String processDefinitionsAuth(int typeProcessId) =>
       'api/process_definitions/auth/$typeProcessId';
   String adminProcessDefinitionsByType(int typeProcessId) =>
-      'api/process_definitions/admin/type/$typeProcessId';
+      'api/process_definitions/type/$typeProcessId';
   String get adminComplaintProcessDefinitions =>
       'api/process_definitions/admin/complaints';
   String processDefinitionDetails(int processId) =>
       'api/process_definitions/$processId/details';
+  String get organizationProcessDefinitionsSearch =>
+      'api/process_definitions/search/org';
+  String get organizationSearch => 'api/organization/search/';
   String get uploadTransactionFile => '/api/transaction/files/upload';
   String stageConfig(int processId) => 'api/stage_config/config/$processId';
   String signingChallenge(int processId) =>

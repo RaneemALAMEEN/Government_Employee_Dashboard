@@ -27,6 +27,7 @@ class ApiService {
     Map<String, dynamic>? queryParameters,
     dio.FormData? formData,
     Map<String, dynamic>? headers,
+    dio.CancelToken? cancelToken,
   }) async {
     try {
       final fullUrl = endPoint.startsWith('http')
@@ -40,6 +41,7 @@ class ApiService {
         endPoint,
         data: formData ?? body,
         queryParameters: queryParameters,
+        cancelToken: cancelToken,
         options: dio.Options(
           method: method.value,
           headers: headers,

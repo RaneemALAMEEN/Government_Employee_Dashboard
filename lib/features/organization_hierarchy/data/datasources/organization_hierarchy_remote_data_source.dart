@@ -1,4 +1,5 @@
 import '../../../../core/enums/api_method.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/api_const.dart';
@@ -6,6 +7,7 @@ import '../../../../core/services/api_service.dart';
 import '../models/department_leaf_model.dart';
 import '../models/department_role_model.dart';
 import '../models/organization_employee_model.dart';
+import '../models/organization_search_models.dart';
 
 class OrganizationHierarchyRemoteDataSource {
   final ApiService apiService;
@@ -69,14 +71,38 @@ class OrganizationHierarchyRemoteDataSource {
         .toList();
   }
 
+  Future<OrganizationSearchResponseModel> searchOrganization({
+    required int organizationId,
+    required String query,
+    required String scope,
+    required int limit,
+    String? cursor,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _get(
+      endPoint: _endPoints.organizationSearch,
+      queryParameters: {
+        'organization_id': organizationId,
+        'q': query,
+        'scope': scope,
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+      cancelToken: cancelToken,
+    );
+    return OrganizationSearchResponseModel.fromJson(response);
+  }
+
   Future<Map<String, dynamic>> _get({
     required String endPoint,
     Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
   }) async {
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
       endPoint: endPoint,
       queryParameters: queryParameters,
+      cancelToken: cancelToken,
     );
 
     return result.fold(

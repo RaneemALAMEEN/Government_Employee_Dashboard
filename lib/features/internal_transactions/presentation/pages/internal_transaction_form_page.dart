@@ -51,7 +51,8 @@ class _InternalTransactionFormPageState
         ? getIt<UsbSigningService>()
         : UsbSigningService();
 
-    final discoveryResult = await usbSigningService.findUsbKeysDirectory(username);
+    final discoveryResult =
+        await usbSigningService.findUsbKeysDirectory(username);
 
     if (discoveryResult.status == UsbDiscoveryStatus.success &&
         discoveryResult.path != null &&

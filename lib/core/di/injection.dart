@@ -41,13 +41,11 @@ Future<void> setupCoreInjection() async {
     );
   }
 
-
   if (!getIt.isRegistered<ApiService>()) {
     getIt.registerLazySingleton<ApiService>(
       () => ApiService(getIt<Dio>()),
     );
   }
-
   // اتصال إشعارات الـ WebSocket (بديل FCM على سطح مكتب Windows). يُبدأ صراحةً
   // من main عبر start() بعد تهيئة الإشعارات والـ tray.
   if (!getIt.isRegistered<PushSocket>()) {
@@ -59,5 +57,5 @@ Future<void> setupCoreInjection() async {
     );
   }
 
-    setupInternalTransactionsInjection(getIt);
+  setupInternalTransactionsInjection(getIt);
 }

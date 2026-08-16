@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -29,8 +30,200 @@ class OrganizationHierarchyPage extends StatelessWidget {
   }
 }
 
-class _OrganizationHierarchyView extends StatelessWidget {
+class _OrganizationHierarchyView extends StatefulWidget {
   const _OrganizationHierarchyView();
+
+  @override
+  State<_OrganizationHierarchyView> createState() =>
+      _OrganizationHierarchyViewState();
+}
+
+class _OrganizationHierarchyViewState
+    extends State<_OrganizationHierarchyView> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {});
+    context.read<OrgHierarchyBloc>().add(SearchOrganizationHierarchy(query));
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _onSearchChanged('');
+  }
+
+  Widget _buildSearchField(OrgHierarchyLoaded state) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 680),
+      child: SizedBox(
+        height: 48,
+        child: TextField(
+          controller: _searchController,
+          onChanged: _onSearchChanged,
+          textDirection: TextDirection.rtl,
+          textAlign: TextAlign.right,
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: 'ابحث عن قسم، دور، أو موظف...',
+            hintTextDirection: TextDirection.rtl,
+            prefixIcon: const Icon(LucideIcons.search, size: 20),
+            suffixIcon: state.searchStatus == OrganizationSearchStatus.loading
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'مسح البحث',
+                        onPressed: _clearSearch,
+                        icon: const Icon(LucideIcons.x, size: 18),
+                      ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: AppColors.charcoal.withValues(alpha: 0.2),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHierarchyContent(
+    BuildContext context,
+    OrgHierarchyLoaded state,
+  ) {
+    if (state.searchStatus == OrganizationSearchStatus.empty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/vectors/empty search.svg',
+                width: 150,
+                height: 150,
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'لا توجد نتائج مطابقة لبحثك',
+                style: AppTextStyles.titleMedium,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'جرّب البحث باسم آخر',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.charcoal.withValues(alpha: 0.65),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (state.searchStatus == OrganizationSearchStatus.failure) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(LucideIcons.searchX, size: 40, color: AppColors.umber),
+              const SizedBox(height: 12),
+              const Text('تعذر تنفيذ البحث', style: AppTextStyles.titleMedium),
+              const SizedBox(height: 8),
+              Text(
+                state.searchFailure?.message ?? 'حاول مرة أخرى',
+                style: AppTextStyles.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () => context
+                    .read<OrgHierarchyBloc>()
+                    .add(const RetryOrganizationSearch()),
+                icon: const Icon(LucideIcons.refreshCw, size: 17),
+                label: const Text('حاول مرة أخرى'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final showSearchResults =
+        state.searchStatus == OrganizationSearchStatus.success ||
+            (state.searchStatus == OrganizationSearchStatus.loading &&
+                state.searchNodes.isNotEmpty);
+    final nodes = showSearchResults ? state.searchNodes : state.nodes;
+    if (nodes.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(
+          child: Text(
+            'لا توجد أقسام مرتبطة بهذه المؤسسة.',
+            style: AppTextStyles.titleMedium,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: nodes
+          .map((node) => OrgNodeWidget(
+                key: ValueKey(
+                  '${showSearchResults ? 'search' : 'normal'}_${node.id}',
+                ),
+                node: node,
+                onNodeTap: (node) => _handleNodeTap(context, node),
+                onLoadChildren: (node) {
+                  if (showSearchResults) return;
+                  if (node.type == OrgNodeType.role &&
+                      node.departmentId != null &&
+                      node.roleId != null) {
+                    context.read<OrgHierarchyBloc>().add(
+                          LoadRoleEmployees(
+                            departmentId: node.departmentId!,
+                            roleId: node.roleId!,
+                          ),
+                        );
+                  } else if (node.departmentId != null) {
+                    context
+                        .read<OrgHierarchyBloc>()
+                        .add(LoadDepartmentRoles(node.departmentId!));
+                  }
+                },
+              ))
+          .toList(),
+    );
+  }
 
   void _handleNodeTap(BuildContext context, OrgNodeEntity node) {
     final employee = node.employee;
@@ -248,6 +441,8 @@ class _OrganizationHierarchyView extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    _buildSearchField(state),
                     const SizedBox(height: 32),
                     FadeInUp(
                       duration: const Duration(milliseconds: 500),
@@ -264,50 +459,7 @@ class _OrganizationHierarchyView extends StatelessWidget {
                             )
                           ],
                         ),
-                        child: state.nodes.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 48),
-                                child: Center(
-                                  child: Text(
-                                    'لا توجد أقسام مرتبطة بهذه المؤسسة.',
-                                    style: AppTextStyles.titleMedium,
-                                  ),
-                                ),
-                              )
-                            : Column(
-                                children: state.nodes
-                                    .map((node) => OrgNodeWidget(
-                                          key: ValueKey(node.id),
-                                          node: node,
-                                          onNodeTap: (node) =>
-                                              _handleNodeTap(context, node),
-                                          onLoadChildren: (node) {
-                                            if (node.type == OrgNodeType.role &&
-                                                node.departmentId != null &&
-                                                node.roleId != null) {
-                                              context
-                                                  .read<OrgHierarchyBloc>()
-                                                  .add(
-                                                    LoadRoleEmployees(
-                                                      departmentId:
-                                                          node.departmentId!,
-                                                      roleId: node.roleId!,
-                                                    ),
-                                                  );
-                                            } else if (node.departmentId !=
-                                                null) {
-                                              context
-                                                  .read<OrgHierarchyBloc>()
-                                                  .add(
-                                                    LoadDepartmentRoles(
-                                                      node.departmentId!,
-                                                    ),
-                                                  );
-                                            }
-                                          },
-                                        ))
-                                    .toList(),
-                              ),
+                        child: _buildHierarchyContent(context, state),
                       ),
                     ),
                   ],
