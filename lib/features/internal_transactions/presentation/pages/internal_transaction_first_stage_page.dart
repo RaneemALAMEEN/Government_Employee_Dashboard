@@ -97,7 +97,7 @@ class _DetailsContent extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
-                  onPressed: context.pop,
+                  onPressed: () => context.go('/internal-transactions'),
                   icon: const Icon(LucideIcons.arrowRight, size: 18),
                   label: const Text('العودة للمعاملات'),
                 ),

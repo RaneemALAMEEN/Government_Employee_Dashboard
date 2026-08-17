@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -195,16 +197,39 @@ class InternalTransactionFormBloc
         return;
       }
 
-      final payload = payloadResult.payload!;
+      final payload = Map<String, dynamic>.unmodifiable({
+        ...payloadResult.payload!,
+        'decision': 'approve',
+      });
+      final gatewayWidget = _findGatewayWidget(payload['widgets']);
+      final gatewayData = gatewayWidget?['data'];
+      final gatewayId = gatewayData is Map ? gatewayData['id'] : null;
+      final gatewayValue = gatewayWidget?['value'];
+
       final uploadedFilesCount = _countUploadedFiles(payload);
       debugPrint(
         '[InternalTransactionForm] اكتمل رفع $uploadedFilesCount '
         'مرفق/مرفقات قبل التوقيع وإرسال المعاملة.',
       );
 
+      debugPrint('[InternalSigning] processId = ${event.processId}');
+      debugPrint('[InternalSigning] root decision = approve');
+      debugPrint(
+        '[InternalSigning] gateway widget = ${gatewayId ?? '(not present)'}',
+      );
+      debugPrint(
+        '[InternalSigning] gateway value = '
+        '${gatewayWidget == null ? '(not present)' : gatewayValue}',
+      );
+      debugPrint(
+        '[InternalSigning] challenge payload = '
+        '${_payloadForSafeLog(payload)}',
+      );
+
       final challengeResult = await createSigningChallenge(
         processId: event.processId,
         pin: event.pin,
+        payload: payload,
       );
 
       await challengeResult.fold(
@@ -231,6 +256,9 @@ class InternalTransactionFormBloc
             return;
           }
 
+          debugPrint('[InternalSigning] challengeId = $challengeId');
+          debugPrint('[InternalSigning] transactionId = $transactionId');
+
           final signature = await usbSigningService.signMessageFromUsb(
             keysDirectoryPath: event.keysDirectoryPath,
             pin: event.pin,
@@ -250,14 +278,16 @@ class InternalTransactionFormBloc
 
           final completePayload = {
             ...payload,
-            'decision': payload['decision']?.toString().isNotEmpty == true
-                ? payload['decision']
-                : 'approve',
             'signature': {
               'challenge_id': challengeId,
               'signature': signature,
             },
           };
+
+          debugPrint(
+            '[InternalSigning] complete payload = '
+            '${_payloadForSafeLog(completePayload)}',
+          );
 
           final completeResult = await completeSignedTransaction(
             transactionId: transactionId,
@@ -402,12 +432,39 @@ class InternalTransactionFormBloc
       'widgets': widgetsResult.widgets,
       'templates': templatesPayload,
       'note': form.note,
-      if (form.decision.isNotEmpty) 'decision': form.decision,
-      if (form.expectedVersion != null)
-        'expected_version': form.expectedVersion,
     };
 
     return _SubmitPayloadResult.success(payload);
+  }
+
+  String _payloadForSafeLog(Map<String, dynamic> payload) {
+    final safePayload = Map<String, dynamic>.from(payload);
+    final signature = safePayload['signature'];
+    if (signature is Map) {
+      safePayload['signature'] = {
+        'challenge_id': signature['challenge_id'],
+        'signature': '[REDACTED]',
+      };
+    }
+    return jsonEncode(safePayload);
+  }
+
+  Map<dynamic, dynamic>? _findGatewayWidget(dynamic widgets) {
+    if (widgets is! List) return null;
+
+    for (final widget in widgets) {
+      if (widget is! Map || widget['widget_type'] != 'radio_group') continue;
+
+      final data = widget['data'];
+      if (data is! Map) continue;
+
+      final id = data['id']?.toString();
+      if (data['is_gateway'] == true || id == 'gateway' || id == 'decision') {
+        return widget;
+      }
+    }
+
+    return null;
   }
 
   Future<_WidgetsPayloadResult> _buildWidgetsPayload({

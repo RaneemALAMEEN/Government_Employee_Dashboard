@@ -11,10 +11,12 @@ class CreateSigningChallengeUseCase {
   Future<Either<Failure, Map<String, dynamic>>> call({
     required int processId,
     required String pin,
+    required Map<String, dynamic> payload,
   }) {
     return repository.createSigningChallenge(
       processId: processId,
       pin: pin,
+      payload: payload,
     );
   }
 }

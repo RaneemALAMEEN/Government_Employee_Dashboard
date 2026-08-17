@@ -199,11 +199,13 @@ class InternalTransactionsRemoteDataSource {
   Future<Map<String, dynamic>> createSigningChallenge({
     required int processId,
     required String pin,
+    required Map<String, dynamic> payload,
   }) async {
     final result = await apiService.makeRequest(
       method: ApiMethod.post,
       endPoint: _endPoints.signingChallenge(processId),
       body: {
+        ...payload,
         'pin': pin,
       },
     );

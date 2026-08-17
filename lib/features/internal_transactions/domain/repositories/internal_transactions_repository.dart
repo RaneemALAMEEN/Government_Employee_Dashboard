@@ -47,6 +47,7 @@ abstract class InternalTransactionsRepository {
   Future<Either<Failure, Map<String, dynamic>>> createSigningChallenge({
     required int processId,
     required String pin,
+    required Map<String, dynamic> payload,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> completeSignedTransaction({

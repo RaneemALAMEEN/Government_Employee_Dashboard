@@ -141,11 +141,13 @@ class InternalTransactionsRepositoryImpl
   Future<Either<Failure, Map<String, dynamic>>> createSigningChallenge({
     required int processId,
     required String pin,
+    required Map<String, dynamic> payload,
   }) async {
     try {
       final data = await remoteDataSource.createSigningChallenge(
         processId: processId,
         pin: pin,
+        payload: payload,
       );
       return Right(data);
     } on ServerException catch (e) {
