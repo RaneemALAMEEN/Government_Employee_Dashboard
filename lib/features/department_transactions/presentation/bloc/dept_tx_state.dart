@@ -1,3 +1,4 @@
+import '../../domain/entities/accessible_department_entity.dart';
 import '../../domain/entities/department_transaction_entity.dart';
 
 abstract class DeptTxState {
@@ -26,6 +27,14 @@ class DeptTxLoaded extends DeptTxState {
   final int inProgressCount;
   final int pendingPickupCount;
 
+  // Accessible departments
+  final List<AccessibleDepartmentEntity> accessibleDepartments;
+  final int? selectedDepartmentId;
+  final String? selectedDepartmentName;
+
+  // Search Loading Flag
+  final bool isSearching;
+
   const DeptTxLoaded({
     required this.transactions,
     required this.statusFilter,
@@ -41,6 +50,10 @@ class DeptTxLoaded extends DeptTxState {
     this.activeCount = 0,
     this.inProgressCount = 0,
     this.pendingPickupCount = 0,
+    this.accessibleDepartments = const [],
+    this.selectedDepartmentId,
+    this.selectedDepartmentName,
+    this.isSearching = false,
   });
 
   DeptTxLoaded copyWith({
@@ -58,6 +71,10 @@ class DeptTxLoaded extends DeptTxState {
     int? activeCount,
     int? inProgressCount,
     int? pendingPickupCount,
+    List<AccessibleDepartmentEntity>? accessibleDepartments,
+    int? selectedDepartmentId,
+    String? selectedDepartmentName,
+    bool? isSearching,
   }) {
     return DeptTxLoaded(
       transactions: transactions ?? this.transactions,
@@ -74,6 +91,10 @@ class DeptTxLoaded extends DeptTxState {
       activeCount: activeCount ?? this.activeCount,
       inProgressCount: inProgressCount ?? this.inProgressCount,
       pendingPickupCount: pendingPickupCount ?? this.pendingPickupCount,
+      accessibleDepartments: accessibleDepartments ?? this.accessibleDepartments,
+      selectedDepartmentId: selectedDepartmentId ?? this.selectedDepartmentId,
+      selectedDepartmentName: selectedDepartmentName ?? this.selectedDepartmentName,
+      isSearching: isSearching ?? this.isSearching,
     );
   }
 }

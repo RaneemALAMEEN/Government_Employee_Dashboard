@@ -6,7 +6,9 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/statistics_employee_details_entity.dart';
+
 import '../bloc/statistics_employee_details_bloc.dart';
 import '../bloc/statistics_employee_details_event.dart';
 import '../bloc/statistics_employee_details_state.dart';
@@ -677,7 +679,11 @@ class _EmployeeDetailsSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
         children: [
-          _skeletonBox(130),
+          const CustomSkeletonLoader(
+            width: double.infinity,
+            height: 130,
+            borderRadius: 14,
+          ),
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (_, constraints) => Wrap(
@@ -689,23 +695,19 @@ class _EmployeeDetailsSkeleton extends StatelessWidget {
                   width: constraints.maxWidth >= 900
                       ? (constraints.maxWidth - 18) / 2
                       : constraints.maxWidth,
-                  child: _skeletonBox(210),
+                  child: const CustomSkeletonLoader(
+                    width: double.infinity,
+                    height: 210,
+                    borderRadius: 14,
+                  ),
                 ),
               ),
             ),
           ),
         ],
       );
-
-  Widget _skeletonBox(double height) => Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border.withValues(alpha: .25)),
-        ),
-      );
 }
+
 
 class _EmployeeDetailsError extends StatelessWidget {
   final String message;

@@ -1,6 +1,9 @@
 import '../../../core/di/injection.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/services/usb_signing_service.dart';
 import '../../../core/storage/secure_storage_service.dart';
+
 
 import '../data/datasources/auth_remote_data_source.dart';
 import '../data/repositories/auth_repository_impl.dart';
@@ -48,9 +51,14 @@ Future<void> setupAuthInjection() async {
 
   if (!getIt.isRegistered<ChangePinUseCase>()) {
     getIt.registerLazySingleton<ChangePinUseCase>(
-      () => ChangePinUseCase(getIt<AuthRepository>()),
+      () => ChangePinUseCase(
+        repository: getIt<AuthRepository>(),
+        usbSigningService: getIt<UsbSigningService>(),
+        sessionService: getIt<SessionService>(),
+      ),
     );
   }
+
 
   getIt.registerFactory<LoginBloc>(
     () => LoginBloc(getIt<LoginUseCase>()),

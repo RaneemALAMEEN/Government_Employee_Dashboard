@@ -24,3 +24,12 @@ class SearchDeptTx extends DeptTxEvent {
   final String query;
   const SearchDeptTx(this.query);
 }
+
+class FilterDeptTxByDepartment extends DeptTxEvent {
+  final int departmentId;
+  final String departmentName;
+  const FilterDeptTxByDepartment({
+    required this.departmentId,
+    required this.departmentName,
+  });
+}

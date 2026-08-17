@@ -75,10 +75,11 @@ Future<void> setupMyTransactionsInjection() async {
 
   // BLoCs
   if (!getIt.isRegistered<MyTransactionsBloc>()) {
-    getIt.registerFactory<MyTransactionsBloc>(
+    getIt.registerLazySingleton<MyTransactionsBloc>(
       () => MyTransactionsBloc(getIt<GetMyTransactions>()),
     );
   }
+
 
   if (!getIt.isRegistered<TransactionDetailsBloc>()) {
     getIt.registerFactory<TransactionDetailsBloc>(

@@ -12,13 +12,19 @@ class AppSnackBar {
     required String message,
     bool isError = false,
     String? title,
+    Color? backgroundColor,
+    IconData? icon,
     Duration duration = const Duration(seconds: 4),
   }) {
     final messenger = ScaffoldMessenger.of(context);
-    final backgroundColor = isError ? AppColors.umberLight : AppColors.goldDark;
+    final bg = backgroundColor ??
+        (isError ? AppColors.umber : AppColors.forest);
+    final iconData = icon ??
+        (isError ? LucideIcons.circleAlert : LucideIcons.circleCheck);
 
     messenger
       ..hideCurrentSnackBar()
+
       ..showSnackBar(
         SnackBar(
           width: 520,
@@ -31,7 +37,7 @@ class AppSnackBar {
             textDirection: TextDirection.rtl,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: backgroundColor,
+                color: bg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white.withOpacity(0.16)),
                 boxShadow: [
@@ -55,14 +61,13 @@ class AppSnackBar {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        isError
-                            ? LucideIcons.circleAlert
-                            : LucideIcons.circleCheck,
+                        iconData,
                         color: AppColors.white,
                         size: 22,
                       ),
                     ),
                     const SizedBox(width: 12),
+
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

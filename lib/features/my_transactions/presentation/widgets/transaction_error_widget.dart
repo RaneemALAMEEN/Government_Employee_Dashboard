@@ -41,17 +41,18 @@ class TransactionErrorWidget extends StatelessWidget {
   Color _getColor() {
     switch (errorCode) {
       case 'VERSION_CONFLICT':
-        return Colors.orange.shade700;
+        return AppColors.umber;
       case 'TASK_NOT_FOUND':
-        return Colors.blueGrey.shade600;
+        return AppColors.umberLight;
       case 'SIGNING_ERROR':
         return AppColors.umber;
       case 'LOCK_ERROR':
-        return Colors.red.shade700;
+        return AppColors.umberDark;
       default:
-        return AppColors.error;
+        return AppColors.umber;
     }
   }
+
 
   String _getErrorLabel() {
     switch (errorCode) {

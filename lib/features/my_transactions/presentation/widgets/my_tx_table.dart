@@ -15,6 +15,7 @@ class MyTxTable extends StatefulWidget {
   final String activeFilter;
   final String searchQuery;
   final bool isLoadingMore;
+  final bool isSearching;
   final bool hasMore;
 
   const MyTxTable({
@@ -25,6 +26,7 @@ class MyTxTable extends StatefulWidget {
     required this.activeFilter,
     required this.searchQuery,
     this.isLoadingMore = false,
+    this.isSearching = false,
     this.hasMore = false,
   });
 
@@ -47,22 +49,9 @@ class _MyTxTableState extends State<MyTxTable> {
     super.dispose();
   }
 
-  /// تصفية المعاملات حسب البحث المحلي
-  List<MyTransactionEntity> _getFilteredTransactions() {
-    if (widget.searchQuery.isEmpty) return widget.transactions;
-    final lowerQuery = widget.searchQuery.toLowerCase();
-    return widget.transactions.where((tx) {
-      return tx.number.toLowerCase().contains(lowerQuery) ||
-          tx.applicant.toLowerCase().contains(lowerQuery) ||
-          tx.type.toLowerCase().contains(lowerQuery) ||
-          tx.department.toLowerCase().contains(lowerQuery) ||
-          tx.processName.toLowerCase().contains(lowerQuery);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final filteredTransactions = _getFilteredTransactions();
+    final filteredTransactions = widget.transactions;
 
     return Container(
       decoration: BoxDecoration(
@@ -78,16 +67,53 @@ class _MyTxTableState extends State<MyTxTable> {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const double minTableWidth = 1050;
-          final double availableWidth = constraints.maxWidth;
+      child: Column(
+        children: [
+          if (widget.isSearching) ...[
+            Container(
+              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              color: AppColors.white,
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.forest,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'جاري البحث...',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.forest,
+                      fontWeight: AppTextStyles.medium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(
+              height: 2,
+              child: LinearProgressIndicator(
+                color: AppColors.forest,
+                backgroundColor: AppColors.goldLight,
+              ),
+            ),
+          ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const double minTableWidth = 1050;
+              final double availableWidth = constraints.maxWidth;
 
-          final Widget tableContent = Column(
-            children: [
-              const _TableHeader(),
-              if (filteredTransactions.isEmpty)
-                _buildEmptyState(widget.activeFilter)
+              final Widget tableContent = Column(
+                children: [
+                  const _TableHeader(),
+                  if (filteredTransactions.isEmpty)
+                    _buildEmptyState(widget.activeFilter)
               else
                 ListView.separated(
                   shrinkWrap: true,
@@ -159,8 +185,10 @@ class _MyTxTableState extends State<MyTxTable> {
           }
         },
       ),
-    );
-  }
+    ],
+  ),
+);
+}
 
   Widget _buildEmptyState(String filter) {
     String svgPath;

@@ -6,7 +6,9 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/notification_entity.dart';
+
 import '../bloc/notifications_bloc.dart';
 import '../bloc/notifications_event.dart';
 import '../bloc/notifications_state.dart';
@@ -498,7 +500,7 @@ class _QuickNotificationTile extends StatelessWidget {
   }
 }
 
-class NotificationSkeletonList extends StatefulWidget {
+class NotificationSkeletonList extends StatelessWidget {
   final int itemCount;
   final bool compact;
 
@@ -509,55 +511,20 @@ class NotificationSkeletonList extends StatefulWidget {
   });
 
   @override
-  State<NotificationSkeletonList> createState() =>
-      _NotificationSkeletonListState();
-}
-
-class _NotificationSkeletonListState extends State<NotificationSkeletonList>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1100),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _controller,
-        builder: (_, child) => Opacity(
-          opacity: .45 + _controller.value * .35,
-          child: child,
-        ),
-        child: ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.all(widget.compact ? 10 : 0),
-          itemCount: widget.itemCount,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, __) => Container(
-            height: widget.compact ? 62 : 88,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.border.withValues(alpha: .25),
-              ),
-            ),
-          ),
+  Widget build(BuildContext context) => ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.all(compact ? 10 : 0),
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, __) => CustomSkeletonLoader(
+          width: double.infinity,
+          height: compact ? 62 : 88,
+          borderRadius: 14,
         ),
       );
 }
+
 
 class NotificationsMessageState extends StatelessWidget {
   final String message;

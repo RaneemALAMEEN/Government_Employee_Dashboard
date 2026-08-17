@@ -30,6 +30,40 @@ class MyTransactionsRemoteDataSource {
     );
   }
 
+  Future<Either<Failure, dynamic>> searchTasks({
+    required String status,
+    String? query,
+    String? fromDate,
+    String? toDate,
+    String? cursor,
+    int limit = 6,
+  }) {
+    final queryParameters = <String, dynamic>{
+      'limit': limit,
+    };
+    if (status.isNotEmpty) {
+      queryParameters['status'] = status;
+    }
+    if (query != null && query.isNotEmpty) {
+      queryParameters['q'] = query;
+    }
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParameters['cursor'] = cursor;
+    }
+    if (fromDate != null && fromDate.isNotEmpty) {
+      queryParameters['from_date'] = fromDate;
+    }
+    if (toDate != null && toDate.isNotEmpty) {
+      queryParameters['to_date'] = toDate;
+    }
+
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/workflow/tasks/search',
+      queryParameters: queryParameters,
+    );
+  }
+
   Future<Either<Failure, dynamic>> getTaskDetails({
     required String taskId,
   }) {

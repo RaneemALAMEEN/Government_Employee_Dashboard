@@ -5,7 +5,9 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sfpdf;
+
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../../../core/di/injection.dart';
@@ -13,8 +15,11 @@ import '../../../../core/services/session_service.dart';
 import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/document_template_entity.dart';
+
 import '../../domain/entities/dynamic_form_entity.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_event.dart';
@@ -65,12 +70,17 @@ class _InternalTransactionFormPageState
 
     if (discoveryResult.status != UsbDiscoveryStatus.success) {
       if (!mounted) return null;
-      _showSnackBar(
-        discoveryResult.errorMessage ?? 'تعذر العثور على المفاتيح',
+      AppSnackBar.show(
+        context,
+        title: 'تعذر العثور على فلاشة التوقيع',
+        message: discoveryResult.errorMessage ??
+            'لم يتم العثور على وحدة USB متصلة تحتوي على مفاتيح التوقيع الرقمي الخاصة بحسابك.',
         isError: true,
+        icon: LucideIcons.usb,
       );
-      return null; // Added early return since manual fallback is disabled
+      return null;
     }
+
 
     /*
     // Manual Signature Dialog Fallback:
@@ -151,17 +161,16 @@ class _InternalTransactionFormPageState
       },
       builder: (context, state) {
         if (state.loading) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.forest),
-          );
+          return const _FormLoadingSkeleton();
         }
 
         if (state.errorMessage != null && state.form == null) {
-          return Center(
-            child: Text(
-              state.errorMessage!,
-              style: const TextStyle(color: AppColors.umber),
-            ),
+          return AppErrorWidget(
+            title: 'تعذر تحميل النموذج',
+            message: state.errorMessage!,
+            onRetry: () => context.read<InternalTransactionFormBloc>().add(
+                  LoadInternalTransactionForm(widget.processId),
+                ),
           );
         }
 
@@ -180,13 +189,15 @@ class _InternalTransactionFormPageState
         final form = state.form;
 
         if (form == null) {
-          return const Center(
-            child: Text(
-              'تعذر تحميل النموذج',
-              style: TextStyle(color: AppColors.umber),
-            ),
+          return AppErrorWidget(
+            title: 'تعذر تحميل النموذج',
+            message: 'لم يتم العثور على بيانات النموذج المطلوب',
+            onRetry: () => context.read<InternalTransactionFormBloc>().add(
+                  LoadInternalTransactionForm(widget.processId),
+                ),
           );
         }
+
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
@@ -901,3 +912,58 @@ class _SubmitButton extends StatelessWidget {
     );
   }
 }
+
+class _FormLoadingSkeleton extends StatelessWidget {
+  const _FormLoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            Align(
+              alignment: Alignment.centerRight,
+              child: CustomSkeletonLoader(
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+              ),
+            ),
+            SizedBox(height: 16),
+            CustomSkeletonLoader(
+              width: double.infinity,
+              height: 110,
+              borderRadius: 16,
+            ),
+            SizedBox(height: 24),
+            CustomSkeletonLoader(
+              width: double.infinity,
+              height: 280,
+              borderRadius: 16,
+            ),
+            SizedBox(height: 24),
+            CustomSkeletonLoader(
+              width: double.infinity,
+              height: 240,
+              borderRadius: 16,
+            ),
+            SizedBox(height: 28),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CustomSkeletonLoader(
+                width: 220,
+                height: 52,
+                borderRadius: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

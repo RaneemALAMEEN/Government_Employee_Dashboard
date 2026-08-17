@@ -36,8 +36,12 @@ class _MyTxFilterBarState extends State<MyTxFilterBar> {
   @override
   void didUpdateWidget(covariant MyTxFilterBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.searchQuery != _searchController.text) {
+    if (widget.searchQuery != oldWidget.searchQuery &&
+        widget.searchQuery != _searchController.text) {
       _searchController.text = widget.searchQuery;
+      _searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _searchController.text.length),
+      );
     }
   }
 

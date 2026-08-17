@@ -1,6 +1,7 @@
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,10 +10,16 @@ import '../../domain/entities/department_transaction_entity.dart';
 
 class DeptTxTable extends StatefulWidget {
   final List<DepartmentTransactionEntity> transactions;
+  final bool isSearching;
+  final String searchQuery;
+  final String activeFilter;
 
   const DeptTxTable({
     super.key,
     required this.transactions,
+    this.isSearching = false,
+    this.searchQuery = '',
+    this.activeFilter = 'الكل',
   });
 
   @override
@@ -40,10 +47,10 @@ class _DeptTxTableState extends State<DeptTxTable> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.charcoal.withOpacity(0.06),
+            color: AppColors.charcoal.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -60,7 +67,24 @@ class _DeptTxTableState extends State<DeptTxTable> {
             child: Row(
               textDirection: TextDirection.rtl,
               children: [
-                const SizedBox.shrink(),
+                if (widget.isSearching) ...[
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.forest,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'جاري البحث...',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.forest,
+                      fontWeight: AppTextStyles.medium,
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -73,14 +97,26 @@ class _DeptTxTableState extends State<DeptTxTable> {
                     const SizedBox(width: 6),
                     Text(
                       'للعرض والمتابعة فقط',
-                      style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoal.withOpacity(0.8)),
+                      style: AppTextStyles.labelLarge.copyWith(
+                        fontWeight: AppTextStyles.medium,
+                        color: AppColors.charcoal.withValues(alpha: 0.8),
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          Container(height: 1, color: AppColors.gold.withOpacity(0.25)),
+          if (widget.isSearching)
+            const SizedBox(
+              height: 2,
+              child: LinearProgressIndicator(
+                color: AppColors.forest,
+                backgroundColor: AppColors.goldLight,
+              ),
+            )
+          else
+            Container(height: 1, color: AppColors.gold.withValues(alpha: 0.25)),
 
           LayoutBuilder(
             builder: (context, constraints) {
@@ -91,31 +127,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
                 children: [
                   const _TableHeader(),
                   if (widget.transactions.isEmpty)
-                    FadeIn(
-                      duration: const Duration(milliseconds: 350),
-                      child: Container(
-                        height: 180,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ZoomIn(
-                              duration: const Duration(milliseconds: 400),
-                              child: const Icon(
-                                LucideIcons.search,
-                                size: 56,
-                                color: AppColors.goldDark,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'لا توجد معاملات تطابق الفلترة',
-                              style: AppTextStyles.bodyMedium.copyWith(fontWeight: AppTextStyles.medium),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
+                    _buildEmptyState(widget.activeFilter)
                   else
                     ListView.separated(
                       shrinkWrap: true,
@@ -124,7 +136,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
                       itemCount: widget.transactions.length,
                       separatorBuilder: (_, __) => Container(
                         height: 1,
-                        color: AppColors.gold.withOpacity(0.18),
+                        color: AppColors.gold.withValues(alpha: 0.18),
                       ),
                       itemBuilder: (context, index) {
                         return FadeInUp(
@@ -156,6 +168,89 @@ class _DeptTxTableState extends State<DeptTxTable> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String filter) {
+    String svgPath;
+    String title;
+    String description;
+
+    if (widget.searchQuery.isNotEmpty) {
+      svgPath = 'assets/vectors/empty search.svg';
+      title = 'لا توجد نتائج تطابق بحثك';
+      description =
+          'تأكد من كتابة الاسم أو رقم المعاملة بشكل صحيح وحاول مرة أخرى.';
+    } else {
+      switch (filter) {
+        case 'قيد التنفيذ':
+        case 'قيد المعالجة':
+          svgPath = 'assets/vectors/in progress.svg';
+          title = 'لا توجد معاملات قيد المعالجة';
+          description =
+              'لا توجد معاملات قيد المعالجة حالياً ضمن الدائرة.';
+          break;
+        case 'بانتظار الاستلام':
+          svgPath = 'assets/vectors/waiting.svg';
+          title = 'لا توجد معاملات بانتظار الاستلام';
+          description =
+              'جميع المعاملات الواردة تم استلامها للبدء بالعمل عليها.';
+          break;
+        case 'منجزة':
+          svgPath = 'assets/vectors/approved.svg';
+          title = 'لا توجد معاملات منجزة';
+          description = 'لا توجد معاملات منجزة مطابقة للشروط المحددة.';
+          break;
+        case 'تم الرفض':
+        case 'مرفوضة':
+          svgPath = 'assets/vectors/rejected.svg';
+          title = 'لا توجد معاملات مرفوضة';
+          description = 'سجلك خالي من أي معاملات مرفوضة.';
+          break;
+        default: // الكل
+          svgPath = 'assets/vectors/waiting.svg';
+          title = 'لا توجد معاملات متوفرة';
+          description = 'لا توجد معاملات متاحة حالياً ضمن هذه الدائرة.';
+      }
+    }
+
+    return FadeIn(
+      duration: const Duration(milliseconds: 350),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+        alignment: Alignment.center,
+        child: ZoomIn(
+          duration: const Duration(milliseconds: 450),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                svgPath,
+                width: 140,
+                height: 140,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                style: AppTextStyles.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.charcoal.withValues(alpha: 0.60),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -210,7 +305,10 @@ class _TransactionRow extends StatelessWidget {
               child: Center(
                 child: Text(
                   tx.transactionNumber,
-                  style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest),
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: AppTextStyles.semiBold,
+                    color: AppColors.forest,
+                  ),
                 ),
               ),
             ),
@@ -246,19 +344,27 @@ class _TransactionRow extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.forestLight.withOpacity(0.08),
+                    color: AppColors.forestLight.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: AppColors.forest.withOpacity(0.12)),
+                    border: Border.all(color: AppColors.forest.withValues(alpha: 0.12)),
                   ),
                   child: Text(
                     tx.department,
-                    style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.forest, height: 1),
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontWeight: AppTextStyles.medium,
+                      color: AppColors.forest,
+                      height: 1,
+                    ),
                   ),
                 ),
               ),
             ),
             // Date
-            _CellText(tx.date, flex: 12, color: AppColors.charcoal.withOpacity(0.70)),
+            _CellText(
+              tx.date,
+              flex: 12,
+              color: AppColors.charcoal.withValues(alpha: 0.70),
+            ),
             // Applicant Name
             Expanded(
               flex: 18,
@@ -271,7 +377,10 @@ class _TransactionRow extends StatelessWidget {
                     backgroundColor: avatarBgColor,
                     child: Text(
                       firstLetter,
-                      style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: Colors.white),
+                      style: AppTextStyles.labelMedium.copyWith(
+                        fontWeight: AppTextStyles.semiBold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -288,14 +397,16 @@ class _TransactionRow extends StatelessWidget {
             // Status Badge
             Expanded(
               flex: 14,
-              child: Center(child: _StatusBadge(status: tx.status, statusLabel: tx.statusLabel)),
+              child: Center(
+                child: _StatusBadge(status: tx.status, statusLabel: tx.statusLabel),
+              ),
             ),
             // Details Action Button
             Expanded(
               flex: 20,
               child: Center(
                 child: Material(
-                  color: AppColors.forestLight.withOpacity(0.12),
+                  color: AppColors.forestLight.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                   child: InkWell(
                     onTap: () {
@@ -307,15 +418,19 @@ class _TransactionRow extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             LucideIcons.eye,
                             color: AppColors.forest,
                             size: 14,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
                             'عرض التفاصيل',
-                            style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: AppColors.forest, height: 1),
+                            style: AppTextStyles.labelMedium.copyWith(
+                              fontWeight: AppTextStyles.semiBold,
+                              color: AppColors.forest,
+                              height: 1,
+                            ),
                           ),
                         ],
                       ),
@@ -361,7 +476,10 @@ class _HeaderText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
+        style: AppTextStyles.labelLarge.copyWith(
+          fontWeight: AppTextStyles.semiBold,
+          height: 1,
+        ),
       ),
     );
   }
@@ -387,7 +505,10 @@ class _CellText extends StatelessWidget {
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.labelLarge.copyWith(color: color ?? AppColors.charcoalDark, height: 1.25),
+        style: AppTextStyles.labelLarge.copyWith(
+          color: color ?? AppColors.charcoalDark,
+          height: 1.25,
+        ),
       ),
     );
   }
@@ -410,16 +531,16 @@ class _StatusBadge extends StatelessWidget {
         fg = Colors.blue.shade700;
         break;
       case 'in_progress':
-        bg = AppColors.gold.withOpacity(0.14);
+        bg = AppColors.gold.withValues(alpha: 0.14);
         fg = AppColors.goldDark;
         break;
       case 'completed':
-        bg = AppColors.forestLight.withOpacity(0.12);
+        bg = AppColors.forestLight.withValues(alpha: 0.12);
         fg = AppColors.forest;
         break;
       case 'rejected':
       default:
-        bg = AppColors.umber.withOpacity(0.08);
+        bg = AppColors.umber.withValues(alpha: 0.08);
         fg = AppColors.umber;
     }
 
@@ -431,7 +552,11 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         statusLabel,
-        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
+        style: AppTextStyles.labelMedium.copyWith(
+          fontWeight: AppTextStyles.semiBold,
+          color: fg,
+          height: 1,
+        ),
       ),
     );
   }

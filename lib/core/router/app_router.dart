@@ -16,6 +16,8 @@ import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transaction_first_stage_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transaction_details_page.dart';
+import '../../features/department_transactions/presentation/pages/generate_final_document_page.dart';
+
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_bloc.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_process_event.dart';
 import '../../features/directorate_process_management/presentation/bloc/directorate_complaints_bloc.dart';
@@ -212,6 +214,19 @@ class AppRouter {
               );
             },
           ),
+          GoRoute(
+            path: '/department-transaction-details/:id/generate-final-document',
+            pageBuilder: (context, state) {
+              final transactionId =
+                  int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return NoTransitionPage(
+                child: GenerateFinalDocumentPage(
+                  transactionId: transactionId,
+                ),
+              );
+            },
+          ),
+
           GoRoute(
             path: '/directorate-process-management',
             pageBuilder: (context, state) => CustomTransitionPage(

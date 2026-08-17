@@ -1,21 +1,38 @@
-import '../../../../shared/theme/app_text_styles.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/internal_transaction_entity.dart';
 import '../bloc/internal_transactions_bloc.dart';
 import '../bloc/internal_transactions_state.dart';
 
-import '../../../../shared/widgets/custom_skeleton_loader.dart';
-
-class InternalProcessesTable extends StatelessWidget {
+class InternalProcessesTable extends StatefulWidget {
   const InternalProcessesTable({super.key});
 
-  static const double _minTableWidth = 1100;
+  @override
+  State<InternalProcessesTable> createState() => _InternalProcessesTableState();
+}
+
+class _InternalProcessesTableState extends State<InternalProcessesTable> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,24 +52,21 @@ class InternalProcessesTable extends StatelessWidget {
         final data = state.transactionsPageData;
 
         if (data == null) {
-          return const SizedBox(
-            height: 240,
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.forest),
-            ),
+          return const ListSkeletonLoader(
+            itemCount: 5,
+            itemHeight: 70,
           );
         }
 
         return Container(
-          width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.gold.withValues(alpha: 0.22)),
+            border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.charcoal.withValues(alpha: 0.04),
-                blurRadius: 8,
+                color: AppColors.charcoal.withValues(alpha: 0.06),
+                blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -60,143 +74,86 @@ class InternalProcessesTable extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final tableWidth = constraints.maxWidth <
-                      InternalProcessesTable._minTableWidth
-                  ? InternalProcessesTable._minTableWidth
-                  : constraints.maxWidth;
+              const double minTableWidth = 850;
+              final double availableWidth = constraints.maxWidth;
 
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: tableWidth,
-                  child: Column(
-                    children: [
-                      _Table(
-                        items: data.items,
-                        isLoading: state.loadingTransactions,
-                        hasMore: state.hasMoreTransactions,
+              final Widget tableContent = Column(
+                children: [
+                  const _TableHeader(),
+                  if (data.items.isEmpty && state.loadingTransactions)
+                    const SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.forest),
                       ),
-                    ],
-                  ),
-                ),
+                    )
+                  else if (data.items.isEmpty)
+                    const _EmptyTransactionsState()
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: data.items.length,
+                      separatorBuilder: (_, __) => Container(
+                        height: 1,
+                        color: AppColors.gold.withValues(alpha: 0.18),
+                      ),
+                      itemBuilder: (context, index) {
+                        return FadeInUp(
+                          duration: const Duration(milliseconds: 350),
+                          delay: Duration(milliseconds: (index % 10) * 45),
+                          child: _TransactionRow(item: data.items[index]),
+                        );
+                      },
+                    ),
+                  if (state.loadingTransactions && data.items.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.forest,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (state.hasMoreTransactions)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: const Center(
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: AppColors.gold,
+                        ),
+                      ),
+                    ),
+                ],
               );
+
+              if (availableWidth < minTableWidth) {
+                return Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: minTableWidth,
+                      child: tableContent,
+                    ),
+                  ),
+                );
+              } else {
+                return tableContent;
+              }
             },
           ),
         );
       },
-    );
-  }
-}
-
-class _Table extends StatelessWidget {
-  static const double _rowHeight = 72;
-  static const double _bodyHeight = _rowHeight * 6;
-
-  final List<InternalTransactionEntity> items;
-  final bool isLoading;
-  final bool hasMore;
-
-  const _Table({
-    required this.items,
-    required this.isLoading,
-    required this.hasMore,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const _TableHeader(),
-        ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: _bodyHeight),
-          child: items.isEmpty && isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.forest),
-                )
-              : items.isEmpty
-                  ? const _EmptyTransactionsState()
-                  : Column(
-                      children: [
-                        ...items.asMap().entries.map(
-                              (entry) => FadeInUp(
-                                duration: const Duration(milliseconds: 350),
-                                delay: Duration(
-                                  milliseconds: (entry.key % 10) * 50,
-                                ),
-                                child: _TransactionRow(item: entry.value),
-                              ),
-                            ),
-                        if (isLoading)
-                          const SizedBox(
-                            height: _rowHeight,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.forest,
-                              ),
-                            ),
-                          )
-                        else if (hasMore)
-                          const SizedBox(
-                            height: 48,
-                            child: Center(
-                              child: Icon(
-                                Icons.keyboard_arrow_down,
-                                color: AppColors.gold,
-                              ),
-                            ),
-                          )
-                        else
-                          const SizedBox(height: 16),
-                      ],
-                    ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyTransactionsState extends StatelessWidget {
-  const _EmptyTransactionsState();
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeIn(
-      duration: const Duration(milliseconds: 350),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 34, 24, 18),
-        alignment: Alignment.center,
-        child: ZoomIn(
-          duration: const Duration(milliseconds: 450),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/vectors/waiting.svg',
-                width: 78,
-                height: 78,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'لا توجد معاملات داخلية حالياً',
-                style: AppTextStyles.titleMedium,
-              ),
-              const SizedBox(height: 5),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 72),
-                child: Text(
-                  'عند إنشاء معاملة داخلية جديدة ستظهر هنا مع مرحلتها الحالية ونسبة الإنجاز.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.charcoal.withValues(alpha: 0.60),
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -207,18 +164,18 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 54,
-      color: AppColors.goldLight.withValues(alpha: 0.4),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      height: 46,
+      color: AppColors.goldLight,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderCell('رقم المعاملة', flex: 16, shiftRight: 10),
-          _HeaderCell('نوع المعاملة', flex: 25, shiftRight: 10),
-          _HeaderCell('المرحلة الحالية', flex: 20, shiftRight: 10),
-          _HeaderCell('نسبة الإنجاز', flex: 13, shiftRight: 10),
-          _HeaderCell('الحالة', flex: 12, shiftRight: 10),
-          _HeaderCell('إجراء', flex: 14, shiftRight: 10),
+          _HeaderText('رقم المعاملة', flex: 17),
+          _HeaderText('نوع المعاملة', flex: 20),
+          _HeaderText('المرحلة الحالية', flex: 19),
+          _HeaderText('نسبة الإنجاز', flex: 14),
+          _HeaderText('الحالة', flex: 14),
+          _HeaderText('إجراء', flex: 16),
         ],
       ),
     );
@@ -232,140 +189,115 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.charcoal.withValues(alpha: 0.08),
-          ),
-        ),
-      ),
-      child: Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          _BodyCell(
-            item.idProcess,
-            flex: 16,
-            color: AppColors.forest,
-            fontWeight: FontWeight.w700,
-            shiftRight: 10,
-          ),
-          _BodyCell(
-            item.processDefinitionName,
-            flex: 25,
-            color: AppColors.charcoalDark,
-            fontWeight: FontWeight.w600,
-            shiftRight: 10,
-          ),
-          _BodyCell(
-            item.stageName,
-            flex: 20,
-            color: AppColors.charcoal,
-            shiftRight: 10,
-          ),
-          Expanded(
-            flex: 13,
-            child: Transform.translate(
-              offset: const Offset(10, 0),
-              child: _ProgressBadge(percent: item.progressPercent),
+    return SizedBox(
+      height: 65,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            // Transaction ID
+            _CellText(
+              item.idProcess,
+              flex: 17,
+              color: AppColors.forest,
+              fontWeight: AppTextStyles.semiBold,
             ),
-          ),
-          Expanded(
-            flex: 12,
-            child: Transform.translate(
-              offset: const Offset(10, 0),
+            // Process Type
+            _CellText(
+              item.processDefinitionName,
+              flex: 20,
+              color: AppColors.charcoalDark,
+              fontWeight: AppTextStyles.medium,
+            ),
+            // Current Stage
+            _CellText(
+              item.stageName,
+              flex: 19,
+              color: AppColors.charcoal,
+            ),
+            // Progress Percent
+            Expanded(
+              flex: 14,
+              child: Center(
+                child: _ProgressBadge(percent: item.progressPercent),
+              ),
+            ),
+            // Status Badge
+            Expanded(
+              flex: 14,
               child: Center(
                 child: _StatusBadge(status: item.status),
               ),
             ),
-          ),
-          Expanded(
-            flex: 14,
-            child: Transform.translate(
-              offset: const Offset(10, 0),
+            // Action Button
+            Expanded(
+              flex: 16,
               child: Center(
                 child: _DetailsButton(
                   onTap: () {
-                    context.go(
+                    context.push(
                       '/internal-transactions/${item.transactionId}/first-stage',
                     );
                   },
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderCell extends StatelessWidget {
-  final String text;
-  final int flex;
-  final double shiftRight;
-
-  const _HeaderCell(
-    this.text, {
-    required this.flex,
-    this.shiftRight = 0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Transform.translate(
-        offset: Offset(shiftRight, 0),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.labelLarge.copyWith(
-            fontWeight: AppTextStyles.semiBold,
-            height: 1,
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _BodyCell extends StatelessWidget {
+class _HeaderText extends StatelessWidget {
+  final String text;
+  final int flex;
+
+  const _HeaderText(this.text, {required this.flex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: AppTextStyles.labelLarge.copyWith(
+          fontWeight: AppTextStyles.semiBold,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _CellText extends StatelessWidget {
   final String text;
   final int flex;
   final Color? color;
   final FontWeight fontWeight;
-  final double shiftRight;
 
-  const _BodyCell(
+  const _CellText(
     this.text, {
     required this.flex,
     this.color,
     this.fontWeight = FontWeight.w400,
-    this.shiftRight = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Transform.translate(
-        offset: Offset(shiftRight, 0),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.labelLarge.copyWith(
-            fontWeight: fontWeight,
-            color: color ?? AppColors.charcoalDark,
-            height: 1.25,
-          ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.labelLarge.copyWith(
+          fontWeight: fontWeight,
+          color: color ?? AppColors.charcoalDark,
+          height: 1.25,
         ),
       ),
     );
@@ -381,21 +313,18 @@ class _ProgressBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final safePercent = percent.clamp(0, 100);
 
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 92, maxWidth: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.forestLight.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '$safePercent%',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: AppTextStyles.bold,
-            color: AppColors.forest,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.forestLight.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '$safePercent%',
+        style: AppTextStyles.labelMedium.copyWith(
+          fontWeight: AppTextStyles.bold,
+          color: AppColors.forest,
+          height: 1,
         ),
       ),
     );
@@ -412,20 +341,20 @@ class _StatusBadge extends StatelessWidget {
     final data = _statusData(status);
 
     return Container(
-      constraints: const BoxConstraints(minWidth: 82, maxWidth: 130),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: data.background,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         data.text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
-        style: AppTextStyles.bodySmall.copyWith(
+        style: AppTextStyles.labelMedium.copyWith(
           fontWeight: AppTextStyles.semiBold,
           color: data.textColor,
+          height: 1,
         ),
       ),
     );
@@ -454,13 +383,13 @@ class _StatusBadge extends StatelessWidget {
       case 'completed':
         return const _StatusViewData(
           text: 'منجزة',
-          textColor: Color(0xFF2E7D32),
+          textColor: AppColors.forest,
           background: Color(0xFFE8F5E9),
         );
       case 'rejected':
         return const _StatusViewData(
           text: 'مرفوضة',
-          textColor: Color(0xFFC62828),
+          textColor: AppColors.umber,
           background: Color(0xFFFFEBEE),
         );
       case 'cancelled':
@@ -470,10 +399,10 @@ class _StatusBadge extends StatelessWidget {
           background: Color(0xFFF8EDEF),
         );
       default:
-        return const _StatusViewData(
-          text: 'غير معروف',
-          textColor: Color(0xFF5A738E),
-          background: Color(0xFFEDF2F7),
+        return _StatusViewData(
+          text: status,
+          textColor: const Color(0xFF5A738E),
+          background: const Color(0xFFEDF2F7),
         );
     }
   }
@@ -498,205 +427,79 @@ class _DetailsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 104, maxWidth: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.goldLight.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.visibility_outlined,
-              size: 15,
-              color: AppColors.charcoal,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
+    return Material(
+      color: AppColors.forestLight.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                LucideIcons.eye,
+                size: 14,
+                color: AppColors.forest,
+              ),
+              const SizedBox(width: 5),
+              Text(
                 'عرض التفاصيل',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelLarge.copyWith(
-                  fontWeight: AppTextStyles.medium,
-                  color: AppColors.charcoalDark,
+                style: AppTextStyles.labelMedium.copyWith(
+                  fontWeight: AppTextStyles.semiBold,
+                  color: AppColors.forest,
+                  height: 1,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _Pagination extends StatelessWidget {
-  final int page;
-  final int totalPages;
-  final int total;
-  final int limit;
-  final int itemCount;
-  final bool hasNext;
-  final bool hasPrev;
-  final ValueChanged<int> onPageChanged;
-
-  const _Pagination({
-    required this.page,
-    required this.totalPages,
-    required this.total,
-    required this.limit,
-    required this.itemCount,
-    required this.hasNext,
-    required this.hasPrev,
-    required this.onPageChanged,
-  });
+class _EmptyTransactionsState extends StatelessWidget {
+  const _EmptyTransactionsState();
 
   @override
   Widget build(BuildContext context) {
-    if (total == 0 && itemCount == 0) {
-      return Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        color: AppColors.white,
-        alignment: Alignment.centerRight,
-        child: Text(
-          'عرض 0–0 من 0 معاملة',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.charcoal.withValues(alpha: 0.6),
-          ),
-        ),
-      );
-    }
-
-    final canGoPrev = hasPrev || page > 1;
-    final canGoNext = hasNext || itemCount >= limit;
-    final discoveredTotalPages = canGoNext ? page + 1 : page;
-    final displayTotalPages = totalPages > discoveredTotalPages
-        ? totalPages
-        : discoveredTotalPages;
-    final minimumTotal = ((page - 1) * limit) + itemCount;
-    final displayTotal = total > minimumTotal ? total : minimumTotal;
-    final start = ((page - 1) * limit) + 1;
-    final end = minimumTotal;
-
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      color: AppColors.white,
-      child: Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          Text(
-            'عرض $start–$end من $displayTotal معاملة',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.charcoal.withValues(alpha: 0.6),
-            ),
-          ),
-          const Spacer(),
-          _PageButton(
-            icon: Icons.chevron_right,
-            enabled: canGoPrev,
-            onTap: () => onPageChanged(page - 1),
-          ),
-          const SizedBox(width: 8),
-          ...List.generate(
-            displayTotalPages,
-            (index) {
-              final pageNumber = index + 1;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _NumberButton(
-                  number: pageNumber,
-                  selected: pageNumber == page,
-                  onTap: () => onPageChanged(pageNumber),
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          _PageButton(
-            icon: Icons.chevron_left,
-            enabled: canGoNext,
-            onTap: () => onPageChanged(page + 1),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PageButton extends StatelessWidget {
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  const _PageButton({
-    required this.icon,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(6),
+    return FadeIn(
+      duration: const Duration(milliseconds: 350),
       child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.15)),
-        ),
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: Icon(
-            icon,
-            color: enabled ? AppColors.charcoal : AppColors.gold,
-            size: 18,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NumberButton extends StatelessWidget {
-  final int number;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NumberButton({
-    required this.number,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: selected ? null : onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        width: 32,
-        height: 32,
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.forest : AppColors.white,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          number.toString(),
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: AppTextStyles.bold,
-            color: selected ? AppColors.white : AppColors.charcoal,
+        child: ZoomIn(
+          duration: const Duration(milliseconds: 450),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                'assets/vectors/waiting.svg',
+                width: 140,
+                height: 140,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'لا توجد معاملات داخلية حالياً',
+                style: AppTextStyles.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'عند إنشاء معاملة داخلية جديدة ستظهر هنا مع مرحلتها الحالية ونسبة الإنجاز.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.charcoal.withValues(alpha: 0.60),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

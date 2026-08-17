@@ -62,6 +62,8 @@ class EndPoints {
   String markNotificationAsRead(int notificationId) =>
       'api/notifications/$notificationId/read';
   String get verifyDocumentDetails => 'api/verify/document/details';
+  String get verifyDocumentDetailsByTransaction =>
+      'api/verify/document/details/by-transaction';
 }
 
 /// Base API configuration. The base url is read from the loaded environment

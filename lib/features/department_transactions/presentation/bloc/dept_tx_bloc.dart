@@ -4,6 +4,8 @@ import 'package:government_employee_dashboard/core/errors/failures.dart';
 import 'package:stream_transform/stream_transform.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/session_service.dart';
+import '../../domain/entities/accessible_department_entity.dart';
+import '../../domain/usecases/get_accessible_departments.dart';
 import '../../domain/usecases/get_department_transactions.dart';
 import 'dept_tx_event.dart';
 import 'dept_tx_state.dart';
@@ -15,18 +17,32 @@ const _limit = 6;
 class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
   final GetDepartmentTransactions getDepartmentTransactions;
   final GetDepartmentStats getDepartmentStats;
+  final GetAccessibleDepartments getAccessibleDepartments;
 
-  DeptTxBloc(this.getDepartmentTransactions, this.getDepartmentStats)
-      : super(DeptTxInitial()) {
+  DeptTxBloc(
+    this.getDepartmentTransactions,
+    this.getDepartmentStats,
+    this.getAccessibleDepartments,
+  ) : super(DeptTxInitial()) {
     on<LoadDeptTx>(_onLoadDeptTx);
     on<LoadMoreDeptTx>(_onLoadMoreDeptTx);
     on<FilterDeptTxByStatus>(_onFilterDeptTxByStatus);
     on<FilterDeptTxByDate>(_onFilterDeptTxByDate);
+    on<FilterDeptTxByDepartment>(_onFilterDeptTxByDepartment);
     on<SearchDeptTx>(
       _onSearchDeptTx,
       transformer: (events, mapper) =>
           events.debounce(const Duration(milliseconds: 500)).switchMap(mapper),
     );
+  }
+
+  /// الحصول على departmentId — إما المختار أو الافتراضي من SessionService
+  String _getDepartmentId({int? selectedDepartmentId}) {
+    if (selectedDepartmentId != null) {
+      return selectedDepartmentId.toString();
+    }
+    final activeRole = getIt<SessionService>().activeRoleNotifier.value;
+    return activeRole?.departmentId.toString() ?? '1';
   }
 
   Future<void> _onLoadDeptTx(
@@ -37,6 +53,9 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
     String? currentFromDate;
     String? currentToDate;
     String currentSearchQuery = '';
+    int? currentSelectedDeptId;
+    String? currentSelectedDeptName;
+    List<AccessibleDepartmentEntity> currentDepartments = [];
 
     // We want to keep old stats if we have them, so they don't flash to 0 on refresh.
     int completedCount = 0;
@@ -50,6 +69,9 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       currentFromDate = currentState.fromDate;
       currentToDate = currentState.toDate;
       currentSearchQuery = currentState.searchQuery;
+      currentSelectedDeptId = currentState.selectedDepartmentId;
+      currentSelectedDeptName = currentState.selectedDepartmentName;
+      currentDepartments = currentState.accessibleDepartments;
 
       completedCount = currentState.completedCount;
       rejectedCount = currentState.rejectedCount;
@@ -58,26 +80,63 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       pendingPickupCount = currentState.pendingPickupCount;
     }
 
-    emit(DeptTxLoading());
+    if (currentState is! DeptTxLoaded) {
+      emit(DeptTxLoading());
+    }
 
-    final activeRole = getIt<SessionService>().activeRoleNotifier.value;
-    final departmentId = activeRole?.departmentId.toString() ?? '1';
+    final departmentId = _getDepartmentId(selectedDepartmentId: currentSelectedDeptId);
 
-    // Fetch transactions and stats in parallel
-    final results = await Future.wait([
+    // Fetch transactions, stats, and accessible departments in parallel
+    final futures = <Future>[
       getDepartmentTransactions(
         departmentIds: departmentId,
         status: currentStatus,
         fromDate: currentFromDate,
         toDate: currentToDate,
+        searchQuery: currentSearchQuery.isNotEmpty ? currentSearchQuery : null,
         cursor: null,
         limit: _limit,
       ),
       getDepartmentStats(departmentIds: departmentId),
-    ]);
+      // Only fetch departments if we don't have them cached
+      if (currentDepartments.isEmpty)
+        getAccessibleDepartments(),
+    ];
+
+    final results = await Future.wait(futures);
 
     final txResult = results[0] as Either<Failure, Map<String, dynamic>>;
     final statsResult = results[1] as Either<Failure, Map<String, dynamic>>;
+
+    // Parse accessible departments
+    List<AccessibleDepartmentEntity> departments = currentDepartments;
+    if (currentDepartments.isEmpty && results.length > 2) {
+      final deptResult = results[2] as Either<Failure, List<AccessibleDepartmentEntity>>;
+      deptResult.fold(
+        (_) {}, // Keep empty on failure
+        (depts) => departments = depts,
+      );
+    }
+
+    // إذا لم يتم اختيار دائرة بعد، نحدد الدائرة الحالية كافتراضية
+    if (currentSelectedDeptId == null && departments.isNotEmpty) {
+      final activeRole = getIt<SessionService>().activeRoleNotifier.value;
+      final defaultDeptId = activeRole?.departmentId;
+      if (defaultDeptId != null) {
+        final match = departments.where((d) => d.id == defaultDeptId);
+        if (match.isNotEmpty) {
+          currentSelectedDeptId = match.first.id;
+          currentSelectedDeptName = match.first.name;
+        } else {
+          // الدائرة الافتراضية غير موجودة في النطاق، نختار أول دائرة
+          currentSelectedDeptId = departments.first.id;
+          currentSelectedDeptName = departments.first.name;
+        }
+      } else {
+        currentSelectedDeptId = departments.first.id;
+        currentSelectedDeptName = departments.first.name;
+      }
+    }
 
     txResult.fold(
       (failure) => emit(DeptTxFailure(failure.message)),
@@ -116,6 +175,9 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
           activeCount: activeCount,
           inProgressCount: inProgressCount,
           pendingPickupCount: pendingPickupCount,
+          accessibleDepartments: departments,
+          selectedDepartmentId: currentSelectedDeptId,
+          selectedDepartmentName: currentSelectedDeptName,
         ));
       },
     );
@@ -130,16 +192,14 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
     emit(currentState.copyWith(isFetchingMore: true));
 
-
-
-    final activeRole = getIt<SessionService>().activeRoleNotifier.value;
-    final departmentId = activeRole?.departmentId.toString() ?? '1';
+    final departmentId = _getDepartmentId(selectedDepartmentId: currentState.selectedDepartmentId);
 
     final result = await getDepartmentTransactions(
       departmentIds: departmentId,
       status: currentState.statusFilter,
       fromDate: currentState.fromDate,
       toDate: currentState.toDate,
+      searchQuery: currentState.searchQuery.isNotEmpty ? currentState.searchQuery : null,
       cursor: currentState.nextCursor,
       limit: _limit,
     );
@@ -176,9 +236,6 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       emit(currentState.copyWith(statusFilter: event.statusFilter));
       add(const LoadDeptTx());
     } else {
-      // If not loaded yet (initial), we just Load with that status.
-      // But we need a way to pass status to LoadDeptTx if we don't store it.
-      // Easiest is to wait for LoadDeptTx to finish, then filter. Or just trigger load.
       add(const LoadDeptTx());
     }
   }
@@ -193,11 +250,71 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
     }
   }
 
-  void _onSearchDeptTx(SearchDeptTx event, Emitter<DeptTxState> emit) {
+  void _onFilterDeptTxByDepartment(
+      FilterDeptTxByDepartment event, Emitter<DeptTxState> emit) {
     if (state is DeptTxLoaded) {
       final currentState = state as DeptTxLoaded;
-      emit(currentState.copyWith(searchQuery: event.query));
+      if (currentState.selectedDepartmentId == event.departmentId) return;
+
+      emit(currentState.copyWith(
+        selectedDepartmentId: event.departmentId,
+        selectedDepartmentName: event.departmentName,
+      ));
       add(const LoadDeptTx());
     }
+  }
+
+  Future<void> _onSearchDeptTx(
+      SearchDeptTx event, Emitter<DeptTxState> emit) async {
+    if (state is! DeptTxLoaded) return;
+    final currentState = state as DeptTxLoaded;
+    final query = event.query.trim();
+
+    // Mark isSearching = true while preserving text query & existing state
+    emit(currentState.copyWith(
+      isSearching: true,
+      searchQuery: event.query,
+    ));
+
+    final departmentId =
+        _getDepartmentId(selectedDepartmentId: currentState.selectedDepartmentId);
+
+    // Call transactions search API ONLY — no stats API call!
+    final result = await getDepartmentTransactions(
+      departmentIds: departmentId,
+      status: currentState.statusFilter,
+      fromDate: currentState.fromDate,
+      toDate: currentState.toDate,
+      searchQuery: query.isNotEmpty ? query : null,
+      cursor: null,
+      limit: _limit,
+    );
+
+    result.fold(
+      (failure) {
+        if (state is DeptTxLoaded) {
+          emit((state as DeptTxLoaded).copyWith(isSearching: false));
+        }
+      },
+      (data) {
+        if (state is! DeptTxLoaded) return;
+        final latestState = state as DeptTxLoaded;
+
+        final items = data['items'] as List<dynamic>;
+        final pagination = data['pagination'] as Map<String, dynamic>;
+
+        final totalCount = pagination['total'] as int? ?? 0;
+        final hasNext = pagination['has_next'] as bool? ?? false;
+        final nextCursor = pagination['next_cursor'] as String?;
+
+        emit(latestState.copyWith(
+          transactions: items.cast(),
+          nextCursor: nextCursor,
+          hasReachedMax: !hasNext,
+          isSearching: false,
+          totalCount: totalCount,
+        ));
+      },
+    );
   }
 }

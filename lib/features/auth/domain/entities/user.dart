@@ -5,6 +5,8 @@ class User {
   final String phoneNumber;
   final int organizationId;
 
+  String get username => userName;
+
   User({
     required this.id,
     required this.userName,
@@ -12,6 +14,7 @@ class User {
     required this.phoneNumber,
     this.organizationId = 0,
   });
+
 
   Map<String, dynamic> toJson() {
     return {

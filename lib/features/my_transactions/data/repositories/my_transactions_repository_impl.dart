@@ -32,48 +32,28 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
   @override
   Future<Either<Failure, MyTransactionsPaginatedResult>> getMyTransactions({
     required String status,
+    String? searchQuery,
     String? cursor,
     int limit = 6,
   }) async {
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final result = await remoteDataSource.searchTasks(
+        status: status,
+        query: searchQuery.trim(),
+        cursor: cursor,
+        limit: limit,
+      );
+      return result.fold(
+        (failure) => Left(failure),
+        (data) => Right(_parsePaginatedResult(data)),
+      );
+    }
+
     final rawKey =
         'my_transactions_status_${status}_cursor_${cursor ?? "initial"}_limit_$limit';
     final scopedKey = userScopeService?.buildScopedKey(rawKey) ?? rawKey;
 
-    // 1. Offline-First: Check if cached data exists in Isar database
-    CacheEntry? cachedEntry;
-    if (cacheManager != null) {
-      try {
-        cachedEntry = await cacheManager!.readRawEntry(scopedKey);
-      } catch (e) {
-        debugPrint(
-            '[MyTransactionsRepositoryImpl] Cache read error for $scopedKey: $e');
-      }
-    }
-
-    // 2. If cache exists (even if stale/expired TTL), return it IMMEDIATELY (0ms UI latency)
-    if (cachedEntry != null && cachedEntry.jsonData != null) {
-      debugPrint(
-        '[MyTransactionsRepositoryImpl] Offline cache hit for $scopedKey (0ms UI latency)',
-      );
-      final jsonMap =
-          jsonDecode(cachedEntry.jsonData!) as Map<String, dynamic>;
-      final cachedResult = _parsePaginatedResult(jsonMap);
-
-      // Trigger silent background API refresh
-      _triggerBackgroundRefresh(
-        scopedKey: scopedKey,
-        status: status,
-        cursor: cursor,
-        limit: limit,
-      );
-
-      return Right(cachedResult);
-    }
-
-    // 3. If NO cache exists (e.g. first launch ever), fetch from network synchronously
-    debugPrint(
-      '[MyTransactionsRepositoryImpl] No cache available for $scopedKey. Fetching from network...',
-    );
+    // 1. Network-First: Always fetch live data from network when internet is available
     final result = await remoteDataSource.getTasks(
       status: status,
       cursor: cursor,
@@ -81,13 +61,32 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
     );
 
     return result.fold(
-      (failure) {
+      (failure) async {
         debugPrint(
-          '[MyTransactionsRepositoryImpl] Network fetch failed with no cache available: $failure',
+          '[MyTransactionsRepositoryImpl] Network fetch failed: $failure. Trying offline cache for $scopedKey...',
         );
+        // 2. Offline Fallback: If network fails (no internet/timeout), use local cache if exists
+        if (cacheManager != null) {
+          try {
+            final cachedEntry = await cacheManager!.readRawEntry(scopedKey);
+            if (cachedEntry != null && cachedEntry.jsonData != null) {
+              debugPrint(
+                '[MyTransactionsRepositoryImpl] Offline cache hit for $scopedKey',
+              );
+              final jsonMap =
+                  jsonDecode(cachedEntry.jsonData!) as Map<String, dynamic>;
+              return Right(_parsePaginatedResult(jsonMap));
+            }
+          } catch (e) {
+            debugPrint(
+              '[MyTransactionsRepositoryImpl] Cache read error for $scopedKey: $e',
+            );
+          }
+        }
         return Left(failure);
       },
       (data) async {
+        // 3. Update cache on successful network fetch
         if (data is Map && cacheManager != null) {
           try {
             final mapData = Map<String, dynamic>.from(data);
@@ -108,6 +107,7 @@ class MyTransactionsRepositoryImpl implements MyTransactionsRepository {
       },
     );
   }
+
 
   void _triggerBackgroundRefresh({
     required String scopedKey,

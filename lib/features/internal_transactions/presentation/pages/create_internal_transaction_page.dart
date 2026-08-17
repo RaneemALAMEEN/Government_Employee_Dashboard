@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/internal_category_entity.dart';
+
 import '../../domain/entities/internal_process_entity.dart';
 import '../bloc/create_internal_transaction/create_internal_transaction_bloc.dart';
 import '../bloc/create_internal_transaction/create_internal_transaction_event.dart';
@@ -73,11 +75,19 @@ class _CreateInternalTransactionPageState
                 ),
                 const SizedBox(height: 20),
                 if (state.loadingCategories)
-                  const SizedBox(
-                    height: 120,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.forest,
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: List.generate(
+                        6,
+                        (index) => const Padding(
+                          padding: EdgeInsets.only(left: 10),
+                          child: CustomSkeletonLoader(
+                            width: 120,
+                            height: 38,
+                            borderRadius: 20,
+                          ),
+                        ),
                       ),
                     ),
                   )
@@ -98,13 +108,31 @@ class _CreateInternalTransactionPageState
                     child: _ErrorBox(message: state.errorMessage!),
                   )
                 else if (state.loadingProcesses)
-                  const SizedBox(
-                    height: 220,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.forest,
-                      ),
-                    ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 1000
+                          ? 3
+                          : constraints.maxWidth >= 600
+                              ? 2
+                              : 1;
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          mainAxisExtent: 170,
+                        ),
+                        itemCount: 6,
+                        itemBuilder: (context, index) =>
+                            const CustomSkeletonLoader(
+                          width: double.infinity,
+                          height: 170,
+                          borderRadius: 14,
+                        ),
+                      );
+                    },
                   )
                 else
                   FadeInUp(
@@ -112,6 +140,7 @@ class _CreateInternalTransactionPageState
                     delay: const Duration(milliseconds: 200),
                     child: _ProcessesGrid(processes: state.filteredProcesses),
                   ),
+
               ],
             ),
           ),

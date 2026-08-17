@@ -24,25 +24,54 @@ class DynamicFormWidgetRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final key = ValueKey(widgetEntity.data['id']?.toString() ??
+        widgetEntity.data['name']?.toString() ??
+        widgetEntity.widgetType);
+
     switch (widgetEntity.widgetType) {
       case 'text_field':
         return _TextFieldWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
       case 'dropdown':
         return _DropdownWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
       case 'file_picker':
         return _FilePickerWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
       case 'date_picker':
         return _DatePickerWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
       case 'radio_group':
         return _RadioGroupWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
       case 'check_list':
         return _CheckListWidget(
-            widgetEntity: widgetEntity, value: value, onChanged: onChanged, hasError: hasError);
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
+
       default:
         return Container(
           padding: const EdgeInsets.all(12),
@@ -65,43 +94,81 @@ String _label(DynamicWidgetEntity e) {
   return e.data['is_required'] == true ? '$label *' : label;
 }
 
-class _TextFieldWidget extends StatelessWidget {
+class _TextFieldWidget extends StatefulWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
   final bool hasError;
 
-  const _TextFieldWidget(
-      {required this.widgetEntity,
-      required this.value,
-      required this.onChanged,
-      this.hasError = false});
+  const _TextFieldWidget({
+    super.key,
+    required this.widgetEntity,
+    required this.value,
+    required this.onChanged,
+    this.hasError = false,
+  });
+
+  @override
+  State<_TextFieldWidget> createState() => _TextFieldWidgetState();
+}
+
+class _TextFieldWidgetState extends State<_TextFieldWidget> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value?.toString() ?? '');
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TextFieldWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final incoming = widget.value?.toString() ?? '';
+    if (incoming != _controller.text && !_focusNode.hasFocus) {
+      _controller.value = TextEditingValue(
+        text: incoming,
+        selection: TextSelection.collapsed(offset: incoming.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      initialValue: value?.toString(),
+      controller: _controller,
+      focusNode: _focusNode,
       textDirection: TextDirection.rtl,
       textAlign: TextAlign.right,
-      maxLength: widgetEntity.data['max_length'] as int?,
-      onChanged: onChanged,
+      textInputAction: TextInputAction.next,
+      maxLength: widget.widgetEntity.data['max_length'] as int?,
+      onChanged: widget.onChanged,
       decoration: InputDecoration(
-        labelText: _label(widgetEntity),
+        labelText: _label(widget.widgetEntity),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
-              width: hasError ? 2.0 : 1.2),
+              color: widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: widget.hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              color: widget.hasError ? Colors.red.shade700 : AppColors.forest,
               width: 2.0),
         ),
         filled: true,
-        fillColor: hasError ? Colors.red.shade50 : Colors.white,
+        fillColor: widget.hasError ? Colors.red.shade50 : Colors.white,
       ),
     );
   }
@@ -113,11 +180,13 @@ class _DropdownWidget extends StatelessWidget {
   final ValueChanged<dynamic> onChanged;
   final bool hasError;
 
-  const _DropdownWidget(
-      {required this.widgetEntity,
-      required this.value,
-      required this.onChanged,
-      this.hasError = false});
+  const _DropdownWidget({
+    super.key,
+    required this.widgetEntity,
+    required this.value,
+    required this.onChanged,
+    this.hasError = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -154,50 +223,79 @@ class _DropdownWidget extends StatelessWidget {
   }
 }
 
-class _DatePickerWidget extends StatelessWidget {
+class _DatePickerWidget extends StatefulWidget {
   final DynamicWidgetEntity widgetEntity;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
   final bool hasError;
 
-  const _DatePickerWidget(
-      {required this.widgetEntity,
-      required this.value,
-      required this.onChanged,
-      this.hasError = false});
+  const _DatePickerWidget({
+    super.key,
+    required this.widgetEntity,
+    required this.value,
+    required this.onChanged,
+    this.hasError = false,
+  });
+
+  @override
+  State<_DatePickerWidget> createState() => _DatePickerWidgetState();
+}
+
+class _DatePickerWidgetState extends State<_DatePickerWidget> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value?.toString() ?? '');
+  }
+
+  @override
+  void didUpdateWidget(covariant _DatePickerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value?.toString() != oldWidget.value?.toString()) {
+      _controller.text = widget.value?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       readOnly: true,
-      controller: TextEditingController(text: value?.toString() ?? ''),
+      controller: _controller,
       textDirection: TextDirection.rtl,
       textAlign: TextAlign.right,
       decoration: InputDecoration(
-        labelText: _label(widgetEntity),
+        labelText: _label(widget.widgetEntity),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-              color: hasError ? Colors.red.shade700 : Colors.grey.shade400,
-              width: hasError ? 2.0 : 1.2),
+              color: widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: widget.hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-              color: hasError ? Colors.red.shade700 : AppColors.forest,
+              color: widget.hasError ? Colors.red.shade700 : AppColors.forest,
               width: 2.0),
         ),
         filled: true,
-        fillColor: hasError ? Colors.red.shade50 : Colors.white,
+        fillColor: widget.hasError ? Colors.red.shade50 : Colors.white,
         suffixIcon: const Icon(Icons.calendar_month_outlined),
       ),
       onTap: () async {
         final minDate = DateTime.tryParse(
-                widgetEntity.data['min_date']?.toString() ?? '') ??
+                widget.widgetEntity.data['min_date']?.toString() ?? '') ??
             DateTime(1900);
         final maxDate = DateTime.tryParse(
-                widgetEntity.data['max_date']?.toString() ?? '') ??
+                widget.widgetEntity.data['max_date']?.toString() ?? '') ??
             DateTime.now();
 
         final picked = await showDatePicker(
@@ -209,7 +307,9 @@ class _DatePickerWidget extends StatelessWidget {
         );
 
         if (picked != null) {
-          onChanged(picked.toIso8601String().split('T').first);
+          final dateStr = picked.toIso8601String().split('T').first;
+          _controller.text = dateStr;
+          widget.onChanged(dateStr);
         }
       },
     );
@@ -222,11 +322,13 @@ class _RadioGroupWidget extends StatelessWidget {
   final ValueChanged<dynamic> onChanged;
   final bool hasError;
 
-  const _RadioGroupWidget(
-      {required this.widgetEntity,
-      required this.value,
-      required this.onChanged,
-      this.hasError = false});
+  const _RadioGroupWidget({
+    super.key,
+    required this.widgetEntity,
+    required this.value,
+    required this.onChanged,
+    this.hasError = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -272,11 +374,13 @@ class _CheckListWidget extends StatelessWidget {
   final ValueChanged<dynamic> onChanged;
   final bool hasError;
 
-  const _CheckListWidget(
-      {required this.widgetEntity,
-      required this.value,
-      required this.onChanged,
-      this.hasError = false});
+  const _CheckListWidget({
+    super.key,
+    required this.widgetEntity,
+    required this.value,
+    required this.onChanged,
+    this.hasError = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -336,11 +440,13 @@ class _FilePickerWidget extends StatefulWidget {
   final bool hasError;
 
   const _FilePickerWidget({
+    super.key,
     required this.widgetEntity,
     required this.value,
     required this.onChanged,
     this.hasError = false,
   });
+
 
   @override
   State<_FilePickerWidget> createState() => _FilePickerWidgetState();
@@ -350,6 +456,31 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
   double _uploadProgress = 0.0;
   bool _isUploading = false;
   Timer? _progressTimer;
+  List<dynamic> _localFiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFromWidget();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FilePickerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != oldWidget.value && !_isUploading) {
+      _syncFromWidget();
+    }
+  }
+
+  void _syncFromWidget() {
+    if (widget.value == null) {
+      _localFiles = [];
+    } else if (widget.value is List) {
+      _localFiles = List.from(widget.value as List);
+    } else {
+      _localFiles = [widget.value];
+    }
+  }
 
   @override
   void dispose() {
@@ -357,21 +488,21 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
     super.dispose();
   }
 
-  void _startUploadProgressSimulation(dynamic selectedFiles) {
+  void _startUploadProgressSimulation() {
     _progressTimer?.cancel();
     setState(() {
       _isUploading = true;
       _uploadProgress = 0.15;
     });
 
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 90), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
       setState(() {
         if (_uploadProgress < 0.95) {
-          _uploadProgress += 0.12;
+          _uploadProgress += 0.11;
         } else {
           _uploadProgress = 1.0;
           _isUploading = false;
@@ -397,7 +528,7 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
                 .toList() ??
             ['pdf', 'png', 'jpg', 'jpeg'];
 
-    final files = widget.value is List ? widget.value as List : const [];
+    final files = _localFiles;
 
     return Container(
       decoration: BoxDecoration(
@@ -432,8 +563,11 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
               );
 
               if (result != null && result.files.isNotEmpty) {
+                setState(() {
+                  _localFiles = List.from(result.files);
+                });
                 widget.onChanged(result.files);
-                _startUploadProgressSimulation(result.files);
+                _startUploadProgressSimulation();
               }
             },
             icon: const Icon(LucideIcons.uploadCloud, color: AppColors.forest),
@@ -531,12 +665,27 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
                           ),
                           const SizedBox(width: 8),
                           if (_isUploading)
-                            Text(
-                              '${(_uploadProgress * 100).toInt()}%',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.forest,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    value: _uploadProgress,
+                                    color: AppColors.forest,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${(_uploadProgress * 100).toInt()}%',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.forest,
+                                  ),
+                                ),
+                              ],
                             )
                           else
                             const Icon(
@@ -549,9 +698,11 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
                                 size: 16, color: Colors.red),
                             tooltip: 'حذف الملف',
                             onPressed: () {
-                              final updated = [...files];
-                              updated.remove(file);
-                              widget.onChanged(updated);
+                              setState(() {
+                                _localFiles.remove(file);
+                              });
+                              widget.onChanged(
+                                  _localFiles.isEmpty ? null : _localFiles);
                             },
                           ),
                         ],
@@ -595,3 +746,4 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
     return file?.toString() ?? 'ملف مرفق';
   }
 }
+

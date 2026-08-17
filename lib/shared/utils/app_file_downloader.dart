@@ -61,12 +61,29 @@ class AppFileDownloader {
       parts.add(cleanType);
     }
 
-    if (parts.isEmpty) {
-      final sanitizedOriginal = _sanitize(originalFilename);
-      if (sanitizedOriginal.contains('.')) {
-        return sanitizedOriginal;
+    var cleanOriginal = originalFilename.trim();
+    cleanOriginal = cleanOriginal.split('?').first.split('#').first;
+    final lastDot = cleanOriginal.lastIndexOf('.');
+    if (lastDot != -1 && lastDot < cleanOriginal.length - 1) {
+      cleanOriginal = cleanOriginal.substring(0, lastDot);
+    }
+    cleanOriginal = _sanitize(cleanOriginal);
+
+    if (cleanOriginal.isNotEmpty &&
+        cleanOriginal != 'file' &&
+        cleanOriginal != 'image' &&
+        cleanOriginal != 'document' &&
+        cleanOriginal != 'ملف_مرفق' &&
+        cleanOriginal != 'صورة_مرفقة' &&
+        cleanOriginal != 'مستند_مرفق') {
+      if (!parts.contains(cleanOriginal)) {
+        parts.add(cleanOriginal);
       }
-      return _sanitize('$sanitizedOriginal.$ext');
+    }
+
+    if (parts.isEmpty) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      return _sanitize('file_$now.$ext');
     }
 
     final name = parts.join(' - ');

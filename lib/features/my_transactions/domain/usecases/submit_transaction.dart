@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/errors/failures.dart';
+
 import '../../../../core/services/usb_signing_service.dart';
 import '../../../internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import '../repositories/my_transactions_repository.dart';
@@ -132,7 +134,12 @@ class SubmitTransaction {
           keysDirectoryPath != null &&
           pin.isNotEmpty &&
           keysDirectoryPath.isNotEmpty) {
+        debugPrint('==================================================');
+        debugPrint('[SubmitTransaction] 🔐 Transaction Signing PIN: $pin');
+        debugPrint('==================================================');
+
         // Request Signing Challenge
+
         final challengeResult = await repository.createSigningChallenge(
           taskId: taskId,
           pin: pin,

@@ -70,16 +70,11 @@ class DepartmentTransactionsRemoteDataSource {
   }
 
   Future<Either<Failure, dynamic>> getTransactionCertificate(String transactionId) async {
-    final result = await api.makeRequest(
-      method: ApiMethod.get,
-      endPoint: 'api/workflow/transactions/$transactionId/certificate',
-    );
-    if (result.isRight()) {
-      return result;
-    }
+    final parsedId = int.tryParse(transactionId) ?? transactionId;
     return api.makeRequest(
       method: ApiMethod.get,
-      endPoint: 'api/transaction/$transactionId/certificate',
+      endPoint: 'api/verify/document/details/by-transaction',
+      queryParameters: {'transaction_id': parsedId},
     );
   }
 
@@ -106,4 +101,108 @@ class DepartmentTransactionsRemoteDataSource {
       queryParameters: {'department_ids': departmentIds},
     );
   }
+
+  Future<Either<Failure, dynamic>> getAccessibleScope() {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/department/accessible-scope',
+    );
+  }
+
+  Future<Either<Failure, dynamic>> searchCompletedTransactions({
+    required String departmentIds,
+    String? query,
+    String? fromDate,
+    String? toDate,
+    String? cursor,
+    int limit = 6,
+  }) {
+    final queryParams = <String, dynamic>{
+      'department_ids': departmentIds,
+      'limit': limit,
+    };
+    if (query != null && query.isNotEmpty) {
+      queryParams['q'] = query;
+    }
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParams['cursor'] = cursor;
+    }
+    if (fromDate != null && fromDate.isNotEmpty) {
+      queryParams['from_date'] = fromDate;
+    }
+    if (toDate != null && toDate.isNotEmpty) {
+      queryParams['to_date'] = toDate;
+    }
+
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/search',
+      queryParameters: queryParams,
+    );
+  }
+
+  Future<Either<Failure, dynamic>> searchRejectedTransactions({
+    required String departmentIds,
+    String? query,
+    String? fromDate,
+    String? toDate,
+    String? cursor,
+    int limit = 6,
+  }) {
+    final queryParams = <String, dynamic>{
+      'department_ids': departmentIds,
+      'limit': limit,
+    };
+    if (query != null && query.isNotEmpty) {
+      queryParams['q'] = query;
+    }
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParams['cursor'] = cursor;
+    }
+    if (fromDate != null && fromDate.isNotEmpty) {
+      queryParams['from_date'] = fromDate;
+    }
+    if (toDate != null && toDate.isNotEmpty) {
+      queryParams['to_date'] = toDate;
+    }
+
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/search/rejected',
+      queryParameters: queryParams,
+    );
+  }
+
+  Future<Either<Failure, dynamic>> getSourceDocuments(int transactionId) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/$transactionId/source-documents',
+    );
+  }
+
+  Future<Either<Failure, dynamic>> getOrGenerateFinalDocument(
+    int transactionId, {
+    String? fileOrder,
+    String? documentSignatureIds,
+    String? documentInstanceIds,
+  }) {
+    final queryParams = <String, dynamic>{};
+    if (fileOrder != null) {
+      queryParams['file_order'] = fileOrder;
+    }
+    if (documentSignatureIds != null && documentSignatureIds.isNotEmpty) {
+      queryParams['document_signature_ids'] = documentSignatureIds;
+    }
+    if (documentInstanceIds != null && documentInstanceIds.isNotEmpty) {
+      queryParams['document_instance_ids'] = documentInstanceIds;
+    }
+
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: 'api/transaction/$transactionId/final-document',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+  }
 }
+
+

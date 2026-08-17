@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -350,7 +352,12 @@ class UsbSigningService {
     required String message,
     String? expectedKeyFingerprint,
   }) async {
+    debugPrint('==================================================');
+    debugPrint('[Transaction Signing] 🔑 PIN used for signing: $pin');
+    debugPrint('==================================================');
+
     final sep = Platform.pathSeparator;
+
     final encFile = File('$keysDirectoryPath${sep}employee-key.enc');
     final metaFile = File('$keysDirectoryPath${sep}employee-key.meta');
     final publicKeyFile = File('$keysDirectoryPath${sep}employee-public.pem');
@@ -442,7 +449,149 @@ class UsbSigningService {
     }
   }
 
+  /// Decrypts the private key using [oldPin] and re-encrypts it with [newPin]
+  /// using fresh cryptographic salt, nonce, and updated MAC tag on the physical USB flash drive.
+  Future<void> reEncryptKeyWithNewPin({
+    required String username,
+    required String oldPin,
+    required String newPin,
+    String? keysDirectoryPath,
+  }) async {
+    debugPrint('==================================================');
+    debugPrint('[USB Re-encrypt] 🔄 Re-encrypting USB key for user: $username');
+    debugPrint('[USB Re-encrypt] Old PIN: $oldPin -> New PIN: $newPin');
+    debugPrint('==================================================');
+
+    String dirPath = keysDirectoryPath ?? '';
+    if (dirPath.isEmpty) {
+      final discovery = await findUsbKeysDirectory(username);
+      if (discovery.status != UsbDiscoveryStatus.success ||
+          discovery.path == null) {
+        throw Exception(
+          discovery.errorMessage ??
+              'لم يتم العثور على فلاشة التوقيع لتحديث مفتاح التوقيع عليها.',
+        );
+      }
+      dirPath = discovery.path!;
+    }
+
+    final sep = Platform.pathSeparator;
+    final encFile = File('$dirPath${sep}employee-key.enc');
+    final metaFile = File('$dirPath${sep}employee-key.meta');
+    final publicKeyFile = File('$dirPath${sep}employee-public.pem');
+
+    if (!await encFile.exists() ||
+        !await metaFile.exists() ||
+        !await publicKeyFile.exists()) {
+      throw Exception('ملفات المفتاح على الفلاشة غير مكتملة أو مفقودة');
+    }
+
+    final meta = await _readMeta(metaFile);
+    if (meta['version'] != 2) {
+      throw Exception('المفتاح الموجود على الفلاشة قديم، يرجى إعادة إصداره');
+    }
+    _validateV2Metadata(meta);
+
+    final device = await _usbDeviceIdentityProvider.getDeviceForPath(dirPath);
+    if (device == null || !device.isRemovable) {
+      throw Exception('يجب أن يبقى ملف المفتاح على فلاشة USB فعلية');
+    }
+    final currentUsbFingerprint =
+        await _usbDeviceIdentityProvider.getStableDeviceFingerprint(device);
+    final usbFingerprintMatches = _constantTimeEquals(
+      currentUsbFingerprint,
+      meta['usb_fingerprint_hash'] as String,
+    );
+    if (!usbFingerprintMatches) {
+      throw Exception('هذه الفلاشة لا تطابق الفلاشة التي أُنشئ عليها المفتاح');
+    }
+
+    final publicKeyPem = await publicKeyFile.readAsString();
+    final localPublicKeyFingerprint = await _fingerprintPublicKey(publicKeyPem);
+    final metaPublicKeyFingerprint = meta['public_key_fingerprint'] as String;
+    if (!_constantTimeEquals(
+      localPublicKeyFingerprint,
+      metaPublicKeyFingerprint,
+    )) {
+      throw Exception('ملفات المفتاح غير متطابقة أو تم تعديلها');
+    }
+
+    // 1. Decrypt private key using oldPin
+    final cipherText = await _readCipherText(encFile);
+    final oldSalt = _decodeBase64Field(meta, 'salt');
+    final oldNonce = _decodeBase64Field(meta, 'nonce');
+    final oldMac = Mac(_decodeBase64Field(meta, 'mac'));
+
+    final oldSecretKey = await Hkdf(
+      hmac: Hmac.sha256(),
+      outputLength: 32,
+    ).deriveKey(
+      secretKey: SecretKey(utf8.encode(
+        'pinLength=${oldPin.length}:$oldPin|usbSha256=$currentUsbFingerprint',
+      )),
+      nonce: oldSalt,
+      info: utf8.encode('technical-team/usb-bound-key/v2'),
+    );
+
+    final privateKeyBytes = await _decryptPrivateKeyV2(
+      cipherText: cipherText,
+      nonce: oldNonce,
+      mac: oldMac,
+      secretKey: oldSecretKey,
+      aad: _canonicalV2Aad(meta),
+    );
+
+    try {
+      final keyPair = await Ed25519().newKeyPairFromSeed(privateKeyBytes);
+      if (!await _privateKeyMatchesPublicKey(keyPair, publicKeyPem)) {
+        throw Exception('ملفات المفتاح غير متطابقة أو تم تعديلها');
+      }
+
+      // 2. Generate new cryptographic salt & nonce for new PIN encryption
+      final random = Random.secure();
+      final newSalt = List<int>.generate(16, (_) => random.nextInt(256));
+      final newNonce = List<int>.generate(12, (_) => random.nextInt(256));
+
+      // 3. Derive new secret key using newPin
+      final newSecretKey = await Hkdf(
+        hmac: Hmac.sha256(),
+        outputLength: 32,
+      ).deriveKey(
+        secretKey: SecretKey(utf8.encode(
+          'pinLength=${newPin.length}:$newPin|usbSha256=$currentUsbFingerprint',
+        )),
+        nonce: newSalt,
+        info: utf8.encode('technical-team/usb-bound-key/v2'),
+      );
+
+      // 4. Encrypt private key with new secret key
+      final secretBox = await _aes.encrypt(
+        privateKeyBytes,
+        secretKey: newSecretKey,
+        nonce: newNonce,
+        aad: _canonicalV2Aad(meta),
+      );
+
+      // 5. Update metadata with new salt, nonce, and MAC tag
+      meta['salt'] = base64Encode(newSalt);
+      meta['nonce'] = base64Encode(secretBox.nonce);
+      meta['mac'] = base64Encode(secretBox.mac.bytes);
+
+      // 6. Write updated ciphertext and metadata back to USB flash drive
+      await encFile.writeAsString(base64Encode(secretBox.cipherText));
+      const encoder = JsonEncoder.withIndent('  ');
+      await metaFile.writeAsString(encoder.convert(meta));
+
+      debugPrint(
+        '[USB Re-encrypt] ✅ Private key on USB successfully re-encrypted with new PIN!',
+      );
+    } finally {
+      privateKeyBytes.fillRange(0, privateKeyBytes.length, 0);
+    }
+  }
+
   void _validateV2Metadata(Map<String, dynamic> meta) {
+
     String requireString(String field) {
       final value = meta[field];
       if (value is! String || value.trim().isEmpty) {

@@ -24,6 +24,9 @@ class MyTransactionsLoaded extends MyTransactionsState {
   final int urgentCount;
   final int completedMonthCount;
 
+  // Search Loading Flag
+  final bool isSearching;
+
   const MyTransactionsLoaded({
     required this.transactions,
     required this.statusFilter,
@@ -35,6 +38,7 @@ class MyTransactionsLoaded extends MyTransactionsState {
     required this.awaitingSignatureCount,
     required this.urgentCount,
     required this.completedMonthCount,
+    this.isSearching = false,
   });
 
   MyTransactionsLoaded copyWith({
@@ -48,6 +52,7 @@ class MyTransactionsLoaded extends MyTransactionsState {
     int? awaitingSignatureCount,
     int? urgentCount,
     int? completedMonthCount,
+    bool? isSearching,
   }) {
     return MyTransactionsLoaded(
       transactions: transactions ?? this.transactions,
@@ -60,6 +65,7 @@ class MyTransactionsLoaded extends MyTransactionsState {
       awaitingSignatureCount: awaitingSignatureCount ?? this.awaitingSignatureCount,
       urgentCount: urgentCount ?? this.urgentCount,
       completedMonthCount: completedMonthCount ?? this.completedMonthCount,
+      isSearching: isSearching ?? this.isSearching,
     );
   }
 }

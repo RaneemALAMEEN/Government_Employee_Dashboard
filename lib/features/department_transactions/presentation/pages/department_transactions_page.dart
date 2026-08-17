@@ -6,6 +6,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../../domain/entities/accessible_department_entity.dart';
 import '../bloc/dept_tx_bloc.dart';
 import '../bloc/dept_tx_event.dart';
 import '../bloc/dept_tx_state.dart';
@@ -70,12 +71,18 @@ class _DepartmentTransactionsViewState
         String searchQuery = '';
         String? fromDate;
         String? toDate;
+        List<AccessibleDepartmentEntity> accessibleDepartments = [];
+        int? selectedDepartmentId;
+        String? selectedDepartmentName;
 
         if (state is DeptTxLoaded) {
           statusFilter = state.statusFilter;
           searchQuery = state.searchQuery;
           fromDate = state.fromDate;
           toDate = state.toDate;
+          accessibleDepartments = state.accessibleDepartments;
+          selectedDepartmentId = state.selectedDepartmentId;
+          selectedDepartmentName = state.selectedDepartmentName;
         }
 
         return LayoutBuilder(
@@ -108,7 +115,9 @@ class _DepartmentTransactionsViewState
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'جميع المعاملات الجارية والمنجزة ضمن الدائرة — للعرض والمتابعة فقط',
+                            selectedDepartmentName != null
+                                ? 'معاملات $selectedDepartmentName — للعرض والمتابعة فقط'
+                                : 'جميع المعاملات المنجزة والمرفوضة ضمن الدائرة — للعرض والمتابعة فقط',
                             textAlign: TextAlign.right,
                             style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.goldDark.withOpacity(0.85)),
@@ -199,27 +208,33 @@ class _DepartmentTransactionsViewState
                     FadeInUp(
                       duration: const Duration(milliseconds: 450),
                       delay: const Duration(milliseconds: 140),
-                      child: IgnorePointer(
-                        ignoring:
-                            state is DeptTxLoading || state is DeptTxInitial,
-                        child: DeptTxFilterBar(
-                          activeStatusFilter: statusFilter,
-                          searchQuery: searchQuery,
-                          fromDate: fromDate,
-                          toDate: toDate,
-                          onStatusFilterChanged: (filter) {
-                            context
-                                .read<DeptTxBloc>()
-                                .add(FilterDeptTxByStatus(filter));
-                          },
-                          onDateRangeChanged: (from, to) {
-                            context.read<DeptTxBloc>().add(
-                                FilterDeptTxByDate(fromDate: from, toDate: to));
-                          },
-                          onSearchChanged: (query) {
-                            context.read<DeptTxBloc>().add(SearchDeptTx(query));
-                          },
-                        ),
+                      child: DeptTxFilterBar(
+                        activeStatusFilter: statusFilter,
+                        searchQuery: searchQuery,
+                        fromDate: fromDate,
+                        toDate: toDate,
+                        accessibleDepartments: accessibleDepartments,
+                        selectedDepartmentId: selectedDepartmentId,
+                        onStatusFilterChanged: (filter) {
+                          context
+                              .read<DeptTxBloc>()
+                              .add(FilterDeptTxByStatus(filter));
+                        },
+                        onDateRangeChanged: (from, to) {
+                          context.read<DeptTxBloc>().add(
+                              FilterDeptTxByDate(fromDate: from, toDate: to));
+                        },
+                        onSearchChanged: (query) {
+                          context.read<DeptTxBloc>().add(SearchDeptTx(query));
+                        },
+                        onDepartmentChanged: (deptId, deptName) {
+                          context.read<DeptTxBloc>().add(
+                                FilterDeptTxByDepartment(
+                                  departmentId: deptId,
+                                  departmentName: deptName,
+                                ),
+                              );
+                        },
                       ),
                     ),
                     const SizedBox(height: gap),
@@ -249,6 +264,9 @@ class _DepartmentTransactionsViewState
                         delay: const Duration(milliseconds: 220),
                         child: DeptTxTable(
                           transactions: state.transactions,
+                          isSearching: state.isSearching,
+                          searchQuery: state.searchQuery,
+                          activeFilter: state.statusFilter,
                         ),
                       ),
                       // Loading indicator at bottom

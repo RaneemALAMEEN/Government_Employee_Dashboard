@@ -1,35 +1,25 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:animate_do/animate_do.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-
-import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../../../../shared/utils/app_file_downloader.dart';
+import 'package:animate_do/animate_do.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
-import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../../../document_verification/presentation/widgets/document_verification_widgets.dart';
 import '../bloc/certificate_details/department_certificate_bloc.dart';
 import '../bloc/certificate_details/department_certificate_event.dart';
 import '../bloc/certificate_details/department_certificate_state.dart';
-import '../../../my_transactions/presentation/pages/transaction_details/widgets/employee_info_card.dart';
-import '../../../my_transactions/presentation/pages/transaction_details/widgets/workflow_timeline_widget.dart';
-import '../../../my_transactions/presentation/pages/transaction_details/widgets/stage_history_card.dart';
-import '../../../my_transactions/presentation/pages/transaction_details/widgets/transaction_info_card.dart';
 
 class DepartmentTransactionDetailsPage extends StatefulWidget {
   final String transactionId;
 
   const DepartmentTransactionDetailsPage({
-    Key? key,
+    super.key,
     required this.transactionId,
-  }) : super(key: key);
+  });
 
   @override
   State<DepartmentTransactionDetailsPage> createState() =>
@@ -44,6 +34,10 @@ class _DepartmentTransactionDetailsPageState
   void initState() {
     super.initState();
     _bloc = getIt<DepartmentCertificateBloc>();
+    _load();
+  }
+
+  void _load() {
     _bloc.add(LoadDepartmentCertificate(widget.transactionId));
   }
 
@@ -53,464 +47,302 @@ class _DepartmentTransactionDetailsPageState
     super.dispose();
   }
 
-  /// Returns the applicant's full name from the current loaded state.
-  String _getApplicantName() {
-    final state = _bloc.state;
-    if (state is DepartmentCertificateLoaded) {
-      final data = state.data;
-      final history = data['transaction_history'] as Map<String, dynamic>? ?? {};
-      final historyData = history['data'] as Map<String, dynamic>? ?? {};
-      final applicant = historyData['applicant'] as Map<String, dynamic>?;
-      if (applicant != null) {
-        final first = applicant['first_name']?.toString() ?? '';
-        final last = applicant['last_name']?.toString() ?? '';
-        return '$first $last'.trim();
-      }
-    }
-    return '';
-  }
-
-  Future<void> _downloadFile(String path, String filename, {String? documentType}) async {
-    try {
-      final dio = getIt<Dio>();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('جاري تحميل الملف...')),
-      );
-
-      final fileUrl = _buildFileUrl(path);
-
-      final response = await dio.get<List<int>>(
-        fileUrl,
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      final bytes =
-          response.data != null ? Uint8List.fromList(response.data!) : null;
-      final contentType = response.headers.value('content-type');
-
-      final savePath = await AppFileDownloader.getSavePath(
-        applicantName: _getApplicantName(),
-        documentType: documentType,
-        originalFilename: filename,
-        contentType: contentType,
-        bytes: bytes,
-      );
-
-      if (bytes != null && bytes.isNotEmpty) {
-        final file = File(savePath);
-        await file.writeAsBytes(bytes);
-      } else {
-        await dio.download(fileUrl, savePath);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم تحميل الملف بنجاح\n$savePath'),
-            backgroundColor: AppColors.forest,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        String errorMessage =
-            'فشل تحميل الملف. قد يكون تالفاً أو غير موجود على الخادم.';
-        if (e is DioException) {
-          if (e.response?.statusCode == 404) {
-            errorMessage =
-                'هناك مشكلة في هذا الملف ولا يمكن عرضه أو تنزيله ، يرجى التواصل مع من أرفقه لإعادة إرفاقه مرة أخرى';
-          } else {
-            errorMessage = 'حدث خطأ في الاتصال بالخادم عند محاولة تحميل الملف.';
-          }
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppColors.umber,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  String _buildFileUrl(String pathOrUrl) {
-    final trimmed = pathOrUrl.trim();
-    if (trimmed.isEmpty) return '';
-    if (trimmed.startsWith(RegExp(r'https?://'))) {
-      return trimmed;
-    }
-
-    var baseUrl = dotenv.env['BASE_URL']?.trim() ?? '';
-    if (baseUrl.isEmpty) {
-      baseUrl = const String.fromEnvironment('BASE_URL',
-          defaultValue: 'http://10.0.2.2:5000');
-    }
-
-    if (baseUrl.endsWith('/')) {
-      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
-    }
-
-    var normalizedPath = trimmed.replaceAll('\\', '/');
-    if (!normalizedPath.startsWith('/')) {
-      normalizedPath = '/$normalizedPath';
-    }
-    return '$baseUrl$normalizedPath';
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.goldLight,
-      body: BlocBuilder<DepartmentCertificateBloc, DepartmentCertificateState>(
-        bloc: _bloc,
+    return BlocProvider.value(
+      value: _bloc,
+      child: BlocBuilder<DepartmentCertificateBloc, DepartmentCertificateState>(
         builder: (context, state) {
-          if (state is DepartmentCertificateLoading ||
-              state is DepartmentCertificateInitial) {
-            return const Center(
-                child: CircularProgressIndicator(color: AppColors.forest));
-          }
-
-          if (state is DepartmentCertificateFailure) {
-            return AppErrorWidget(
-              onRetry: () =>
-                  _bloc.add(LoadDepartmentCertificate(widget.transactionId)),
-            );
-          }
+          String processName = 'تفاصيل المعاملة';
+          String? status;
+          int? priority;
 
           if (state is DepartmentCertificateLoaded) {
-            final data = state.data;
-            final processName =
-                data['process_name']?.toString() ?? 'تفاصيل المعاملة';
+            final history = state.data.transactionHistory;
+            if (history.processName.isNotEmpty) {
+              processName = history.processName;
+            }
+            status = state.data.transaction.status;
+            priority = history.priority;
+          }
 
-            final history =
-                data['transaction_history'] as Map<String, dynamic>? ?? {};
-            final historyData = history['data'] as Map<String, dynamic>? ?? {};
-            final applicant = historyData['applicant'] as Map<String, dynamic>?;
-            final stages = historyData['stages'] as List<dynamic>? ?? [];
+          final isWide = MediaQuery.of(context).size.width > 950;
 
-            final idProcess =
-                history['id_process']?.toString() ?? widget.transactionId;
-            final priorityVal = history['priority'];
-            final priority = priorityVal == 1
-                ? 'عالية'
-                : (priorityVal == 2 ? 'عادية' : 'متوسطة');
-            final status = data['status']?.toString() ?? '';
-
-            // Extract final document
-            final finalDocument =
-                data['final_document'] as Map<String, dynamic>? ?? {};
-            final hasFinalDoc = (finalDocument['file_url']?.toString() ??
-                    finalDocument['file_path']?.toString() ??
-                    '')
-                .isNotEmpty;
-
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
-                children: [
-                  _DepartmentTransactionHeaderWidget(
-                    processName: processName,
-                    idProcess: idProcess,
-                    priority: priority,
-                    onBack: () => context.pop(),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Row(
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              backgroundColor: AppColors.goldLight,
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(32, 28, 32, 40),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1320),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          // Breadcrumb
+                          GestureDetector(
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/department-transactions');
+                              }
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (applicant != null) ...[
-                                  _buildApplicantInfo(applicant),
-                                  const SizedBox(height: 24),
-                                ],
-                                TransactionInfoCard(
-                                  taskData: data,
-                                  status: status == 'completed' ? 'منجزة' : (status == 'rejected' ? 'تم الرفض' : 'بانتظار الاستلام'),
-                                  transactionNumber: idProcess,
+                                const Icon(
+                                  LucideIcons.arrowRight,
+                                  color: AppColors.charcoal,
+                                  size: 16,
                                 ),
-                                const SizedBox(height: 24),
-                                ...stages
-                                    .where((stage) {
-                                      final name = (stage as Map)['stage_name']?.toString() ?? '';
-                                      final formName = stage['form_name']?.toString() ?? '';
-                                      return !name.toUpperCase().contains('GENERATE_PDF') &&
-                                          !formName.toUpperCase().contains('GENERATE_PDF');
-                                    })
-                                    .map((stage) => StageHistoryCard(
-                                      stage: Map<String, dynamic>.from(stage as Map),
-                                      buildFileUrl: _buildFileUrl,
-                                      onDownloadFile: _downloadFile,
-                                    )),
-                                if (stages.isNotEmpty)
-                                  const SizedBox(height: 24),
-                                if (hasFinalDoc)
-                                  _buildFinalDocumentCard(finalDocument)
-                                else
-                                  _buildPendingDocumentCard(
-                                      finalDocument['message']?.toString() ??
-                                          'لم يتم توليد نسخة pdf من هذا الطلب'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 32),
-                          Expanded(
-                            flex: 1,
-                            child: Column(
-                              children: [
-                                WorkflowTimelineWidget(
-                                  completedStages: stages,
-                                  currentStage: null,
-                                  isLocked: false,
-                                  status: status,
+                                const SizedBox(width: 8),
+                                Text(
+                                  'العودة لمعاملات الدائرة',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontWeight: AppTextStyles.medium,
+                                    color: AppColors.charcoal.withOpacity(0.8),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          // Header Widget
+                          _DepartmentTransactionHeader(
+                            processName: processName,
+                            transactionId: widget.transactionId,
+                            status: status,
+                            priority: priority,
+                            onRefresh: _load,
+                          ),
+                          const SizedBox(height: 24),
+                          // Content Widget
+                          switch (state) {
+                            DepartmentCertificateLoading() ||
+                            DepartmentCertificateInitial() =>
+                              _buildSkeletonLoader(isWide),
+                            DepartmentCertificateLoaded(:final data) =>
+                              VerificationResult(
+                                data: data,
+                                transactionId:
+                                    int.tryParse(widget.transactionId) ??
+                                        data.transaction.id,
+                                onDocumentGenerated: _load,
+                              ),
+                            DepartmentCertificateFailure(:final message) =>
+                              VerificationErrorCard(
+                                isNetworkError: message.contains('اتصال') ||
+                                    message.contains('خادم') ||
+                                    message.contains('network') ||
+                                    message.contains('connect'),
+                                isExpired: false,
+                                onRetry: _load,
+                                onReset: () {
+                                  if (context.canPop()) {
+                                    context.pop();
+                                  } else {
+                                    context.go('/department-transactions');
+                                  }
+                                },
+                              ),
+                            _ => const SizedBox.shrink(),
+                          },
                         ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            );
-          }
-          return const SizedBox();
+            ),
+          );
         },
       ),
     );
   }
 
-  Widget _buildApplicantInfo(Map<String, dynamic> applicant) {
-    final mappedApplicant = {
-      'first_name': applicant['first_name_employee'] ?? applicant['first_name'] ?? '',
-      'father_name': applicant['father_name_employee'] ?? applicant['father_name'] ?? '',
-      'last_name': applicant['last_name_employee'] ?? applicant['last_name'] ?? '',
-      'national_id': applicant['national_id_employee'] ?? applicant['national_id'] ?? '',
-      'phone_number': applicant['phone_number_employee'] ?? applicant['phone_number'] ?? '',
-    };
-
-    return EmployeeInfoCard(applicant: mappedApplicant);
-  }
-
-  Widget _buildFinalDocumentCard(Map<String, dynamic> finalDoc) {
-    return FadeInUp(
-      duration: const Duration(milliseconds: 300),
-      delay: const Duration(milliseconds: 100),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.forestLight.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(LucideIcons.fileCheck,
-                      color: AppColors.forest, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'الوثيقة النهائية (الشهادة)',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: AppTextStyles.bold, color: AppColors.forest),
-                ),
+  Widget _buildSkeletonLoader(bool isWide) {
+    if (isWide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 7,
+            child: Column(
+              children: const [
+                CustomSkeletonLoader(width: double.infinity, height: 120),
+                SizedBox(height: 20),
+                CustomSkeletonLoader(width: double.infinity, height: 220),
+                SizedBox(height: 20),
+                CustomSkeletonLoader(width: double.infinity, height: 160),
               ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'تم إصدار الشهادة بنجاح. يمكنك عرضها وتحميلها أدناه.',
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
-            ),
-            const SizedBox(height: 24),
-            if ((finalDoc['file_url']?.toString() ??
-                    finalDoc['file_path']?.toString() ??
-                    '')
-                .isNotEmpty)
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        final url =
-                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
-                        if (url.isNotEmpty) {
-                          final fullUrl = _buildFileUrl(url);
-                          context.push('/pdf-viewer', extra: fullUrl);
-                        }
-                      },
-                      icon: const Icon(LucideIcons.eye),
-                      label: const Text('عرض الوثيقة'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.gold,
-                        foregroundColor: AppColors.charcoal,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        final url =
-                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
-                        final originalName =
-                            finalDoc['original_name'] ?? 'certificate.pdf';
-                        if (url.isNotEmpty) {
-                          _downloadFile(url, originalName,
-                              documentType: 'الوثيقة النهائية');
-                        }
-                      },
-                      icon: const Icon(LucideIcons.download),
-                      label: const Text('تحميل الوثيقة'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.forest,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPendingDocumentCard(String message) {
-    return FadeInUp(
-      duration: const Duration(milliseconds: 300),
-      delay: const Duration(milliseconds: 100),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.umber.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(LucideIcons.fileClock,
-                      color: AppColors.umber, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'الوثيقة النهائية (الشهادة)',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: AppTextStyles.bold, color: AppColors.umber),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
-            ),
-          ],
-        ),
-      ),
+          ),
+          const SizedBox(width: 24),
+          const SizedBox(
+            width: 320,
+            child: CustomSkeletonLoader(width: double.infinity, height: 400),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: const [
+        CustomSkeletonLoader(width: double.infinity, height: 120),
+        SizedBox(height: 20),
+        CustomSkeletonLoader(width: double.infinity, height: 220),
+        SizedBox(height: 20),
+        CustomSkeletonLoader(width: double.infinity, height: 160),
+      ],
     );
   }
 }
 
-class _DepartmentTransactionHeaderWidget extends StatelessWidget {
+class _DepartmentTransactionHeader extends StatelessWidget {
   final String processName;
-  final String idProcess;
-  final String priority;
-  final VoidCallback onBack;
+  final String transactionId;
+  final String? status;
+  final int? priority;
+  final VoidCallback onRefresh;
 
-  const _DepartmentTransactionHeaderWidget({
-    Key? key,
+  const _DepartmentTransactionHeader({
     required this.processName,
-    required this.idProcess,
+    required this.transactionId,
+    required this.status,
     required this.priority,
-    required this.onBack,
-  }) : super(key: key);
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(LucideIcons.arrowRight, color: AppColors.charcoal),
-            onPressed: onBack,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
+    Color badgeBg;
+    Color badgeFg;
+    String statusLabel = 'قيد المعالجة';
+
+    final normalizedStatus = status?.trim().toLowerCase() ?? '';
+    if (normalizedStatus == 'completed') {
+      badgeBg = AppColors.forestLight.withOpacity(0.12);
+      badgeFg = AppColors.forest;
+      statusLabel = 'منجزة';
+    } else if (normalizedStatus == 'rejected') {
+      badgeBg = AppColors.umber.withOpacity(0.08);
+      badgeFg = AppColors.umber;
+      statusLabel = 'تم الرفض';
+    } else if (normalizedStatus == 'in_progress') {
+      badgeBg = Colors.orange.shade50;
+      badgeFg = Colors.orange.shade700;
+      statusLabel = 'قيد التنفيذ';
+    } else {
+      badgeBg = Colors.blue.shade50;
+      badgeFg = Colors.blue.shade700;
+      statusLabel = 'قيد المعالجة';
+    }
+
+    return FadeInDown(
+      duration: const Duration(milliseconds: 300),
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          textDirection: TextDirection.rtl,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              textDirection: TextDirection.rtl,
               children: [
-                Text(
-                  processName,
-                  style: AppTextStyles.headlineSmall
-                      .copyWith(color: AppColors.forest),
-                ),
-                const SizedBox(height: 4),
-                Row(
+                Wrap(
+                  textDirection: TextDirection.rtl,
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      'رقم المعاملة: $idProcess',
-                      style: AppTextStyles.bodyMedium
-                          .copyWith(color: AppColors.charcoal),
+                      processName,
+                      style: AppTextStyles.headlineLarge.copyWith(
+                        fontSize: 26,
+                        fontWeight: AppTextStyles.semiBold,
+                        color: AppColors.forest,
+                      ),
                     ),
-                    const SizedBox(width: 16),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: priority == 'عالية'
-                            ? AppColors.umber.withOpacity(0.1)
-                            : AppColors.gold.withOpacity(0.2),
+                        color: badgeBg,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        priority,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: priority == 'عالية'
-                              ? AppColors.umber
-                              : AppColors.goldDark,
-                          fontWeight: AppTextStyles.bold,
+                        statusLabel,
+                        style: AppTextStyles.labelLarge.copyWith(
+                          fontWeight: AppTextStyles.medium,
+                          color: badgeFg,
                         ),
                       ),
                     ),
+                    if (priority == 1) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.umber.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'مستعجل',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            fontWeight: AppTextStyles.medium,
+                            color: AppColors.umber,
+                          ),
+                        ),
+                      ),
+                    ] else if (priority == 2) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.forest.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'أولوية عادية',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            fontWeight: AppTextStyles.medium,
+                            color: AppColors.forest,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'رقم المعاملة: $transactionId',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: AppTextStyles.medium,
+                    color: AppColors.charcoal.withOpacity(0.6),
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+            IconButton(
+              icon: const Icon(LucideIcons.refreshCw, size: 18),
+              tooltip: 'تحديث البيانات',
+              onPressed: onRefresh,
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: AppColors.gold.withOpacity(0.3)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

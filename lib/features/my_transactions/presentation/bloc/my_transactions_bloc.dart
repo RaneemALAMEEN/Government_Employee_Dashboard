@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dartz/dartz.dart';
+import 'package:stream_transform/stream_transform.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/my_transaction_entity.dart';
 import '../../domain/entities/my_transactions_paginated_result.dart';
@@ -25,7 +26,11 @@ class MyTransactionsBloc
     on<LoadMyTransactions>(_onLoadMyTransactions);
     on<LoadMoreTransactions>(_onLoadMoreTransactions);
     on<FilterMyTransactions>(_onFilterMyTransactions);
-    on<SearchMyTransactions>(_onSearchMyTransactions);
+    on<SearchMyTransactions>(
+      _onSearchMyTransactions,
+      transformer: (events, mapper) =>
+          events.debounce(const Duration(milliseconds: 400)).switchMap(mapper),
+    );
     on<SignTransaction>(_onSignTransaction);
     on<RejectTransaction>(_onRejectTransaction);
     on<PickupTransaction>(_onPickupTransaction);
@@ -82,7 +87,9 @@ class MyTransactionsBloc
       oldCompleted = loaded.completedMonthCount;
     }
 
+    // Always emit loading so the skeleton effect is visible during data fetch
     emit(MyTransactionsLoading());
+
 
     Future<Either<Failure, MyTransactionsPaginatedResult>>? pendingCall;
     if (apiStatus != 'pending_pickup') {
@@ -156,6 +163,7 @@ class MyTransactionsBloc
 
     final result = await getMyTransactions(
       status: loadedState.apiStatusFilter,
+      searchQuery: loadedState.searchQuery.isNotEmpty ? loadedState.searchQuery : null,
       cursor: loadedState.nextCursor,
       limit: _pageLimit,
     );
@@ -194,14 +202,44 @@ class MyTransactionsBloc
     );
   }
 
-  void _onSearchMyTransactions(
+  Future<void> _onSearchMyTransactions(
     SearchMyTransactions event,
     Emitter<MyTransactionsState> emit,
-  ) {
-    if (state is MyTransactionsLoaded) {
-      final loadedState = state as MyTransactionsLoaded;
-      emit(loadedState.copyWith(searchQuery: event.query));
-    }
+  ) async {
+    if (state is! MyTransactionsLoaded) return;
+    final currentState = state as MyTransactionsLoaded;
+    final query = event.query.trim();
+
+    emit(currentState.copyWith(
+      isSearching: true,
+      searchQuery: event.query,
+    ));
+
+    final result = await getMyTransactions(
+      status: currentState.apiStatusFilter,
+      searchQuery: query.isNotEmpty ? query : null,
+      cursor: null,
+      limit: _pageLimit,
+    );
+
+    result.fold(
+      (failure) {
+        if (state is MyTransactionsLoaded) {
+          emit((state as MyTransactionsLoaded).copyWith(isSearching: false));
+        }
+      },
+      (paginatedResult) {
+        if (state is! MyTransactionsLoaded) return;
+        final latestState = state as MyTransactionsLoaded;
+
+        emit(latestState.copyWith(
+          transactions: paginatedResult.items,
+          nextCursor: paginatedResult.nextCursor,
+          hasMore: paginatedResult.hasNext,
+          isSearching: false,
+        ));
+      },
+    );
   }
 
   void _onSignTransaction(

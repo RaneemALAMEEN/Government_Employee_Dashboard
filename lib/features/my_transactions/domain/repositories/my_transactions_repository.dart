@@ -6,6 +6,7 @@ import '../entities/my_transactions_paginated_result.dart';
 abstract class MyTransactionsRepository {
   Future<Either<Failure, MyTransactionsPaginatedResult>> getMyTransactions({
     required String status,
+    String? searchQuery,
     String? cursor,
     int limit = 6,
   });

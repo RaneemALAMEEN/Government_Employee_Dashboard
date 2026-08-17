@@ -21,7 +21,9 @@ import '../../../../core/services/session_service.dart';
 import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
+
 import '../../domain/entities/my_transaction_entity.dart';
 import '../../../internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import '../../../internal_transactions/data/models/dynamic_widget_model.dart';
@@ -130,11 +132,23 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
       final response = await dio.get<List<int>>(
         fileUrl,
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {'Accept': '*/*'},
+        ),
       );
 
       final bytes =
           response.data != null ? Uint8List.fromList(response.data!) : null;
+
+      if (response.statusCode != 200 || bytes == null || bytes.isEmpty) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+        );
+      }
+
       final contentType = response.headers.value('content-type');
 
       final savePath = await AppFileDownloader.getSavePath(
@@ -145,19 +159,15 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         bytes: bytes,
       );
 
-      if (bytes != null && bytes.isNotEmpty) {
-        final file = File(savePath);
-        await file.writeAsBytes(bytes);
-      } else {
-        await dio.download(fileUrl, savePath);
-      }
+      final file = File(savePath);
+      await file.writeAsBytes(bytes);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم تحميل الملف بنجاح\n$savePath'),
-            backgroundColor: AppColors.forest,
-          ),
+        AppSnackBar.show(
+          context,
+          title: 'تم التحميل بنجاح',
+          message: 'تم حفظ الملف بنجاح في:\n$savePath',
+          isError: false,
         );
       }
     } catch (e) {
@@ -173,16 +183,16 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
           }
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppColors.umber,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppSnackBar.show(
+          context,
+          title: 'فشل التحميل',
+          message: errorMessage,
+          isError: true,
         );
       }
     }
   }
+
 
   String _buildFileUrl(String pathOrUrl) {
     final trimmed = pathOrUrl.trim();
@@ -208,7 +218,20 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     return '$baseUrl$normalizedPath';
   }
 
+  void _showPickupRequiredNotice() {
+    AppSnackBar.show(
+      context,
+      backgroundColor: AppColors.forest,
+      icon: LucideIcons.info,
+      title: 'المعاملة بانتظار الاستلام',
+      message:
+          'يرجى استلام المعاملة أولاً بالضغط على زر «استلام المعاملة» أعلاه لتتمكن من تعبئة الحقول واتخاذ الإجراءات.',
+    );
+  }
+
+
   void _showSignatureDialog(List<DynamicWidgetEntity> widgets, String formId,
+
       String formName, bool isApprove,
       {List<Map<String, dynamic>>? assignments,
       List<int> templateIds = const [],
@@ -249,37 +272,37 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       return;
     }
 
-    // 2. Fallback check: If USB keys folder is missing or not inserted, show warning message!
-    if (discoveryResult.status != UsbDiscoveryStatus.success) {
+    // 2. If USB keys folder is missing or not inserted:
+    if (discoveryResult.status != UsbDiscoveryStatus.success ||
+        discoveryResult.path == null ||
+        discoveryResult.path!.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(LucideIcons.usb, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  discoveryResult.errorMessage ?? 'تعذر العثور على المفاتيح',
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      AppSnackBar.show(
+        context,
+        title: 'تعذر العثور على فلاشة التوقيع',
+        message: discoveryResult.errorMessage ??
+            'لم يتم العثور على وحدة USB متصلة تحتوي على مفاتيح التوقيع الرقمي الخاصة بحسابك.',
+        isError: true,
+        icon: LucideIcons.usb,
       );
-      return; // Added early return since manual fallback is disabled
+      return;
     }
+
+    // 3. If session PIN is missing:
+    if (sessionPin == null || sessionPin.isEmpty) {
+      if (!mounted) return;
+      AppSnackBar.show(
+        context,
+        title: 'جلسة التوقيع غير مفعلة',
+        message:
+            'رمز PIN الخاص بجلسة التوقيع غير متوفر أو انتهت صلاحيته. يرجى تفعيل جلسة التوقيع أولاً.',
+        isError: true,
+        icon: LucideIcons.keyRound,
+      );
+      return;
+    }
+
+
 
     /*
     // Manual Signature Dialog Fallback:
@@ -367,36 +390,37 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       return;
     }
 
-    if (discoveryResult.status != UsbDiscoveryStatus.success) {
+    // 2. If USB keys folder is missing or not inserted:
+    if (discoveryResult.status != UsbDiscoveryStatus.success ||
+        discoveryResult.path == null ||
+        discoveryResult.path!.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(LucideIcons.usb, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  discoveryResult.errorMessage ?? 'تعذر العثور على المفاتيح',
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      AppSnackBar.show(
+        context,
+        title: 'تعذر العثور على فلاشة التوقيع',
+        message: discoveryResult.errorMessage ??
+            'لم يتم العثور على وحدة USB متصلة تحتوي على مفاتيح التوقيع الرقمي الخاصة بحسابك.',
+        isError: true,
+        icon: LucideIcons.usb,
       );
-      return; // Added early return since manual fallback is disabled
+      return;
     }
+
+    // 3. If session PIN is missing:
+    if (sessionPin == null || sessionPin.isEmpty) {
+      if (!mounted) return;
+      AppSnackBar.show(
+        context,
+        title: 'جلسة التوقيع غير مفعلة',
+        message:
+            'رمز PIN الخاص بجلسة التوقيع غير متوفر أو انتهت صلاحيته. يرجى تفعيل جلسة التوقيع أولاً.',
+        isError: true,
+        icon: LucideIcons.keyRound,
+      );
+      return;
+    }
+
+
 
     /*
     // Manual Signature Dialog Fallback:
@@ -436,8 +460,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
   void _handleActionSuccess(
       BuildContext context, TransactionDetailsActionSuccess state) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(state.message), backgroundColor: AppColors.forest),
+    AppSnackBar.show(
+      context,
+      title: 'تمت العملية بنجاح',
+      message: state.message,
+      isError: false,
     );
     if (state.shouldReloadList) {
       if (getIt.isRegistered<MyTransactionsBloc>()) {
@@ -505,22 +532,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
     if (!isValid) {
       setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(LucideIcons.alertCircle, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                    'يرجى تعبئة جميع الحقول المطلوبة والمحددة باللون الأحمر.',
-                    style: TextStyle(fontFamily: 'Cairo')),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.umber,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppSnackBar.show(
+        context,
+        title: 'حقول مطلوبة',
+        message: 'يرجى تعبئة جميع الحقول المطلوبة والمحددة باللون الأحمر.',
+        isError: true,
       );
     }
     return isValid;
@@ -539,15 +555,17 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 getIt<MyTransactionsBloc>().add(const LoadMyTransactions());
               }
             } else if (state is TransactionDetailsFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: AppColors.umber),
+              AppSnackBar.show(
+                context,
+                title: 'فشل العملية',
+                message: state.message,
+                isError: true,
               );
             } else if (state is TransactionDetailsActionSuccess) {
               _handleActionSuccess(context, state);
             }
           },
+
           builder: (context, state) {
             if (state is TransactionSignedSuccess) {
               return TransactionSignedSuccessWidget(
@@ -870,21 +888,26 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   const SizedBox(height: 20),
                 ],
                 if (currentStageWidgets.isNotEmpty) ...[
-                  AbsorbPointer(
-                    absorbing: !(isLocked && lockedByMe),
-                    child: TransactionFormWidget(
-                      widgets: currentStageWidgets,
-                      formName: formName,
-                      formValues: _formValues,
-                      formErrors: _formErrors,
-                      onChanged: (id, value) {
-                        setState(() {
+                  GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: !(isLocked && lockedByMe)
+                        ? _showPickupRequiredNotice
+                        : null,
+                    child: AbsorbPointer(
+                      absorbing: !(isLocked && lockedByMe),
+                      child: TransactionFormWidget(
+                        widgets: currentStageWidgets,
+                        formName: formName,
+                        formValues: _formValues,
+                        formErrors: _formErrors,
+                        onChanged: (id, value) {
                           _formValues[id] = value;
-                          if (_formErrors.contains(id)) {
+                          setState(() {
                             _formErrors.remove(id);
-                          }
-                        });
-                      },
+                          });
+                        },
+
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -892,21 +915,27 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 if (status != 'منجزة' &&
                     status != 'تم الرفض' &&
                     _checkIsAssignment(data, currentStage, config)) ...[
-                  TaskAssignmentCard(
-                    isEnabled: isLocked && lockedByMe,
-                    errorText: _assignmentError,
-                    initialDepartmentId: _assignmentDepartmentId,
-                    initialRoleId: _assignmentRoleId,
-                    onAssignmentChanged: (orgId, deptId, roleId) {
-                      setState(() {
-                        _assignmentOrgId = orgId;
-                        _assignmentDepartmentId = deptId;
-                        _assignmentRoleId = roleId;
-                        if (deptId != null && roleId != null) {
-                          _assignmentError = null;
-                        }
-                      });
-                    },
+                  GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: !(isLocked && lockedByMe)
+                        ? _showPickupRequiredNotice
+                        : null,
+                    child: TaskAssignmentCard(
+                      isEnabled: isLocked && lockedByMe,
+                      errorText: _assignmentError,
+                      initialDepartmentId: _assignmentDepartmentId,
+                      initialRoleId: _assignmentRoleId,
+                      onAssignmentChanged: (orgId, deptId, roleId) {
+                        setState(() {
+                          _assignmentOrgId = orgId;
+                          _assignmentDepartmentId = deptId;
+                          _assignmentRoleId = roleId;
+                          if (deptId != null && roleId != null) {
+                            _assignmentError = null;
+                          }
+                        });
+                      },
+                    ),
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -938,60 +967,67 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: TemplateFormCard(
-                        templateName: templateName,
-                        templateFilePath: templateFilePath,
-                        isReadOnly: !(isLocked && lockedByMe),
-                        onDownload: templateFilePath != null &&
-                                templateFilePath.isNotEmpty
-                            ? () => _downloadFile(templateFilePath,
-                                templateFilePath.split('/').last,
-                                documentType: 'قالب - $templateName')
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: !(isLocked && lockedByMe)
+                            ? _showPickupRequiredNotice
                             : null,
-                        onView: templateFilePath != null &&
-                                templateFilePath.isNotEmpty
-                            ? () {
-                                final fullUrl = _buildFileUrl(templateFilePath);
-                                final ext = AppFileDownloader.extractExtension(
-                                  templateFilePath,
-                                  fallbackExtension: templateName,
-                                );
-                                final isImage = [
-                                  'jpg',
-                                  'jpeg',
-                                  'png',
-                                  'gif',
-                                  'bmp',
-                                  'webp'
-                                ].contains(ext);
-                                if (isImage) {
-                                  context.push('/image-viewer', extra: {
-                                    'fileUrl': fullUrl,
-                                    'title': templateName,
-                                  });
-                                } else {
-                                  context.push('/pdf-viewer', extra: {
-                                    'fileUrl': fullUrl,
-                                    'title': templateName,
-                                  });
+                        child: TemplateFormCard(
+                          templateName: templateName,
+                          templateFilePath: templateFilePath,
+                          isReadOnly: !(isLocked && lockedByMe),
+                          onDownload: templateFilePath != null &&
+                                  templateFilePath.isNotEmpty
+                              ? () => _downloadFile(templateFilePath,
+                                  templateFilePath.split('/').last,
+                                  documentType: 'قالب - $templateName')
+                              : null,
+                          onView: templateFilePath != null &&
+                                  templateFilePath.isNotEmpty
+                              ? () {
+                                  final fullUrl = _buildFileUrl(templateFilePath);
+                                  final ext = AppFileDownloader.extractExtension(
+                                    templateFilePath,
+                                    fallbackExtension: templateName,
+                                  );
+                                  final isImage = [
+                                    'jpg',
+                                    'jpeg',
+                                    'png',
+                                    'gif',
+                                    'bmp',
+                                    'webp'
+                                  ].contains(ext);
+                                  if (isImage) {
+                                    context.push('/image-viewer', extra: {
+                                      'fileUrl': fullUrl,
+                                      'title': templateName,
+                                    });
+                                  } else {
+                                    context.push('/pdf-viewer', extra: {
+                                      'fileUrl': fullUrl,
+                                      'title': templateName,
+                                    });
+                                  }
                                 }
-                              }
-                            : null,
-                        widgets: templateWidgets,
-                        formValues: loadedState!.templateFormValues,
-                        formErrors: _formErrors,
-                        onChanged: (id, value) {
-                          _bloc.add(UpdateTemplateFormValue(id, value));
-                          if (_formErrors.contains(id)) {
-                            setState(() {
-                              _formErrors.remove(id);
-                            });
-                          }
-                        },
+                              : null,
+                          widgets: templateWidgets,
+                          formValues: loadedState!.templateFormValues,
+                          formErrors: _formErrors,
+                          onChanged: (id, value) {
+                            _bloc.add(UpdateTemplateFormValue(id, value));
+                            if (_formErrors.contains(id)) {
+                              setState(() {
+                                _formErrors.remove(id);
+                              });
+                            }
+                          },
+                        ),
                       ),
                     );
                   }),
                 ],
+
               ],
             ];
 

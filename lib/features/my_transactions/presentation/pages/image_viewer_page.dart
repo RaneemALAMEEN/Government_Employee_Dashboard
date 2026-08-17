@@ -10,6 +10,8 @@ import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/utils/app_file_downloader.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
+
 
 class ImageViewerPage extends StatefulWidget {
   final String fileUrl;
@@ -194,22 +196,23 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
       await file.writeAsBytes(_imageBytes!);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم تحميل الصورة بنجاح\n$savePath'),
-          backgroundColor: AppColors.forest,
-        ),
+      AppSnackBar.show(
+        context,
+        title: 'تم التحميل بنجاح',
+        message: 'تم حفظ الصورة بنجاح في:\n$savePath',
+        isError: false,
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تعذر تحميل الصورة'),
-          backgroundColor: Colors.red,
-        ),
+      AppSnackBar.show(
+        context,
+        title: 'فشل التحميل',
+        message: 'تعذر تحميل الصورة وحفظها على الجهاز',
+        isError: true,
       );
     }
   }
+
 
   void _retry() {
     setState(() {

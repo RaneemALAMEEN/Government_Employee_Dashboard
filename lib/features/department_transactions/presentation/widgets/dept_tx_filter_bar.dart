@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../domain/entities/accessible_department_entity.dart';
 
 class DeptTxFilterBar extends StatefulWidget {
   final String activeStatusFilter;
@@ -12,6 +13,9 @@ class DeptTxFilterBar extends StatefulWidget {
   final ValueChanged<String> onStatusFilterChanged;
   final Function(String?, String?) onDateRangeChanged;
   final ValueChanged<String> onSearchChanged;
+  final List<AccessibleDepartmentEntity> accessibleDepartments;
+  final int? selectedDepartmentId;
+  final Function(int departmentId, String departmentName)? onDepartmentChanged;
 
   const DeptTxFilterBar({
     super.key,
@@ -22,6 +26,9 @@ class DeptTxFilterBar extends StatefulWidget {
     required this.onStatusFilterChanged,
     required this.onDateRangeChanged,
     required this.onSearchChanged,
+    this.accessibleDepartments = const [],
+    this.selectedDepartmentId,
+    this.onDepartmentChanged,
   });
 
   @override
@@ -40,8 +47,12 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
   @override
   void didUpdateWidget(covariant DeptTxFilterBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.searchQuery != _searchController.text) {
+    if (widget.searchQuery != oldWidget.searchQuery &&
+        widget.searchQuery != _searchController.text) {
       _searchController.text = widget.searchQuery;
+      _searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _searchController.text.length),
+      );
     }
   }
 
@@ -190,10 +201,72 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
           }).toList(),
         );
 
+        // Department dropdown — يظهر فقط إذا كان هناك أكثر من دائرة
+        Widget? departmentDropdown;
+        if (widget.accessibleDepartments.length > 1) {
+          departmentDropdown = Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: widget.selectedDepartmentId,
+                isDense: true,
+                icon: const Icon(LucideIcons.chevronDown, size: 16, color: AppColors.forest),
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: AppTextStyles.medium,
+                  color: AppColors.charcoalDark,
+                ),
+                hint: Text(
+                  'اختر الدائرة',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.charcoal.withOpacity(0.6),
+                  ),
+                ),
+                items: widget.accessibleDepartments.map((dept) {
+                  return DropdownMenuItem<int>(
+                    value: dept.id,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.building2, size: 14, color: AppColors.forest),
+                        const SizedBox(width: 8),
+                        Text(
+                          dept.name,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: dept.id == widget.selectedDepartmentId
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: AppColors.charcoalDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null && widget.onDepartmentChanged != null) {
+                    final dept = widget.accessibleDepartments.firstWhere((d) => d.id == value);
+                    widget.onDepartmentChanged!(dept.id, dept.name);
+                  }
+                },
+              ),
+            ),
+          );
+        }
+
         if (isNarrow) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (departmentDropdown != null) ...[
+                departmentDropdown,
+                const SizedBox(height: 12),
+              ],
               searchBox,
               const SizedBox(height: 12),
               Row(
@@ -211,15 +284,29 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
           );
         }
 
-        return Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            searchBox,
-            const SizedBox(width: 12),
-            datePickerButton,
-            const Spacer(),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: statusChips,
+            if (departmentDropdown != null) ...[
+              Row(
+                children: [
+                  departmentDropdown,
+                  const Spacer(),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            Row(
+              children: [
+                searchBox,
+                const SizedBox(width: 12),
+                datePickerButton,
+                const Spacer(),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: statusChips,
+                ),
+              ],
             ),
           ],
         );

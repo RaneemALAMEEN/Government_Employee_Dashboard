@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -16,6 +15,8 @@ import '../../../../shared/utils/app_file_downloader.dart';
 import '../../../../shared/utils/app_file_url.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
+
 import '../../domain/entities/internal_transaction_first_stage_entity.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_event.dart';
@@ -30,34 +31,120 @@ class InternalTransactionFirstStagePage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Directionality(
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.goldLight,
+      child: BlocBuilder<InternalTransactionFirstStageBloc,
+          InternalTransactionFirstStageState>(
+        builder: (context, state) {
+          if (state.loading) {
+            return const _LoadingSkeleton();
+          }
+
+          if (state.errorMessage != null) {
+            return AppErrorWidget(
+              title: 'تعذر تحميل تفاصيل المعاملة',
+              message: 'حدث خطأ أثناء جلب البيانات، حاول مرة أخرى',
+              onRetry: () => context
+                  .read<InternalTransactionFirstStageBloc>()
+                  .add(LoadInternalTransactionFirstStage(transactionId)),
+            );
+          }
+
+          final details = state.details;
+          if (details == null) {
+            return const Center(child: Text('لا توجد بيانات'));
+          }
+
+          return _DetailsContent(details: details);
+        },
+      ),
+    );
+  }
+}
+
+class _LoadingSkeleton extends StatelessWidget {
+  const _LoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width > 950;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 32, 32, 36),
+      child: Directionality(
         textDirection: TextDirection.rtl,
-        child: ColoredBox(
-          color: AppColors.background,
-          child: BlocBuilder<InternalTransactionFirstStageBloc,
-              InternalTransactionFirstStageState>(
-            builder: (context, state) {
-              if (state.loading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                );
-              }
-              if (state.errorMessage != null) {
-                return AppErrorWidget(
-                  title: 'تعذر تحميل تفاصيل المعاملة',
-                  message: 'حدث خطأ أثناء جلب البيانات، حاول مرة أخرى',
-                  onRetry: () => context
-                      .read<InternalTransactionFirstStageBloc>()
-                      .add(LoadInternalTransactionFirstStage(transactionId)),
-                );
-              }
-              final details = state.details;
-              if (details == null) return const _EmptyState();
-              return _DetailsContent(details: details);
-            },
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/internal-transactions');
+                }
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    LucideIcons.arrowRight,
+                    color: AppColors.charcoal,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'العودة للمعاملات',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: AppTextStyles.medium,
+                      color: AppColors.charcoal.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const CustomSkeletonLoader(width: double.infinity, height: 110),
+            const SizedBox(height: 24),
+            if (isWide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      children: const [
+                        CustomSkeletonLoader(
+                            width: double.infinity, height: 140),
+                        SizedBox(height: 20),
+                        CustomSkeletonLoader(
+                            width: double.infinity, height: 260),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  const Expanded(
+                    flex: 3,
+                    child: CustomSkeletonLoader(
+                        width: double.infinity, height: 420),
+                  ),
+                ],
+              )
+            else
+              Column(
+                children: const [
+                  CustomSkeletonLoader(width: double.infinity, height: 140),
+                  SizedBox(height: 20),
+                  CustomSkeletonLoader(width: double.infinity, height: 260),
+                  SizedBox(height: 20),
+                  CustomSkeletonLoader(width: double.infinity, height: 420),
+                ],
+              ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _DetailsContent extends StatelessWidget {
@@ -86,262 +173,892 @@ class _DetailsContent extends StatelessWidget {
         .where((template) => template.generatedPdfPath.trim().isNotEmpty)
         .toList(growable: false);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 22, 28, 36),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final isWide = MediaQuery.of(context).size.width > 950;
+
+    final rightContentList = <Widget>[
+      _TransactionInfoCard(details: details),
+      const SizedBox(height: 20),
+      if (content.rejectionReason.trim().isNotEmpty) ...[
+        _RejectionReasonCard(reason: content.rejectionReason.trim()),
+        const SizedBox(height: 20),
+      ],
+      if (content.note.trim().isNotEmpty) ...[
+        _NoteCard(note: content.note.trim()),
+        const SizedBox(height: 20),
+      ],
+      if (generatedDocuments.isNotEmpty) ...[
+        ...generatedDocuments.asMap().entries.map((entry) {
+          final index = entry.key;
+          final template = entry.value;
+          final title = generatedDocuments.length > 1
+              ? 'الوثيقة الرسمية (النموذج المولد ${index + 1})'
+              : 'الوثيقة الرسمية (النموذج المولد)';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: _FinalDocumentCard(
+              title: title,
+              filePath: template.generatedPdfPath,
+            ),
+          );
+        }),
+      ],
+      if (textWidgets.isNotEmpty) ...[
+        _DataSectionCard(
+          title: content.formName.trim().isNotEmpty
+              ? content.formName.trim()
+              : 'البيانات المدخلة',
+          widgets: textWidgets,
+        ),
+        const SizedBox(height: 20),
+      ],
+      if (templateValues.isNotEmpty) ...[
+        _TemplateValuesCard(values: templateValues),
+        const SizedBox(height: 20),
+      ],
+      if (fileWidgets.isNotEmpty) ...[
+        _FilesSectionCard(widgets: fileWidgets),
+        const SizedBox(height: 20),
+      ],
+    ];
+
+    final leftContent = _WorkflowTimelineCard(details: details);
+
+        return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(32, 32, 32, 36),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/internal-transactions');
+                }
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    LucideIcons.arrowRight,
+                    color: AppColors.charcoal,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'العودة للمعاملات',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: AppTextStyles.medium,
+                      color: AppColors.charcoal.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _HeaderWidget(
+              details: details,
+              stageName: stageName,
+            ),
+            const SizedBox(height: 24),
+
+            if (isWide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: rightContentList,
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    flex: 3,
+                    child: leftContent,
+                  ),
+                ],
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...rightContentList,
+                  const SizedBox(height: 20),
+                  leftContent,
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _HeaderWidget extends StatelessWidget {
+  final InternalTransactionFirstStageEntity details;
+  final String stageName;
+
+  const _HeaderWidget({
+    required this.details,
+    required this.stageName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final decision = details.content.decision.trim().toLowerCase();
+    Color badgeBg;
+    Color badgeFg;
+    String statusText;
+
+    if (decision == 'approve') {
+      badgeBg = AppColors.forestLight.withOpacity(0.12);
+      badgeFg = AppColors.forest;
+      statusText = 'تمت الموافقة';
+    } else if (decision == 'reject') {
+      badgeBg = AppColors.umber.withOpacity(0.08);
+      badgeFg = AppColors.umber;
+      statusText = 'تم الرفض';
+    } else if (decision == 'submit') {
+      badgeBg = Colors.blue.shade50;
+      badgeFg = Colors.blue.shade700;
+      statusText = 'منجزة';
+    } else if (decision == 'return') {
+      badgeBg = Colors.orange.shade50;
+      badgeFg = Colors.orange.shade700;
+      statusText = 'أعيدت للتعديل';
+    } else {
+      badgeBg = AppColors.forestLight.withOpacity(0.12);
+      badgeFg = AppColors.forest;
+      statusText = 'منجزة';
+    }
+
+    return FadeInDown(
+      duration: const Duration(milliseconds: 300),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            textDirection: TextDirection.rtl,
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => context.go('/internal-transactions'),
-                  icon: const Icon(LucideIcons.arrowRight, size: 18),
-                  label: const Text('العودة للمعاملات'),
+              Text(
+                stageName,
+                style: AppTextStyles.headlineLarge.copyWith(
+                  fontSize: 26,
+                  fontWeight: AppTextStyles.semiBold,
+                  color: AppColors.forest,
                 ),
               ),
-              const SizedBox(height: 8),
-              FadeInDown(
-                duration: const Duration(milliseconds: 300),
-                child: _Header(
-                  details: details,
-                  stageName: stageName,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  statusText,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: AppTextStyles.medium,
+                    color: badgeFg,
+                  ),
                 ),
               ),
-              const SizedBox(height: 18),
-              FadeInUp(
-                duration: const Duration(milliseconds: 280),
-                delay: const Duration(milliseconds: 50),
-                child: _StageSummary(
-                  details: details,
-                  fieldCount: content.widgets.length,
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '#${details.transactionId}',
+            style: AppTextStyles.labelLarge.copyWith(
+              fontWeight: AppTextStyles.medium,
+              color: AppColors.charcoal.withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionInfoCard extends StatelessWidget {
+  final InternalTransactionFirstStageEntity details;
+
+  const _TransactionInfoCard({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final content = details.content;
+    final decision = content.decision.trim().toLowerCase();
+
+    Color statusColor;
+    IconData statusIcon;
+    String statusLabel;
+
+    if (decision == 'approve' || decision == 'submit') {
+      statusColor = AppColors.forest;
+      statusIcon = LucideIcons.circleCheck;
+      statusLabel = decision == 'approve' ? 'تمت الموافقة' : 'منجزة';
+    } else if (decision == 'reject') {
+      statusColor = AppColors.error;
+      statusIcon = LucideIcons.circleX;
+      statusLabel = 'تم الرفض';
+    } else if (decision == 'return') {
+      statusColor = Colors.orange.shade700;
+      statusIcon = LucideIcons.rotateCcw;
+      statusLabel = 'أعيدت للتعديل';
+    } else {
+      statusColor = AppColors.forest;
+      statusIcon = LucideIcons.circleCheck;
+      statusLabel = 'منجزة';
+    }
+
+    final infoItems = <_InfoItem>[
+      _InfoItem(
+        icon: LucideIcons.hash,
+        label: 'رقم المعاملة',
+        value: '#${details.transactionId}',
+        color: AppColors.forest,
+      ),
+      _InfoItem(
+        icon: LucideIcons.calendarCheck,
+        label: 'تاريخ الإنجاز',
+        value: _formatDate(content.completedAt),
+        color: Colors.blue.shade600,
+      ),
+      _InfoItem(
+        icon: LucideIcons.workflow,
+        label: 'المرحلة',
+        value: _stageName(details),
+        color: AppColors.charcoalDark,
+      ),
+      _InfoItem(
+        icon: statusIcon,
+        label: 'الحالة',
+        value: statusLabel,
+        color: statusColor,
+      ),
+    ];
+
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    LucideIcons.clipboardList,
+                    color: AppColors.forest,
+                    size: 20,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              FadeInUp(
-                duration: const Duration(milliseconds: 280),
-                delay: const Duration(milliseconds: 90),
-                child: _DataSection(widgets: textWidgets),
-              ),
-              const SizedBox(height: 16),
-              FadeInUp(
-                duration: const Duration(milliseconds: 280),
-                delay: const Duration(milliseconds: 130),
-                child: _FilesSection(widgets: fileWidgets),
-              ),
-              if (templateValues.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                FadeInUp(
-                  duration: const Duration(milliseconds: 280),
-                  delay: const Duration(milliseconds: 170),
-                  child: _TemplateValuesSection(values: templateValues),
-                ),
-              ],
-              if (generatedDocuments.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                FadeInUp(
-                  duration: const Duration(milliseconds: 280),
-                  delay: const Duration(milliseconds: 210),
-                  child: _GeneratedDocumentsSection(
-                    templates: generatedDocuments,
+                const SizedBox(width: 12),
+                Text(
+                  'معلومات المعاملة',
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    fontWeight: AppTextStyles.semiBold,
+                    color: AppColors.charcoalDark,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = 16.0;
+                final isTwoCol = constraints.maxWidth >= 450;
+                final itemWidth = isTwoCol
+                    ? (constraints.maxWidth - gap) / 2
+                    : constraints.maxWidth;
+
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: 16,
+                  children: infoItems.map((item) {
+                    return SizedBox(
+                      width: itemWidth,
+                      child: _buildInfoRow(item),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(_InfoItem item) {
+    return Row(
+      textDirection: TextDirection.rtl,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(item.icon, size: 16, color: item.color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            textDirection: TextDirection.rtl,
+            children: [
+              Text(
+                item.label,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.charcoal.withValues(alpha: 0.55),
+                  fontWeight: AppTextStyles.medium,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                item.value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: AppTextStyles.semiBold,
+                  color: AppColors.charcoalDark,
+                ),
+              ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoItem {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+}
+
+class _RejectionReasonCard extends StatelessWidget {
+  final String reason;
+
+  const _RejectionReasonCard({required this.reason});
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          textDirection: TextDirection.rtl,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                LucideIcons.messageCircleX,
+                color: Colors.red.shade700,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'سبب الرفض',
+                    textDirection: TextDirection.rtl,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: AppTextStyles.bold,
+                      color: Colors.red.shade800,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    reason,
+                    textDirection: TextDirection.rtl,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.red.shade700,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Header extends StatelessWidget {
-  final InternalTransactionFirstStageEntity details;
-  final String stageName;
+class _NoteCard extends StatelessWidget {
+  final String note;
 
-  const _Header({required this.details, required this.stageName});
-
-  @override
-  Widget build(BuildContext context) {
-    final content = details.content;
-    final decision = _decisionLabel(content.decision);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.lightPrimary.withValues(alpha: .55),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: .14)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.lightPrimary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  LucideIcons.fileSearch,
-                  color: AppColors.primary,
-                  size: 23,
-                ),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'تفاصيل المعاملة',
-                      style: AppTextStyles.displayMedium.copyWith(
-                        fontSize: 29,
-                        color: AppColors.textPrimary,
-                        fontWeight: AppTextStyles.black,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      stageName,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 13),
-          Wrap(
-            spacing: 9,
-            runSpacing: 9,
-            children: [
-              _Chip(
-                icon: LucideIcons.hash,
-                text: 'رقم المعاملة: ${details.transactionId}',
-              ),
-              _Chip(
-                icon: LucideIcons.calendarDays,
-                text: 'تاريخ التقديم: ${_formatDate(content.completedAt)}',
-              ),
-              _Chip(
-                icon: LucideIcons.circleCheck,
-                text: 'الحالة: $decision',
-                emphasized: true,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StageSummary extends StatelessWidget {
-  final InternalTransactionFirstStageEntity details;
-  final int fieldCount;
-
-  const _StageSummary({required this.details, required this.fieldCount});
+  const _NoteCard({required this.note});
 
   @override
   Widget build(BuildContext context) {
-    final content = details.content;
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Wrap(
-            spacing: 0,
-            runSpacing: 12,
-            children: [
-              const _SummaryItem(
-                icon: LucideIcons.circleCheck,
-                label: 'الحالة',
-                value: 'مكتملة',
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.forestLight.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.forest.withOpacity(0.2)),
+        ),
+        child: Row(
+          textDirection: TextDirection.rtl,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.forestLight.withOpacity(0.15),
+                shape: BoxShape.circle,
               ),
-              _SummaryItem(
-                icon: LucideIcons.calendarCheck,
-                label: 'تاريخ الإكمال',
-                value: _formatDate(content.completedAt),
+              child: const Icon(
+                LucideIcons.messageSquareText,
+                color: AppColors.forest,
+                size: 20,
               ),
-              _SummaryItem(
-                icon: LucideIcons.listChecks,
-                label: 'عدد الحقول',
-                value: '$fieldCount',
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ملاحظات المعاملة',
+                    textDirection: TextDirection.rtl,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: AppTextStyles.bold,
+                      color: AppColors.forest,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    note,
+                    textDirection: TextDirection.rtl,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.charcoalDark,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          if (content.note.trim().isNotEmpty ||
-              content.rejectionReason.trim().isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Divider(color: AppColors.border.withValues(alpha: .35)),
-            if (content.note.trim().isNotEmpty)
-              _InlineMessage(
-                label: 'ملاحظات',
-                value: content.note.trim(),
-              ),
-            if (content.rejectionReason.trim().isNotEmpty)
-              _InlineMessage(
-                label: 'سبب الرفض',
-                value: content.rejectionReason.trim(),
-                color: AppColors.error,
-              ),
+            ),
           ],
-        ],
+        ),
       ),
     );
   }
 }
 
-class _DataSection extends StatelessWidget {
-  final List<FirstStageWidgetEntity> widgets;
+class _FinalDocumentCard extends StatelessWidget {
+  final String title;
+  final String filePath;
 
-  const _DataSection({required this.widgets});
+  const _FinalDocumentCard({
+    required this.title,
+    required this.filePath,
+  });
+
+  Future<void> _downloadFile(BuildContext context) async {
+    try {
+      final absoluteUrl = buildAbsoluteFileUrl(filePath);
+      if (absoluteUrl.isEmpty) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('جاري تحميل الوثيقة...')),
+      );
+
+      final dio = getIt<Dio>();
+      final response = await dio.get<List<int>>(
+        absoluteUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {'Accept': '*/*'},
+        ),
+      );
+
+      final bytes =
+          response.data != null ? Uint8List.fromList(response.data!) : null;
+
+      if (response.statusCode != 200 || bytes == null || bytes.isEmpty) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+        );
+      }
+
+      final contentType = response.headers.value('content-type');
+      final savePath = await AppFileDownloader.getSavePath(
+        documentType: title,
+        originalFilename: title,
+        contentType: contentType,
+        bytes: bytes,
+        fallbackExtension: 'pdf',
+      );
+
+      final file = File(savePath);
+      await file.writeAsBytes(bytes);
+
+      if (context.mounted) {
+        AppSnackBar.show(
+          context,
+          title: 'تم التحميل بنجاح',
+          message: 'تم حفظ الوثيقة بنجاح في:\n$savePath',
+          isError: false,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppSnackBar.show(
+          context,
+          title: 'فشل التحميل',
+          message: 'تعذر تحميل الوثيقة وحفظها على الجهاز',
+          isError: true,
+        );
+      }
+    }
+  }
+
 
   @override
-  Widget build(BuildContext context) => _Section(
-        title: 'البيانات المدخلة',
-        icon: LucideIcons.listChecks,
-        child: widgets.isEmpty
-            ? const _Placeholder('لا توجد بيانات مدخلة لهذه المرحلة')
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  const gap = 12.0;
-                  final twoColumns = constraints.maxWidth >= 680;
-                  final width = twoColumns
-                      ? (constraints.maxWidth - gap) / 2
-                      : constraints.maxWidth;
-                  return Wrap(
-                    spacing: gap,
-                    runSpacing: gap,
-                    children: widgets
-                        .map(
-                          (item) => SizedBox(
-                            width: width,
-                            child: _ReadOnlyField(
-                              label: _readableLabel(item.label),
-                              value: _formatValue(item.value),
-                            ),
-                          ),
-                        )
-                        .toList(growable: false),
-                  );
-                },
+  Widget build(BuildContext context) {
+    final absoluteUrl = buildAbsoluteFileUrl(filePath);
+
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forestLight.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    LucideIcons.fileCheck,
+                    color: AppColors.forest,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: AppTextStyles.bold,
+                    color: AppColors.forest,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'تم إصدار الوثيقة الرسمية للمعاملة بنجاح. يمكنك عرضها وتحميلها أدناه.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.charcoal,
               ),
-      );
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        if (absoluteUrl.isNotEmpty) {
+                          context.push('/pdf-viewer', extra: {
+                            'fileUrl': absoluteUrl,
+                            'title': title,
+                            'readOnly': true,
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Ink(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.gold,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(LucideIcons.eye,
+                                color: AppColors.charcoal, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'عرض الوثيقة',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.charcoal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _downloadFile(context),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Ink(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.forest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(LucideIcons.download,
+                                color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'تحميل الوثيقة',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _FilesSection extends StatelessWidget {
+class _DataSectionCard extends StatelessWidget {
+  final String title;
   final List<FirstStageWidgetEntity> widgets;
 
-  const _FilesSection({required this.widgets});
+  const _DataSectionCard({
+    required this.title,
+    required this.widgets,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    LucideIcons.listChecks,
+                    color: AppColors.forest,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoalDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = 12.0;
+                final twoColumns = constraints.maxWidth >= 600;
+                final width = twoColumns
+                    ? (constraints.maxWidth - gap) / 2
+                    : constraints.maxWidth;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: widgets
+                      .map(
+                        (item) => SizedBox(
+                          width: width,
+                          child: _ReadOnlyField(
+                            label: _readableLabel(item.label),
+                            value: _formatValue(item.value),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TemplateValuesCard extends StatelessWidget {
+  final List<MapEntry<String, dynamic>> values;
+
+  const _TemplateValuesCard({required this.values});
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    LucideIcons.fileCheck2,
+                    color: AppColors.forest,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'بيانات النموذج الرسمي',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoalDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = 12.0;
+                final twoColumns = constraints.maxWidth >= 600;
+                final width = twoColumns
+                    ? (constraints.maxWidth - gap) / 2
+                    : constraints.maxWidth;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: values
+                      .map(
+                        (entry) => SizedBox(
+                          width: width,
+                          child: _ReadOnlyField(
+                            label: _templateLabel(entry.key),
+                            value: _formatValue(entry.value),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilesSectionCard extends StatelessWidget {
+  final List<FirstStageWidgetEntity> widgets;
+
+  const _FilesSectionCard({required this.widgets});
 
   @override
   Widget build(BuildContext context) {
@@ -359,13 +1076,51 @@ class _FilesSection extends StatelessWidget {
         ));
       }
     }
-    return _Section(
-      title: 'الملفات المرفقة',
-      icon: LucideIcons.paperclip,
-      child: files.isEmpty
-          ? const _Placeholder('لا توجد ملفات مرفقة')
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+
+    if (files.isEmpty) return const SizedBox.shrink();
+
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    LucideIcons.paperclip,
+                    color: AppColors.forest,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'الملفات المرفقة',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoalDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: files
                   .map(
                     (file) => Padding(
@@ -375,73 +1130,11 @@ class _FilesSection extends StatelessWidget {
                   )
                   .toList(growable: false),
             ),
+          ],
+        ),
+      ),
     );
   }
-}
-
-class _TemplateValuesSection extends StatelessWidget {
-  final List<MapEntry<String, dynamic>> values;
-
-  const _TemplateValuesSection({required this.values});
-
-  @override
-  Widget build(BuildContext context) => _Section(
-        title: 'بيانات النموذج الرسمي',
-        icon: LucideIcons.fileCheck2,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            const gap = 12.0;
-            final twoColumns = constraints.maxWidth >= 680;
-            final width = twoColumns
-                ? (constraints.maxWidth - gap) / 2
-                : constraints.maxWidth;
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: values
-                  .map(
-                    (entry) => SizedBox(
-                      width: width,
-                      child: _ReadOnlyField(
-                        label: _templateLabel(entry.key),
-                        value: _formatValue(entry.value),
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
-            );
-          },
-        ),
-      );
-}
-
-class _GeneratedDocumentsSection extends StatelessWidget {
-  final List<FirstStageTemplateEntity> templates;
-
-  const _GeneratedDocumentsSection({required this.templates});
-
-  @override
-  Widget build(BuildContext context) => _Section(
-        title: 'النماذج المولدة',
-        icon: LucideIcons.files,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: templates
-              .map(
-                (template) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _FileCard(
-                    file: _DisplayFile(
-                      label: 'النموذج الرسمي للمعاملة',
-                      url: template.generatedPdfPath,
-                      mimeType: 'application/pdf',
-                    ),
-                  ),
-                ),
-              )
-              .toList(growable: false),
-        ),
-      );
 }
 
 class _DisplayFile {
@@ -471,7 +1164,6 @@ class _FileCard extends StatefulWidget {
 
 class _FileCardState extends State<_FileCard> {
   bool _hovered = false;
-  bool _externalHovered = false;
   bool _downloading = false;
 
   String get _absoluteUrl => buildAbsoluteFileUrl(widget.file.url);
@@ -495,11 +1187,23 @@ class _FileCardState extends State<_FileCard> {
       final dio = getIt<Dio>();
       final response = await dio.get<List<int>>(
         _absoluteUrl,
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {'Accept': '*/*'},
+        ),
       );
 
       final bytes =
           response.data != null ? Uint8List.fromList(response.data!) : null;
+
+      if (response.statusCode != 200 || bytes == null || bytes.isEmpty) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+        );
+      }
+
       final contentType = response.headers.value('content-type');
 
       final savePath = await AppFileDownloader.getSavePath(
@@ -510,358 +1214,359 @@ class _FileCardState extends State<_FileCard> {
         fallbackExtension: widget.file.isPdf ? 'pdf' : null,
       );
 
-      if (bytes != null && bytes.isNotEmpty) {
-        final file = File(savePath);
-        await file.writeAsBytes(bytes);
-      } else {
-        await dio.download(_absoluteUrl, savePath);
-      }
+      final file = File(savePath);
+      await file.writeAsBytes(bytes);
 
       if (mounted) {
-        AppSnackBar.show(context, message: 'تم تحميل الملف بنجاح');
+        AppSnackBar.show(
+          context,
+          title: 'تم التحميل بنجاح',
+          message: 'تم حفظ الملف بنجاح في:\n$savePath',
+          isError: false,
+        );
       }
     } catch (error) {
       if (mounted) {
         AppSnackBar.show(
           context,
-          message: 'تعذر تحميل الملف',
+          title: 'فشل التحميل',
+          message: 'تعذر تحميل الملف وحفظه على الجهاز',
           isError: true,
         );
       }
     } finally {
+
       if (mounted) setState(() => _downloading = false);
     }
   }
 
-  Future<void> _openExternally() async {
-    if (_absoluteUrl.isEmpty) return;
-    final uri = Uri.tryParse(_absoluteUrl);
-    if (uri == null) return;
-    var opened = false;
-    try {
-      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // Some desktop platforms do not expose externalApplication directly.
-    }
-    if (!opened) {
-      try {
-        opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
-      } catch (_) {
-        opened = false;
-      }
-    }
-    if (!opened && mounted) {
-      AppSnackBar.show(
-        context,
-        message: 'تعذر فتح الملف خارج التطبيق',
-        isError: true,
-      );
-    }
-  }
-
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 620;
-          final identity = Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppColors.lightPrimary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  widget.file.isPdf ? LucideIcons.fileText : LucideIcons.image,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.file.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: AppTextStyles.semiBold,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      widget.file.isPdf ? 'PDF • ملف مرفق' : 'صورة • ملف مرفق',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-          final actions = Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _open,
-                icon: const Icon(LucideIcons.eye, size: 16),
-                label: const Text('عرض'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _downloading ? null : _download,
-                icon: _downloading
-                    ? const SizedBox(
-                        width: 15,
-                        height: 15,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(LucideIcons.download, size: 16),
-                label: const Text('تحميل'),
-              ),
-              Tooltip(
-                message: 'فتح خارج التطبيق',
-                child: MouseRegion(
-                  onEnter: (_) => setState(() => _externalHovered = true),
-                  onExit: (_) => setState(() => _externalHovered = false),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 140),
-                    decoration: BoxDecoration(
-                      color: _externalHovered
-                          ? AppColors.lightPrimary
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _externalHovered
-                            ? AppColors.primary.withValues(alpha: .3)
-                            : AppColors.border.withValues(alpha: .35),
-                      ),
-                    ),
-                    child: IconButton(
-                      onPressed: _openExternally,
-                      visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
-                      ),
-                      icon: Icon(
-                        Icons.launch_rounded,
-                        size: 19,
-                        color: _externalHovered
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-          return MouseRegion(
-            onEnter: (_) => setState(() => _hovered = true),
-            onExit: (_) => setState(() => _hovered = false),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              constraints: const BoxConstraints(minHeight: 86),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: _hovered
-                    ? AppColors.lightPrimary.withValues(alpha: .22)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(
-                  color: _hovered
-                      ? AppColors.primary.withValues(alpha: .28)
-                      : AppColors.border.withValues(alpha: .35),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.textPrimary.withValues(
-                      alpha: _hovered ? .05 : .018,
-                    ),
-                    blurRadius: _hovered ? 12 : 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: compact
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        identity,
-                        const SizedBox(height: 10),
-                        Align(alignment: Alignment.centerLeft, child: actions),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(child: identity),
-                        const SizedBox(width: 16),
-                        actions,
-                      ],
-                    ),
-            ),
-          );
-        },
-      );
-}
-
-class _Section extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  const _Section({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) => _Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: AppColors.primary, size: 21),
-                const SizedBox(width: 9),
-                Text(
-                  title,
-                  style: AppTextStyles.headlineSmall.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: AppTextStyles.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            child,
-          ],
-        ),
-      );
-}
-
-class _Card extends StatelessWidget {
-  final Widget child;
-
-  const _Card({required this.child});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(20),
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border.withValues(alpha: .4)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: .025),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          color: _hovered
+              ? AppColors.goldLight.withOpacity(0.5)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _hovered
+                ? AppColors.forest.withOpacity(0.3)
+                : AppColors.gold.withOpacity(0.2),
+          ),
         ),
-        child: child,
-      );
-}
-
-class _SummaryItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _SummaryItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 245,
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: AppColors.lightPrimary,
-                borderRadius: BorderRadius.circular(9),
+                color: widget.file.isPdf
+                    ? const Color(0xFFFDEEEF)
+                    : const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 17, color: AppColors.primary),
+              child: Icon(
+                widget.file.isPdf ? LucideIcons.fileText : LucideIcons.image,
+                color: widget.file.isPdf
+                    ? const Color(0xFFC62828)
+                    : const Color(0xFF1D4ED8),
+                size: 20,
+              ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    label,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: AppTextStyles.medium,
+                    widget.file.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.charcoalDark,
+                      fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    value,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: AppTextStyles.semiBold,
+                    widget.file.isPdf ? 'مستند PDF' : 'صورة مرفقة',
+                    style: TextStyle(
+                      color: AppColors.charcoal.withOpacity(0.55),
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            Container(
-              width: 1,
-              height: 34,
-              color: AppColors.border.withValues(alpha: .35),
+            const SizedBox(width: 12),
+            // View Action
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _open,
+                borderRadius: BorderRadius.circular(6),
+                child: Ink(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(LucideIcons.eye,
+                          size: 15, color: AppColors.charcoalDark),
+                      SizedBox(width: 6),
+                      Text(
+                        'عرض',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.charcoalDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 8),
+            // Download Action
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _downloading ? null : _download,
+                borderRadius: BorderRadius.circular(6),
+                child: Ink(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_downloading)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      else
+                        const Icon(LucideIcons.download,
+                            size: 15, color: Colors.white),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'تحميل',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
-      );
+      ),
+    );
+  }
 }
 
-class _InlineMessage extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? color;
+class _WorkflowTimelineCard extends StatelessWidget {
+  final InternalTransactionFirstStageEntity details;
 
-  const _InlineMessage({
-    required this.label,
-    required this.value,
-    this.color,
-  });
+  const _WorkflowTimelineCard({required this.details});
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: '$label: ',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: AppTextStyles.medium,
-                ),
-              ),
-              TextSpan(
-                text: value,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: color ?? AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) {
+    final content = details.content;
+    final stageName = _stageName(details);
+    final isRejected = content.decision.trim().toLowerCase() == 'reject';
+
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
         ),
-      );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(
+              child: Text(
+                'مسار سير العمل',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.forest,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Step 1: First Stage (Completed/Rejected)
+            Row(
+              textDirection: TextDirection.rtl,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isRejected
+                            ? Colors.red.shade100
+                            : AppColors.forestLight.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color:
+                              isRejected ? AppColors.error : AppColors.forest,
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        isRejected ? LucideIcons.x : LucideIcons.check,
+                        size: 16,
+                        color:
+                            isRejected ? AppColors.error : AppColors.forest,
+                      ),
+                    ),
+                    Container(
+                      width: 2,
+                      height: 54,
+                      color: const Color(0xFFE0E0E0),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      Text(
+                        stageName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.charcoalDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isRejected ? 'تم الرفض' : 'تم الإكمال والاعتماد',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              isRejected ? AppColors.error : AppColors.forest,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (content.completedAt.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatDate(content.completedAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.charcoal.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Step 2: Next entity / completion
+            Row(
+              textDirection: TextDirection.rtl,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: isRejected
+                        ? Colors.grey.shade100
+                        : AppColors.forestLight.withOpacity(0.18),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isRejected
+                          ? Colors.grey.shade400
+                          : AppColors.forest,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    isRejected
+                        ? LucideIcons.circleMinus
+                        : LucideIcons.circleCheck,
+                    size: 16,
+                    color: isRejected
+                        ? Colors.grey.shade500
+                        : AppColors.forest,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      const Text(
+                        'الجهة المختصة',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.charcoalDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isRejected
+                            ? 'معاملة متوقفة'
+                            : 'منجزة في سجل المعاملات',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isRejected
+                              ? Colors.grey.shade600
+                              : AppColors.forest,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ReadOnlyField extends StatefulWidget {
@@ -878,112 +1583,51 @@ class _ReadOnlyFieldState extends State<_ReadOnlyField> {
   bool _hovered = false;
 
   @override
-  Widget build(BuildContext context) => MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          constraints: const BoxConstraints(minHeight: 68),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: _hovered
-                ? AppColors.lightPrimary.withValues(alpha: .28)
-                : AppColors.background.withValues(alpha: .55),
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(
-              color: _hovered
-                  ? AppColors.primary.withValues(alpha: .22)
-                  : AppColors.border.withValues(alpha: .28),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.label,
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: AppTextStyles.medium,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.value,
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontSize: 16,
-                  color: AppColors.textPrimary,
-                  fontWeight: AppTextStyles.semiBold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-}
-
-class _Chip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final bool emphasized;
-
-  const _Chip({
-    required this.icon,
-    required this.text,
-    this.emphasized = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        constraints: const BoxConstraints(minHeight: 68),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: emphasized ? AppColors.lightPrimary : AppColors.background,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border.withValues(alpha: .4)),
+          color: _hovered
+              ? AppColors.goldLight.withOpacity(0.7)
+              : AppColors.goldLight.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _hovered
+                ? AppColors.forest.withOpacity(0.3)
+                : AppColors.gold.withOpacity(0.2),
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: AppColors.primary),
-            const SizedBox(width: 6),
             Text(
-              text,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight:
-                    emphasized ? AppTextStyles.bold : AppTextStyles.medium,
+              widget.label,
+              style: TextStyle(
+                color: AppColors.charcoal.withOpacity(0.6),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.charcoalDark,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-      );
-}
-
-class _Placeholder extends StatelessWidget {
-  final String text;
-
-  const _Placeholder(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      );
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) => const Center(
-        child: Text('لا توجد تفاصيل لهذه المعاملة'),
-      );
+      ),
+    );
+  }
 }
 
 const _templateLabels = <String, String>{
@@ -1000,21 +1644,6 @@ String _stageName(InternalTransactionFirstStageEntity details) {
   if (contentName.isNotEmpty) return contentName;
   final stageName = details.stageName.trim();
   return stageName.isEmpty ? 'المرحلة الأولى' : stageName;
-}
-
-String _decisionLabel(String decision) {
-  switch (decision.trim().toLowerCase()) {
-    case 'submit':
-      return 'تم تقديم الطلب';
-    case 'approve':
-      return 'تمت الموافقة';
-    case 'reject':
-      return 'تم الرفض';
-    case 'return':
-      return 'أعيدت للتعديل';
-    default:
-      return 'تم تنفيذ المرحلة';
-  }
 }
 
 String _formatDate(String raw) {
@@ -1049,8 +1678,16 @@ List<MapEntry<String, dynamic>> _additionalTemplateValues(
 ) {
   final result = <MapEntry<String, dynamic>>[];
   final seen = <String>{...enteredFingerprints};
+  const ignoredKeys = {
+    'generated_pdf_path',
+    'generated_pdf_url',
+    'id_document_instance',
+    'id_template',
+    'id_document_template',
+  };
   for (final template in templates) {
     for (final entry in template.value.entries) {
+      if (ignoredKeys.contains(entry.key.toLowerCase())) continue;
       if (_isEmptyValue(entry.value)) continue;
       final label = _templateLabel(entry.key);
       final fingerprint = _fingerprint(label, entry.value);
@@ -1086,10 +1723,4 @@ String _formatValue(dynamic value) {
   }
   final text = value.toString().trim();
   return text.isEmpty ? 'غير متوفر' : text;
-}
-
-String _fileExtension(String url) {
-  final path = Uri.tryParse(url)?.path ?? '';
-  final dot = path.lastIndexOf('.');
-  return dot < 0 ? '' : path.substring(dot);
 }

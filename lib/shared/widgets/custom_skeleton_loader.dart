@@ -22,19 +22,20 @@ class CustomSkeletonLoader extends StatelessWidget {
     return Padding(
       padding: margin ?? EdgeInsets.zero,
       child: Shimmer.fromColors(
-        baseColor: AppColors.gold.withValues(alpha: 0.28),
-        highlightColor: AppColors.white.withValues(alpha: 0.86),
+        baseColor: const Color(0xFFE8E4DA),
+        highlightColor: const Color(0xFFFFFFFF),
         child: Container(
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: AppColors.gold.withValues(alpha: 0.24),
+            color: const Color(0xFFE8E4DA),
             borderRadius: BorderRadius.circular(borderRadius),
           ),
         ),
       ),
     );
   }
+
 }
 
 /// ودجت جاهزة لعرض قائمة من العناصر الهيكلية (مثلاً لجدول أو قائمة معاملات)

@@ -333,12 +333,8 @@ class TransactionDetailsBloc
           message: msg,
           suggestions: suggestions,
         ));
-
-        // Auto-reload for version conflict
-        if (errorCode == 'VERSION_CONFLICT') {
-          add(LoadTransactionDetails(event.taskId));
-        }
       },
+
       (submitResponse) {
         if (submitResponse is Map<String, dynamic>) {
           final resData =
@@ -389,4 +385,21 @@ class TransactionDetailsBloc
       emit(currentState.copyWith(templateFormValues: newTemplateFormValues));
     }
   }
+
+  void emitSubmitError({
+    required String errorCode,
+    required String title,
+    required String message,
+    required List<String> suggestions,
+    String? taskId,
+  }) {
+    emit(TransactionSubmitError(
+      taskId: taskId ?? _currentNumericTransactionId ?? '',
+      errorCode: errorCode,
+      title: title,
+      message: message,
+      suggestions: suggestions,
+    ));
+  }
 }
+

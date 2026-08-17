@@ -13,9 +13,23 @@ class GetDepartmentTransactions {
     String? fromDate,
     String? toDate,
     String? cursor,
+    String? searchQuery,
     int limit = 6,
   }) async {
+    // إذا كان هناك نص بحث، نستخدم search APIs
+    final hasSearch = searchQuery != null && searchQuery.trim().isNotEmpty;
+
     if (status == 'منجزة') {
+      if (hasSearch && departmentIds != null) {
+        return await repository.searchCompletedTransactions(
+          departmentIds: departmentIds,
+          query: searchQuery,
+          fromDate: fromDate,
+          toDate: toDate,
+          cursor: cursor,
+          limit: limit,
+        );
+      }
       return await repository.getCompletedTransactions(
         departmentIds: departmentIds,
         fromDate: fromDate,
@@ -24,6 +38,16 @@ class GetDepartmentTransactions {
         limit: limit,
       );
     } else if (status == 'مرفوضة') {
+      if (hasSearch && departmentIds != null) {
+        return await repository.searchRejectedTransactions(
+          departmentIds: departmentIds,
+          query: searchQuery,
+          fromDate: fromDate,
+          toDate: toDate,
+          cursor: cursor,
+          limit: limit,
+        );
+      }
       return await repository.getRejectedTransactions(
         departmentIds: departmentIds,
         fromDate: fromDate,

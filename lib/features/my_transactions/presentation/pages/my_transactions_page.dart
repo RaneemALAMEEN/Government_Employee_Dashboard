@@ -134,22 +134,19 @@ class _MyTransactionsPageState extends State<MyTransactionsPage> {
                     FadeInUp(
                       duration: const Duration(milliseconds: 400),
                       delay: const Duration(milliseconds: 100),
-                      child: IgnorePointer(
-                        ignoring: state is MyTransactionsLoading || state is MyTransactionsInitial,
-                        child: MyTxFilterBar(
-                          activeFilter: statusFilter,
-                          searchQuery: searchQuery,
-                          onFilterChanged: (filter) {
-                            context
-                                .read<MyTransactionsBloc>()
-                                .add(FilterMyTransactions(filter));
-                          },
-                          onSearchChanged: (query) {
-                            context
-                                .read<MyTransactionsBloc>()
-                                .add(SearchMyTransactions(query));
-                          },
-                        ),
+                      child: MyTxFilterBar(
+                        activeFilter: statusFilter,
+                        searchQuery: searchQuery,
+                        onFilterChanged: (filter) {
+                          context
+                              .read<MyTransactionsBloc>()
+                              .add(FilterMyTransactions(filter));
+                        },
+                        onSearchChanged: (query) {
+                          context
+                              .read<MyTransactionsBloc>()
+                              .add(SearchMyTransactions(query));
+                        },
                       ),
                     ),
                     const SizedBox(height: gap),
@@ -198,6 +195,7 @@ class _MyTransactionsPageState extends State<MyTransactionsPage> {
                           activeFilter: state.statusFilter,
                           searchQuery: state.searchQuery,
                           isLoadingMore: state.isLoadingMore,
+                          isSearching: state.isSearching,
                           hasMore: state.hasMore,
                           onSign: (number) {
                             context

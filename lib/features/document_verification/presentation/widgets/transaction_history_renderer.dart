@@ -29,39 +29,56 @@ class _TransactionHistoryTimelineState
     final stages = widget.history.data.stages;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(24),
       decoration: _historyDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.rtl,
         children: [
           Row(
+            textDirection: TextDirection.rtl,
             children: [
-              const Icon(
-                LucideIcons.history,
-                color: AppColors.primary,
-                size: 20,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.forest.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  LucideIcons.history,
+                  color: AppColors.forest,
+                  size: 20,
+                ),
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  textDirection: TextDirection.rtl,
                   children: [
-                    const Text(
+                    Text(
                       'سجل مراحل المعاملة',
-                      style: AppTextStyles.titleMedium,
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        fontWeight: AppTextStyles.semiBold,
+                        color: AppColors.charcoalDark,
+                      ),
                     ),
-                    if (widget.history.processName.isNotEmpty)
+                    if (widget.history.processName.isNotEmpty) ...[
+                      const SizedBox(height: 2),
                       Text(
                         widget.history.processName,
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.goldDark,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: 16),
           if (stages.isEmpty)
             _HistoryEmptyState(
@@ -891,14 +908,15 @@ bool _isPdf(String url, String name, String type) {
 }
 
 BoxDecoration _historyDecoration() => BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(15),
-      border: Border.all(color: AppColors.border.withValues(alpha: .34)),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.gold.withOpacity(0.2)),
       boxShadow: [
         BoxShadow(
-          color: AppColors.textPrimary.withValues(alpha: .04),
-          blurRadius: 14,
-          offset: const Offset(0, 5),
+          color: Colors.black.withOpacity(0.02),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
       ],
     );
+

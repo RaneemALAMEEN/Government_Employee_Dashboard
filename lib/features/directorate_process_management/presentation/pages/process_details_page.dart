@@ -6,7 +6,9 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/utils/app_file_url.dart';
+import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../../internal_transactions/domain/entities/document_template_entity.dart';
+
 import '../../domain/entities/process_details_entity.dart';
 import '../bloc/process_details_bloc.dart';
 import '../bloc/process_details_event.dart';
@@ -1318,61 +1320,39 @@ class _MessageState extends StatelessWidget {
       );
 }
 
-class _DetailsSkeleton extends StatefulWidget {
+class _DetailsSkeleton extends StatelessWidget {
   const _DetailsSkeleton();
 
   @override
-  State<_DetailsSkeleton> createState() => _DetailsSkeletonState();
-}
-
-class _DetailsSkeletonState extends State<_DetailsSkeleton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _controller,
-        builder: (_, child) => Opacity(
-          opacity: .55 + (_controller.value * .35),
-          child: child,
-        ),
-        child: Column(
-          children: [
-            _box(130),
-            const SizedBox(height: 18),
-            _box(250),
-            const SizedBox(height: 18),
-            _box(300),
-            const SizedBox(height: 16),
-            _box(220),
-          ],
-        ),
-      );
-
-  Widget _box(double height) => Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border.withValues(alpha: .25)),
-        ),
+  Widget build(BuildContext context) => const Column(
+        children: [
+          CustomSkeletonLoader(
+            width: double.infinity,
+            height: 130,
+            borderRadius: 16,
+          ),
+          SizedBox(height: 18),
+          CustomSkeletonLoader(
+            width: double.infinity,
+            height: 250,
+            borderRadius: 16,
+          ),
+          SizedBox(height: 18),
+          CustomSkeletonLoader(
+            width: double.infinity,
+            height: 300,
+            borderRadius: 16,
+          ),
+          SizedBox(height: 16),
+          CustomSkeletonLoader(
+            width: double.infinity,
+            height: 220,
+            borderRadius: 16,
+          ),
+        ],
       );
 }
+
 
 String _available(String value) => value.trim().isEmpty ? 'غير متوفر' : value;
 

@@ -10,11 +10,13 @@ class GetMyTransactions {
 
   Future<Either<Failure, MyTransactionsPaginatedResult>> call({
     required String status,
+    String? searchQuery,
     String? cursor,
     int limit = 6,
   }) {
     return repository.getMyTransactions(
       status: status,
+      searchQuery: searchQuery,
       cursor: cursor,
       limit: limit,
     );

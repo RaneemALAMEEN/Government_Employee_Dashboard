@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
@@ -59,30 +60,52 @@ class _DocumentVerificationPageState extends State<DocumentVerificationPage> {
   Widget build(BuildContext context) => Directionality(
         textDirection: TextDirection.rtl,
         child: ColoredBox(
-          color: AppColors.background,
+          color: AppColors.goldLight,
           child:
               BlocBuilder<DocumentVerificationBloc, DocumentVerificationState>(
             builder: (context, state) {
               final loading = state is DocumentVerificationLoading;
+              final isSuccess = state is DocumentVerificationSuccess;
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(28, 25, 28, 36),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1320),
+                    constraints: const BoxConstraints(maxWidth: 1100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const VerificationPageHeader(),
-                        const SizedBox(height: 18),
-                        VerificationInputCard(
-                          controller: _codeController,
-                          loading: loading,
-                          compact: state is DocumentVerificationSuccess,
-                          onVerify: _verify,
-                          onReset: state is DocumentVerificationInitial
-                              ? null
-                              : _reset,
-                        ),
+                        if (!isSuccess) ...[
+                          const VerificationPageHeader(),
+                          const SizedBox(height: 18),
+                        ],
+                        if (!isSuccess)
+                          VerificationInputCard(
+                            controller: _codeController,
+                            loading: loading,
+                            compact: false,
+                            onVerify: _verify,
+                            onReset: null,
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: _reset,
+                                  icon: const Icon(LucideIcons.arrowRight,
+                                      size: 16),
+                                  label: const Text('فحص وثيقة أخرى'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.forest,
+                                    side: BorderSide(
+                                      color: AppColors.forest.withOpacity(0.3),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         const SizedBox(height: 16),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 230),

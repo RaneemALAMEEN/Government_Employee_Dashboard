@@ -5,7 +5,9 @@ import 'package:pinput/pinput.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/usecases/change_pin_usecase.dart';
+
 
 class ChangePinDialog extends StatefulWidget {
   const ChangePinDialog({super.key});
@@ -96,33 +98,24 @@ class _ChangePinDialogState extends State<ChangePinDialog> {
           _errorMessage = failure.message;
         });
       },
-      (_) {
+      (changePinResult) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(LucideIcons.checkCircle2, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text(
-                  'تم تغيير رمز PIN بنجاح',
-                  style: TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.forest,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
+        final bool usbSuccess = changePinResult.usbUpdated;
+        final String message = usbSuccess
+            ? 'تم تغيير رمز PIN وتحديث مفتاح التوقيع على فلاشة USB بنجاح'
+            : 'تم تغيير رمز PIN بنجاح.\nتنبيه: لم يتم العثور على فلاشة USB لتحديث مفتاح التوقيع عليها';
+
+        AppSnackBar.show(
+          context,
+          title: usbSuccess ? 'تم التحديث بنجاح' : 'تنبيه',
+          message: message,
+          isError: !usbSuccess,
         );
       },
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -202,11 +195,12 @@ class _ChangePinDialogState extends State<ChangePinDialog> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'أدخل رمز PIN الحالي والرمز الجديد لتعيينه',
+                          'أدخل رمز PIN الحالي والجديد (مع إبقاء فلاشة التوقيع متصلة)',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: Colors.grey[600],
                           ),
                         ),
+
                       ],
                     ),
                   ),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/foundation.dart';
 import 'package:government_employee_dashboard/features/internal_transactions/domain/entities/document_template_entity.dart';
@@ -201,6 +203,16 @@ class InternalTransactionsRemoteDataSource {
     required String pin,
     required Map<String, dynamic> payload,
   }) async {
+    final body = {
+      'pin': pin,
+    };
+
+    debugPrint('==================================================');
+    debugPrint('[InternalTransactionsRemoteDataSource] 🔐 Create Signing Challenge Request:');
+    debugPrint('Endpoint: ${_endPoints.signingChallenge(processId)}');
+    debugPrint('Body: $body');
+    debugPrint('==================================================');
+
     final result = await apiService.makeRequest(
       method: ApiMethod.post,
       endPoint: _endPoints.signingChallenge(processId),
@@ -223,6 +235,23 @@ class InternalTransactionsRemoteDataSource {
     required int transactionId,
     required Map<String, dynamic> payload,
   }) async {
+    debugPrint('==================================================');
+    debugPrint('[InternalTransactionsRemoteDataSource] 🚀 Complete Signed Transaction Request:');
+    debugPrint('Endpoint: ${_endPoints.completeSignedTransaction(transactionId)}');
+    debugPrint('Transaction ID: $transactionId');
+    debugPrint('--- Payload Sent to Backend (JSON) ---');
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      final prettyJson = encoder.convert(payload);
+      for (final line in prettyJson.split('\n')) {
+        debugPrint(line, wrapWidth: 1024);
+      }
+    } catch (_) {
+      debugPrint(payload.toString());
+    }
+    debugPrint('--------------------------------------');
+    debugPrint('==================================================');
+
     final result = await apiService.makeRequest(
       method: ApiMethod.post,
       endPoint: _endPoints.completeSignedTransaction(transactionId),

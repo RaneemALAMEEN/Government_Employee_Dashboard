@@ -101,11 +101,23 @@ class FirstStageTemplateModel extends FirstStageTemplateEntity {
   });
 
   factory FirstStageTemplateModel.fromJson(Map<String, dynamic> json) {
+    final valueMap = Map<String, dynamic>.from(json['value'] as Map? ?? {});
+    final rawPdfPath = json['generated_pdf_path']?.toString() ??
+        json['generated_pdf_url']?.toString() ??
+        valueMap['generated_pdf_path']?.toString() ??
+        valueMap['generated_pdf_url']?.toString();
+    final pdfPath = (rawPdfPath != null && rawPdfPath.trim().isNotEmpty)
+        ? rawPdfPath.trim()
+        : '';
+    final docInstId = _asInt(json['id_document_instance']) ??
+        _asInt(valueMap['id_document_instance']);
+
     return FirstStageTemplateModel(
-      templateId: _asInt(json['id_template']),
-      documentInstanceId: _asInt(json['id_document_instance']),
-      generatedPdfPath: json['generated_pdf_path']?.toString() ?? '',
-      value: Map<String, dynamic>.from(json['value'] as Map? ?? {}),
+      templateId:
+          _asInt(json['id_template']) ?? _asInt(valueMap['id_template']),
+      documentInstanceId: docInstId,
+      generatedPdfPath: pdfPath,
+      value: valueMap,
     );
   }
 }
