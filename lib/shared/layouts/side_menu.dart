@@ -68,6 +68,11 @@ class _AppSidebarState extends State<AppSidebar>
       'فحص الوثائق',
       '/document-quality-checker',
     ),
+    SidebarNavItem(
+      LucideIcons.calendarDays,
+      'إدارة المواعيد',
+      '/appointments',
+    ),
   ];
 
   @override

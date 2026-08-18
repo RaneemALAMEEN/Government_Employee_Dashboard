@@ -46,6 +46,8 @@ import '../../features/document_verification/presentation/bloc/document_verifica
 import '../../features/document_verification/presentation/pages/document_verification_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/notifications/presentation/widgets/authenticated_notifications_scope.dart';
+import '../../features/appointments/presentation/bloc/appointments_bloc.dart';
+import '../../features/appointments/presentation/pages/appointments_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -103,6 +105,17 @@ class AppRouter {
             path: '/notifications',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: NotificationsPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/appointments',
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider(
+                create: (_) => getIt<AppointmentsBloc>()
+                  ..add(const LoadAppointments('pending'))
+                  ..add(const LoadAvailableAppointmentSlots()),
+                child: const AppointmentsPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -226,7 +239,6 @@ class AppRouter {
               );
             },
           ),
-
           GoRoute(
             path: '/directorate-process-management',
             pageBuilder: (context, state) => CustomTransitionPage(

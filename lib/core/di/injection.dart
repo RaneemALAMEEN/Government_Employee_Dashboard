@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/internal_transactions/di/injection.dart';
+import '../../features/appointments/di/injection.dart';
 import '../cache/cache_config.dart';
 import '../cache/change_detection_strategy.dart';
 import '../cache/services/cache_manager.dart';
@@ -144,4 +145,5 @@ Future<void> setupCoreInjection() async {
   }
 
   setupInternalTransactionsInjection(getIt);
+  setupAppointmentsInjection(getIt);
 }
