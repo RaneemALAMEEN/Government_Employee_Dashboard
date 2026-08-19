@@ -9,6 +9,7 @@ class TransactionActionButtons extends StatelessWidget {
   final bool isLocked;
   final bool lockedByMe;
   final bool submitting;
+  final String? submittingMessage;
   final VoidCallback onPickup;
   final VoidCallback onRelease;
   final VoidCallback onApprove;
@@ -20,6 +21,7 @@ class TransactionActionButtons extends StatelessWidget {
     required this.isLocked,
     required this.lockedByMe,
     required this.submitting,
+    this.submittingMessage,
     required this.onPickup,
     required this.onRelease,
     required this.onApprove,
@@ -46,11 +48,24 @@ class TransactionActionButtons extends StatelessWidget {
           elevation: 0,
         ),
         child: submitting
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    submittingMessage ?? 'جاري استلام المعاملة...',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: AppTextStyles.semiBold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               )
             : Text(
                 'استلام المعاملة',
@@ -75,10 +90,17 @@ class TransactionActionButtons extends StatelessWidget {
                         strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(LucideIcons.shieldCheck, size: 16),
-            label: const Text('موافقة وتوقيع إلكتروني'),
+            label: Text(
+              submitting
+                  ? (submittingMessage ?? 'جاري المعالجة والتوقيع...')
+                  : 'موافقة وتوقيع إلكتروني',
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1E5649),
               foregroundColor: Colors.white,
+              disabledBackgroundColor:
+                  const Color(0xFF1E5649).withOpacity(0.88),
+              disabledForegroundColor: Colors.white,
               minimumSize: const Size(0, 48),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               shape: RoundedRectangleBorder(

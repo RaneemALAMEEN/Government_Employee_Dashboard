@@ -5,6 +5,8 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../domain/entities/accessible_department_entity.dart';
 
+import 'dept_tx_date_range_picker_dialog.dart';
+
 class DeptTxFilterBar extends StatefulWidget {
   final String activeStatusFilter;
   final String searchQuery;
@@ -63,48 +65,14 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
-    final initialDateRange = (widget.fromDate != null && widget.toDate != null)
-        ? DateTimeRange(
-            start: DateTime.tryParse(widget.fromDate!) ??
-                DateTime.now().subtract(const Duration(days: 30)),
-            end: DateTime.tryParse(widget.toDate!) ?? DateTime.now(),
-          )
-        : null;
-
-    final picked = await showDateRangePicker(
+    await DeptTxDateRangePickerDialog.show(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      initialDateRange: initialDateRange,
-      initialEntryMode: DatePickerEntryMode.input,
-      helpText: 'تحديد الفترة الزمنية',
-      saveText: 'تطبيق',
-      cancelText: 'إلغاء',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.forest,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.charcoalDark,
-            ),
-          ),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: child!,
-          ),
-        );
+      initialFromDate: widget.fromDate,
+      initialToDate: widget.toDate,
+      onApply: (fromStr, toStr) {
+        widget.onDateRangeChanged(fromStr, toStr);
       },
     );
-
-    if (picked != null) {
-      final fromStr =
-          "${picked.start.year}-${picked.start.month.toString().padLeft(2, '0')}-${picked.start.day.toString().padLeft(2, '0')}";
-      final toStr =
-          "${picked.end.year}-${picked.end.month.toString().padLeft(2, '0')}-${picked.end.day.toString().padLeft(2, '0')}";
-      widget.onDateRangeChanged(fromStr, toStr);
-    }
   }
 
   @override
@@ -204,28 +172,6 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
                           hasDateFilter ? Colors.white : AppColors.charcoalDark,
                     ),
                   ),
-                  if (hasDateFilter) ...[
-                    const SizedBox(width: 8),
-                    Tooltip(
-                      message: 'إلغاء فلترة التاريخ',
-                      child: InkWell(
-                        onTap: () => widget.onDateRangeChanged(null, null),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            LucideIcons.x,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

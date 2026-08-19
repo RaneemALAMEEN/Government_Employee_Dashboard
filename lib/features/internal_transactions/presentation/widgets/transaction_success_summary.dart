@@ -91,7 +91,7 @@ class TransactionSuccessSummary extends StatelessWidget {
                 ...widgets.map(_buildWidgetValueRow),
               const SizedBox(height: 26),
               Align(
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.center,
                 child: ElevatedButton.icon(
                   onPressed: onBack,
                   icon: const Icon(Icons.arrow_back),
@@ -100,8 +100,11 @@ class TransactionSuccessSummary extends StatelessWidget {
                     backgroundColor: AppColors.forest,
                     foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
+                      horizontal: 32,
                       vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),

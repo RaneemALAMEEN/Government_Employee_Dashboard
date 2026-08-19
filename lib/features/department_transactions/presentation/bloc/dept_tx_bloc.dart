@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:government_employee_dashboard/core/errors/failures.dart';
+import 'package:government_employee_dashboard/features/department_transactions/domain/entities/department_transaction_entity.dart';
 import 'package:stream_transform/stream_transform.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/session_service.dart';
@@ -14,10 +15,28 @@ import '../../domain/usecases/get_department_stats.dart';
 
 const _limit = 6;
 
+class _CachedDeptTxPage {
+  final List<DepartmentTransactionEntity> items;
+  final String? nextCursor;
+  final bool hasNext;
+  final int totalCount;
+  final DateTime timestamp;
+
+  _CachedDeptTxPage({
+    required this.items,
+    this.nextCursor,
+    required this.hasNext,
+    required this.totalCount,
+    required this.timestamp,
+  });
+}
+
 class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
   final GetDepartmentTransactions getDepartmentTransactions;
   final GetDepartmentStats getDepartmentStats;
   final GetAccessibleDepartments getAccessibleDepartments;
+
+  final Map<String, _CachedDeptTxPage> _memoryCache = {};
 
   DeptTxBloc(
     this.getDepartmentTransactions,
@@ -32,8 +51,63 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
     on<SearchDeptTx>(
       _onSearchDeptTx,
       transformer: (events, mapper) =>
-          events.debounce(const Duration(milliseconds: 500)).switchMap(mapper),
+          events.debounce(const Duration(milliseconds: 400)).switchMap(mapper),
     );
+  }
+
+  String _cacheKey({
+    required String deptId,
+    required String status,
+    String? fromDate,
+    String? toDate,
+    String? searchQuery,
+  }) {
+    return '$deptId:$status:${fromDate ?? ""}:${toDate ?? ""}:${searchQuery ?? ""}';
+  }
+
+  /// Pre-fetches both 'منجزة' and 'مرفوضة' in the background for instant switching
+  void _warmUpCategories({
+    required String deptId,
+    String? fromDate,
+    String? toDate,
+  }) {
+    Future.microtask(() async {
+      final statuses = ['منجزة', 'مرفوضة'];
+      for (final s in statuses) {
+        final key = _cacheKey(
+          deptId: deptId,
+          status: s,
+          fromDate: fromDate,
+          toDate: toDate,
+          searchQuery: null,
+        );
+        if (!_memoryCache.containsKey(key)) {
+          try {
+            final res = await getDepartmentTransactions(
+              departmentIds: deptId,
+              status: s,
+              fromDate: fromDate,
+              toDate: toDate,
+              searchQuery: null,
+              cursor: null,
+              limit: _limit,
+            );
+            res.fold((_) {}, (data) {
+              final items = data['items'] as List<dynamic>? ?? [];
+              final pagination =
+                  data['pagination'] as Map<String, dynamic>? ?? {};
+              _memoryCache[key] = _CachedDeptTxPage(
+                items: items.cast<DepartmentTransactionEntity>(),
+                nextCursor: pagination['next_cursor'] as String?,
+                hasNext: pagination['has_next'] as bool? ?? false,
+                totalCount: pagination['total'] as int? ?? 0,
+                timestamp: DateTime.now(),
+              );
+            });
+          } catch (_) {}
+        }
+      }
+    });
   }
 
   /// الحصول على departmentId — إما المختار أو الافتراضي من SessionService
@@ -84,7 +158,8 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       emit(DeptTxLoading());
     }
 
-    final departmentId = _getDepartmentId(selectedDepartmentId: currentSelectedDeptId);
+    final departmentId =
+        _getDepartmentId(selectedDepartmentId: currentSelectedDeptId);
 
     // Fetch transactions, stats, and accessible departments in parallel
     final futures = <Future>[
@@ -99,8 +174,7 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       ),
       getDepartmentStats(departmentIds: departmentId),
       // Only fetch departments if we don't have them cached
-      if (currentDepartments.isEmpty)
-        getAccessibleDepartments(),
+      if (currentDepartments.isEmpty) getAccessibleDepartments(),
     ];
 
     final results = await Future.wait(futures);
@@ -111,7 +185,8 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
     // Parse accessible departments
     List<AccessibleDepartmentEntity> departments = currentDepartments;
     if (currentDepartments.isEmpty && results.length > 2) {
-      final deptResult = results[2] as Either<Failure, List<AccessibleDepartmentEntity>>;
+      final deptResult =
+          results[2] as Either<Failure, List<AccessibleDepartmentEntity>>;
       deptResult.fold(
         (_) {}, // Keep empty on failure
         (depts) => departments = depts,
@@ -128,7 +203,6 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
           currentSelectedDeptId = match.first.id;
           currentSelectedDeptName = match.first.name;
         } else {
-          // الدائرة الافتراضية غير موجودة في النطاق، نختار أول دائرة
           currentSelectedDeptId = departments.first.id;
           currentSelectedDeptName = departments.first.name;
         }
@@ -147,6 +221,29 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
         final totalCount = pagination['total'] as int? ?? 0;
         final hasNext = pagination['has_next'] as bool? ?? false;
         final nextCursor = pagination['next_cursor'] as String?;
+
+        // Cache in memory for instant switching
+        final key = _cacheKey(
+          deptId: departmentId,
+          status: currentStatus,
+          fromDate: currentFromDate,
+          toDate: currentToDate,
+          searchQuery: currentSearchQuery.isNotEmpty ? currentSearchQuery : null,
+        );
+        _memoryCache[key] = _CachedDeptTxPage(
+          items: items.cast<DepartmentTransactionEntity>(),
+          nextCursor: nextCursor,
+          hasNext: hasNext,
+          totalCount: totalCount,
+          timestamp: DateTime.now(),
+        );
+
+        // Warm up other categories in background
+        _warmUpCategories(
+          deptId: departmentId,
+          fromDate: currentFromDate,
+          toDate: currentToDate,
+        );
 
         // If stats succeeded, update them
         statsResult.fold(
@@ -192,14 +289,17 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
     emit(currentState.copyWith(isFetchingMore: true));
 
-    final departmentId = _getDepartmentId(selectedDepartmentId: currentState.selectedDepartmentId);
+    final departmentId = _getDepartmentId(
+        selectedDepartmentId: currentState.selectedDepartmentId);
 
     final result = await getDepartmentTransactions(
       departmentIds: departmentId,
       status: currentState.statusFilter,
       fromDate: currentState.fromDate,
       toDate: currentState.toDate,
-      searchQuery: currentState.searchQuery.isNotEmpty ? currentState.searchQuery : null,
+      searchQuery: currentState.searchQuery.isNotEmpty
+          ? currentState.searchQuery
+          : null,
       cursor: currentState.nextCursor,
       limit: _limit,
     );
@@ -226,14 +326,47 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
     );
   }
 
-  void _onFilterDeptTxByStatus(
-      FilterDeptTxByStatus event, Emitter<DeptTxState> emit) {
+  Future<void> _onFilterDeptTxByStatus(
+      FilterDeptTxByStatus event, Emitter<DeptTxState> emit) async {
     if (state is DeptTxLoaded) {
       final currentState = state as DeptTxLoaded;
       if (currentState.statusFilter == event.statusFilter) return;
 
-      // Update state and trigger load
-      emit(currentState.copyWith(statusFilter: event.statusFilter));
+      final deptId = _getDepartmentId(
+          selectedDepartmentId: currentState.selectedDepartmentId);
+      final key = _cacheKey(
+        deptId: deptId,
+        status: event.statusFilter,
+        fromDate: currentState.fromDate,
+        toDate: currentState.toDate,
+        searchQuery: currentState.searchQuery.isNotEmpty
+            ? currentState.searchQuery
+            : null,
+      );
+
+      final cached = _memoryCache[key];
+      if (cached != null) {
+        // Instant 0ms cache response!
+        emit(currentState.copyWith(
+          transactions: cached.items,
+          statusFilter: event.statusFilter,
+          nextCursor: cached.nextCursor,
+          hasReachedMax: !cached.hasNext,
+          totalCount: cached.totalCount,
+          isSearching: false,
+        ));
+
+        // Warm up and refresh in background
+        _warmUpCategories(
+          deptId: deptId,
+          fromDate: currentState.fromDate,
+          toDate: currentState.toDate,
+        );
+        return;
+      }
+
+      // If not cached yet, emit loading for immediate skeleton feedback
+      emit(DeptTxLoading());
       add(const LoadDeptTx());
     } else {
       add(const LoadDeptTx());
@@ -244,8 +377,12 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
       FilterDeptTxByDate event, Emitter<DeptTxState> emit) {
     if (state is DeptTxLoaded) {
       final currentState = state as DeptTxLoaded;
+      final isClearing = event.fromDate == null && event.toDate == null;
       emit(currentState.copyWith(
-          fromDate: event.fromDate, toDate: event.toDate));
+        fromDate: event.fromDate,
+        toDate: event.toDate,
+        clearDates: isClearing,
+      ));
       add(const LoadDeptTx());
     }
   }

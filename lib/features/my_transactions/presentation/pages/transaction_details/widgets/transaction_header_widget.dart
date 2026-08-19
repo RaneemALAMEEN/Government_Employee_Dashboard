@@ -11,6 +11,7 @@ class TransactionHeaderWidget extends StatelessWidget {
   final bool isLocked;
   final bool lockedByMe;
   final bool submitting;
+  final String? submittingMessage;
   final VoidCallback onPickup;
   final VoidCallback onRelease;
   final VoidCallback onApprove;
@@ -22,6 +23,7 @@ class TransactionHeaderWidget extends StatelessWidget {
     required this.isLocked,
     required this.lockedByMe,
     required this.submitting,
+    this.submittingMessage,
     required this.onPickup,
     required this.onRelease,
     required this.onApprove,
@@ -145,6 +147,7 @@ class TransactionHeaderWidget extends StatelessWidget {
               isLocked: isLocked,
               lockedByMe: lockedByMe,
               submitting: submitting,
+              submittingMessage: submittingMessage,
               onPickup: onPickup,
               onRelease: onRelease,
               onApprove: onApprove,

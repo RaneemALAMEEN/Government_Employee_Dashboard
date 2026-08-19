@@ -250,7 +250,7 @@ class TransactionDetailsBloc
     Emitter<TransactionDetailsState> emit,
   ) async {
     final currentState = state;
-    emit(TransactionDetailsSubmitting(message: 'جاري معالجة المعاملة...'));
+    emit(TransactionDetailsSubmitting(message: 'جاري معالجة وتجهيز المعاملة...'));
 
     final result = await submitTransaction(
       taskId: event.taskId,
@@ -267,6 +267,9 @@ class TransactionDetailsBloc
       loadedTemplates: event.loadedTemplates,
       expectedVersion: event.expectedVersion,
       assignments: event.assignments,
+      onProgress: (msg) {
+        emit(TransactionDetailsSubmitting(message: msg));
+      },
     );
 
     result.fold(

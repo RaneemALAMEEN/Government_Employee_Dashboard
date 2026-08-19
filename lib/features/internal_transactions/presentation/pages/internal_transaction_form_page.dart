@@ -303,9 +303,10 @@ class _InternalTransactionFormPageState
                   duration: const Duration(milliseconds: 350),
                   delay: const Duration(milliseconds: 220),
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: _SubmitButton(
                       submitting: state.submitting,
+                      statusMessage: state.submitStatusMessage,
                       onPressed: _submit,
                     ),
                   ),
@@ -874,17 +875,19 @@ class _FormFields extends StatelessWidget {
 
 class _SubmitButton extends StatelessWidget {
   final bool submitting;
+  final String? statusMessage;
   final VoidCallback onPressed;
 
   const _SubmitButton({
     required this.submitting,
+    this.statusMessage,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 46,
+      height: 48,
       child: ElevatedButton.icon(
         onPressed: submitting ? null : onPressed,
         icon: submitting
@@ -898,12 +901,17 @@ class _SubmitButton extends StatelessWidget {
               )
             : const Icon(Icons.verified_user_outlined, size: 18),
         label: Text(
-          submitting ? 'جارٍ التوقيع والتقديم...' : 'توقيع وتقديم المعاملة',
+          submitting
+              ? (statusMessage ?? 'جارٍ التوقيع والتقديم...')
+              : 'توقيع وتقديم المعاملة',
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.forest,
           foregroundColor: AppColors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          disabledBackgroundColor: AppColors.forest.withOpacity(0.88),
+          disabledForegroundColor: AppColors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

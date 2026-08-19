@@ -30,16 +30,20 @@ class SubmitTransaction {
     Map<String, dynamic> templateFormValues = const {},
     int? expectedVersion,
     List<Map<String, dynamic>>? assignments,
+    void Function(String statusMessage)? onProgress,
   }) async {
     try {
       final isSubmitDocuments =
           formId.contains('sign') || formId.contains('document');
 
+      onProgress?.call('جاري فحص المرفقات وتجهيز البيانات...');
+
       // 1. Set Programmatic Decision Value
       _setProgrammaticDecisionValue(widgets, formValues, isApprove);
 
       // 2. Upload Files and Build Payload
-      final payloadResult = await _buildSubmitPayload(widgets, formValues);
+      final payloadResult =
+          await _buildSubmitPayload(widgets, formValues, onProgress: onProgress);
       if (payloadResult.isLeft()) return payloadResult;
 
       final payload = payloadResult.getOrElse(() => {});
@@ -166,6 +170,7 @@ class SubmitTransaction {
         debugPrint('==================================================');
 
         // Request Signing Challenge
+        onProgress?.call('جاري إنشاء طلب التوقيع الرقمي...');
         final challengeResult = await repository.createSigningChallenge(
           taskId: taskId,
           payload: challengePayload,
@@ -188,6 +193,7 @@ class SubmitTransaction {
 
         // Generate Signature
         try {
+          onProgress?.call('جاري توقيع المعاملة رقمياً عبر USB...');
           final signature = await usbSigningService.signMessageFromUsb(
             keysDirectoryPath: keysDirectoryPath,
             pin: pin,
@@ -206,6 +212,7 @@ class SubmitTransaction {
         }
       }
 
+      onProgress?.call('جاري إرسال واعتماد المعاملة...');
       debugPrint('==================================================');
       debugPrint('[SubmitTransaction] 🚀 Complete Task Request:');
       debugPrint('Task ID: $taskId');
@@ -289,17 +296,26 @@ class SubmitTransaction {
   }
 
   Future<Either<Failure, Map<String, dynamic>>> _buildSubmitPayload(
-      List<DynamicWidgetEntity> widgets,
-      Map<String, dynamic> formValues) async {
+    List<DynamicWidgetEntity> widgets,
+    Map<String, dynamic> formValues, {
+    void Function(String statusMessage)? onProgress,
+  }) async {
     final widgetsPayload = <Map<String, dynamic>>[];
 
     for (final widget in widgets) {
       final id = widget.data['id']?.toString() ?? '';
+      final label = widget.data['label']?.toString() ?? '';
       final value = formValues[id];
 
       dynamic finalValue = value;
       if (widget.widgetType == 'file_picker') {
-        final uploadResult = await _uploadFiles(id, widget.data, value);
+        final uploadResult = await _uploadFiles(
+          id,
+          label,
+          widget.data,
+          value,
+          onProgress: onProgress,
+        );
         if (uploadResult.isLeft()) {
           return Left(uploadResult.fold((l) => l, (r) => throw Exception()));
         }
@@ -318,9 +334,11 @@ class SubmitTransaction {
 
   Future<Either<Failure, List<Map<String, dynamic>>>> _uploadFiles(
     String widgetId,
+    String widgetLabel,
     Map<String, dynamic> widgetData,
-    dynamic value,
-  ) async {
+    dynamic value, {
+    void Function(String statusMessage)? onProgress,
+  }) async {
     if (value == null || (value is! List) || value.isEmpty) {
       return const Right([]);
     }
@@ -328,7 +346,11 @@ class SubmitTransaction {
     final typeDocId = widgetData['type_doc_id'];
     final uploadedFiles = <Map<String, dynamic>>[];
 
+    final total = value.length;
+    var index = 0;
+
     for (final file in value) {
+      index++;
       if (file is Map && file['path'] != null) {
         uploadedFiles.add(Map<String, dynamic>.from(file));
         continue;
@@ -337,6 +359,13 @@ class SubmitTransaction {
       if (filePath == null || filePath.toString().isEmpty) {
         continue;
       }
+
+      final displayName = widgetLabel.isNotEmpty ? widgetLabel : 'الوثيقة';
+      onProgress?.call(
+        total > 1
+            ? 'جاري رفع $displayName ($index من $total)...'
+            : 'جاري رفع $displayName إلى الخادم...',
+      );
 
       final uploadedResult = await repository.uploadTransactionFile(
         filePath: filePath.toString(),

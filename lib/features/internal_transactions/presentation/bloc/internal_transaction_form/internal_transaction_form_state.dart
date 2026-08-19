@@ -6,6 +6,7 @@ import '../../../domain/entities/dynamic_form_entity.dart';
 class InternalTransactionFormState extends Equatable {
   final bool loading;
   final bool submitting;
+  final String? submitStatusMessage;
   final String? errorMessage;
   final DynamicFormEntity? form;
   final DocumentTemplateEntity? template;
@@ -16,6 +17,7 @@ class InternalTransactionFormState extends Equatable {
   const InternalTransactionFormState({
     required this.loading,
     required this.submitting,
+    this.submitStatusMessage,
     required this.formValues,
     required this.templateValues,
     this.errorMessage,
@@ -36,6 +38,7 @@ class InternalTransactionFormState extends Equatable {
   InternalTransactionFormState copyWith({
     bool? loading,
     bool? submitting,
+    String? submitStatusMessage,
     String? errorMessage,
     bool clearError = false,
     DynamicFormEntity? form,
@@ -48,6 +51,8 @@ class InternalTransactionFormState extends Equatable {
     return InternalTransactionFormState(
       loading: loading ?? this.loading,
       submitting: submitting ?? this.submitting,
+      submitStatusMessage:
+          submitting == false ? null : submitStatusMessage ?? this.submitStatusMessage,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       form: form ?? this.form,
       template: template ?? this.template,
@@ -63,6 +68,7 @@ class InternalTransactionFormState extends Equatable {
   List<Object?> get props => [
         loading,
         submitting,
+        submitStatusMessage,
         errorMessage,
         form,
         template,
@@ -70,4 +76,4 @@ class InternalTransactionFormState extends Equatable {
         templateValues,
         submittedTransaction,
       ];
-}
+}

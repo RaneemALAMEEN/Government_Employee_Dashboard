@@ -172,6 +172,7 @@ class InternalTransactionFormBloc
     emit(
       state.copyWith(
         submitting: true,
+        submitStatusMessage: 'جاري فحص وتجهيز المرفقات...',
         clearError: true,
       ),
     );
@@ -185,6 +186,9 @@ class InternalTransactionFormBloc
         formValues: state.formValues,
         template: template,
         templateValues: state.templateValues,
+        onProgress: (msg) {
+          emit(state.copyWith(submitStatusMessage: msg));
+        },
       );
 
       if (!payloadResult.isSuccess) {
@@ -211,6 +215,10 @@ class InternalTransactionFormBloc
         '[InternalTransactionForm] اكتمل رفع $uploadedFilesCount '
         'مرفق/مرفقات قبل التوقيع وإرسال المعاملة.',
       );
+
+      emit(state.copyWith(
+        submitStatusMessage: 'جاري إنشاء طلب التوقيع الرقمي...',
+      ));
 
       debugPrint('[InternalSigning] processId = ${event.processId}');
       debugPrint('[InternalSigning] root decision = approve');
@@ -256,6 +264,10 @@ class InternalTransactionFormBloc
             return;
           }
 
+          emit(state.copyWith(
+            submitStatusMessage: 'جاري توقيع المعاملة رقمياً عبر USB...',
+          ));
+
           debugPrint('[InternalSigning] challengeId = $challengeId');
           debugPrint('[InternalSigning] transactionId = $transactionId');
 
@@ -275,6 +287,10 @@ class InternalTransactionFormBloc
             );
             return;
           }
+
+          emit(state.copyWith(
+            submitStatusMessage: 'جاري إرسال واعتماد المعاملة...',
+          ));
 
           final completePayload = {
             ...payload,
@@ -378,10 +394,12 @@ class InternalTransactionFormBloc
     required Map<String, dynamic> formValues,
     required dynamic template,
     required Map<String, dynamic> templateValues,
+    void Function(String)? onProgress,
   }) async {
     final widgetsResult = await _buildWidgetsPayload(
       widgets: form.widgets,
       values: formValues,
+      onProgress: onProgress,
     );
 
     if (!widgetsResult.isSuccess) {
@@ -394,6 +412,7 @@ class InternalTransactionFormBloc
       final templateWidgetsResult = await _buildWidgetsPayload(
         widgets: inlineTemplate.config.widgets,
         values: templateValues,
+        onProgress: onProgress,
       );
 
       if (!templateWidgetsResult.isSuccess) {
@@ -412,6 +431,7 @@ class InternalTransactionFormBloc
       final templateWidgetsResult = await _buildWidgetsPayload(
         widgets: template.config.widgets,
         values: templateValues,
+        onProgress: onProgress,
       );
 
       if (!templateWidgetsResult.isSuccess) {
@@ -470,11 +490,13 @@ class InternalTransactionFormBloc
   Future<_WidgetsPayloadResult> _buildWidgetsPayload({
     required List<dynamic> widgets,
     required Map<String, dynamic> values,
+    void Function(String)? onProgress,
   }) async {
     final widgetsPayload = <Map<String, dynamic>>[];
 
     for (final widget in widgets) {
       final id = widget.data['id']?.toString() ?? '';
+      final label = widget.data['label']?.toString() ?? '';
       final value = values[id];
 
       dynamic finalValue = value;
@@ -486,8 +508,10 @@ class InternalTransactionFormBloc
       if (widget.widgetType == 'file_picker') {
         final uploadResult = await _uploadFilePickerValue(
           widgetId: id,
+          widgetLabel: label,
           widgetData: widget.data,
           value: value,
+          onProgress: onProgress,
         );
 
         if (!uploadResult.isSuccess) {
@@ -509,8 +533,10 @@ class InternalTransactionFormBloc
 
   Future<_FilePickerUploadResult> _uploadFilePickerValue({
     required String widgetId,
+    String widgetLabel = '',
     required Map<String, dynamic> widgetData,
     required dynamic value,
+    void Function(String)? onProgress,
   }) async {
     if (value is! List || value.isEmpty) {
       return _FilePickerUploadResult.success(const []);
@@ -519,7 +545,11 @@ class InternalTransactionFormBloc
     final uploadedFiles = <Map<String, dynamic>>[];
     final typeDocId = _parseTypeDocId(widgetData['type_doc_id']);
 
+    final total = value.length;
+    var index = 0;
+
     for (final file in value) {
+      index++;
       if (file is Map && file['path']?.toString().isNotEmpty == true) {
         final uploadedFile = Map<String, dynamic>.from(file);
         uploadedFiles.add({
@@ -533,6 +563,13 @@ class InternalTransactionFormBloc
       final filePath = file.path?.toString();
 
       if (filePath == null || filePath.isEmpty) continue;
+
+      final displayName = widgetLabel.isNotEmpty ? widgetLabel : 'الوثيقة';
+      onProgress?.call(
+        total > 1
+            ? 'جاري رفع $displayName ($index من $total)...'
+            : 'جاري رفع $displayName إلى الخادم...',
+      );
 
       final result = await uploadTransactionFile(
         filePath: filePath,

@@ -689,6 +689,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
             TransactionDetailsLoaded? loadedState;
             bool isSubmitting = false;
+            String? submittingMessage;
 
             if (state is TransactionDetailsLoaded) {
               loadedState = state;
@@ -699,13 +700,16 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               final currentState = _bloc.state;
               if (currentState is TransactionDetailsLoaded) {
                 loadedState = currentState;
-              } else if (state is TransactionDetailsSubmitting) {
+              }
+              if (state is TransactionDetailsSubmitting) {
                 isSubmitting = true;
+                submittingMessage = state.message;
               }
             }
 
             if (state is TransactionDetailsSubmitting) {
               isSubmitting = true;
+              submittingMessage = state.message;
             }
 
             // Fallback if we don't have task data
@@ -1118,6 +1122,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                       isLocked: isLocked,
                       lockedByMe: lockedByMe,
                       submitting: isSubmitting,
+                      submittingMessage: submittingMessage,
                       onPickup: () => _bloc
                           .add(PickupTransactionEvent(widget.transactionId)),
                       onRelease: () => _bloc
