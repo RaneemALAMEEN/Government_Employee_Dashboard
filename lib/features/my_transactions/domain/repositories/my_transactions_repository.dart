@@ -23,8 +23,7 @@ abstract class MyTransactionsRepository {
 
   Future<Either<Failure, Map<String, dynamic>>> createSigningChallenge({
     required String taskId,
-    required String pin,
-    required String decision,
+    required Map<String, dynamic> payload,
     bool isSubmitDocuments = false,
   });
 

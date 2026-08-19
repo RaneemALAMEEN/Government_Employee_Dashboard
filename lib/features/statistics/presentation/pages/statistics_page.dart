@@ -459,10 +459,24 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
       firstDate: firstDate,
       lastDate: lastDate,
       initialDateRange: initialDateRange,
+      initialEntryMode: DatePickerEntryMode.input,
+      helpText: 'تحديد الفترة الزمنية',
+      saveText: 'تطبيق',
+      cancelText: 'إلغاء',
       builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.forest,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.charcoalDark,
+            ),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

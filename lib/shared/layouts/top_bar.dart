@@ -14,6 +14,7 @@ import '../../features/notifications/presentation/bloc/notifications_event.dart'
 import '../../features/notifications/presentation/bloc/notifications_state.dart';
 import '../../features/notifications/presentation/widgets/notification_widgets.dart';
 import '../theme/app_colors.dart';
+import '../widgets/global_search_box.dart';
 
 class TopBar extends StatelessWidget {
   const TopBar({super.key});
@@ -30,7 +31,7 @@ class TopBar extends StatelessWidget {
           return Row(
             children: [
               if (showSearch) ...[
-                const _SearchBox(),
+                const GlobalSearchBox(),
                 const SizedBox(width: 14),
               ],
               const _NotificationButton(),
@@ -173,43 +174,6 @@ class _UserInfo extends StatelessWidget {
             const SizedBox(width: 14),
             const Icon(LucideIcons.chevronDown, size: 20),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchBox extends StatelessWidget {
-  const _SearchBox();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 256,
-      height: 42,
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: TextField(
-          textAlign: TextAlign.right,
-          decoration: InputDecoration(
-            hintText: 'بحث في المعاملات...',
-            prefixIcon: const Icon(LucideIcons.search, size: 18),
-            filled: true,
-            fillColor: AppColors.goldLight,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: AppColors.gold.withValues(alpha: 0.45),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: AppColors.gold.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
         ),
       ),
     );

@@ -74,7 +74,7 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              const double minTableWidth = 850;
+              const double minTableWidth = 600;
               final double availableWidth = constraints.maxWidth;
 
               final Widget tableContent = Column(
@@ -260,12 +260,18 @@ class _HeaderText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.labelLarge.copyWith(
-          fontWeight: AppTextStyles.semiBold,
-          height: 1,
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(
+            fontWeight: AppTextStyles.semiBold,
+            height: 1,
+          ),
         ),
       ),
     );
@@ -289,15 +295,19 @@ class _CellText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.labelLarge.copyWith(
-          fontWeight: fontWeight,
-          color: color ?? AppColors.charcoalDark,
-          height: 1.25,
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(
+            fontWeight: fontWeight,
+            color: color ?? AppColors.charcoalDark,
+            height: 1.25,
+          ),
         ),
       ),
     );
@@ -313,18 +323,24 @@ class _ProgressBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final safePercent = percent.clamp(0, 100);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.forestLight.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        '$safePercent%',
-        style: AppTextStyles.labelMedium.copyWith(
-          fontWeight: AppTextStyles.bold,
-          color: AppColors.forest,
-          height: 1,
+    return Tooltip(
+      message: 'نسبة الإنجاز: $safePercent%',
+      waitDuration: const Duration(milliseconds: 250),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.forestLight.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          '$safePercent%',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelMedium.copyWith(
+            fontWeight: AppTextStyles.bold,
+            color: AppColors.forest,
+            height: 1,
+          ),
         ),
       ),
     );
@@ -340,21 +356,25 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = _statusData(status);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: data.background,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        data.text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.labelMedium.copyWith(
-          fontWeight: AppTextStyles.semiBold,
-          color: data.textColor,
-          height: 1,
+    return Tooltip(
+      message: 'الحالة: ${data.text}',
+      waitDuration: const Duration(milliseconds: 200),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: data.background,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          data.text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.labelMedium.copyWith(
+            fontWeight: AppTextStyles.semiBold,
+            color: data.textColor,
+            height: 1,
+          ),
         ),
       ),
     );

@@ -71,10 +71,10 @@ class _LatestTransactionsTableState extends State<LatestTransactionsTable> {
               ),
             ),
           ),
-          Container(height: 1, color: AppColors.gold.withOpacity(0.25)),
+          Container(height: 1, color: AppColors.gold.withValues(alpha: 0.25)),
           LayoutBuilder(
             builder: (context, constraints) {
-              const double minTableWidth = 650;
+              const double minTableWidth = 550;
               final double availableWidth = constraints.maxWidth;
 
               final Widget tableContent = Column(
@@ -87,7 +87,7 @@ class _LatestTransactionsTableState extends State<LatestTransactionsTable> {
                     itemCount: widget.transactions.length,
                     separatorBuilder: (_, __) => Container(
                       height: 1,
-                      color: AppColors.gold.withOpacity(0.18),
+                      color: AppColors.gold.withValues(alpha: 0.18),
                     ),
                     itemBuilder: (context, index) {
                       return _TransactionRow(tx: widget.transactions[index]);
@@ -167,7 +167,7 @@ class _TransactionRow extends StatelessWidget {
             _CellText(tx.type, flex: 16),
             _CellText(tx.applicant, flex: 18),
             _CellText(tx.date,
-                flex: 14, color: AppColors.charcoal.withOpacity(0.70)),
+                flex: 14, color: AppColors.charcoal.withValues(alpha: 0.70)),
             Expanded(
               flex: 14,
               child: Center(child: _StatusBadge(status: tx.status)),
@@ -211,10 +211,16 @@ class _HeaderText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
+        ),
       ),
     );
   }
@@ -237,12 +243,16 @@ class _CellText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.labelLarge.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoalDark, height: 1.25),
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(fontWeight: fontWeight, color: color ?? AppColors.charcoalDark, height: 1.25),
+        ),
       ),
     );
   }
@@ -258,15 +268,21 @@ class _StatusBadge extends StatelessWidget {
     final bg = _backgroundColor(status);
     final fg = _textColor(status);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        status,
-        style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: fg, height: 1),
+    return Tooltip(
+      message: 'الحالة: $status',
+      waitDuration: const Duration(milliseconds: 200),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          status,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelMedium.copyWith(fontWeight: AppTextStyles.medium, color: fg, height: 1),
+        ),
       ),
     );
   }
@@ -275,11 +291,11 @@ class _StatusBadge extends StatelessWidget {
     switch (status) {
       case 'مستعجل':
       case 'مرفوض':
-        return AppColors.umber.withOpacity(0.08);
+        return AppColors.umber.withValues(alpha: 0.08);
       case 'منجز':
-        return AppColors.forestLight.withOpacity(0.12);
+        return AppColors.forestLight.withValues(alpha: 0.12);
       default:
-        return AppColors.gold.withOpacity(0.14);
+        return AppColors.gold.withValues(alpha: 0.14);
     }
   }
 
@@ -311,6 +327,7 @@ class _ActionIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
+      waitDuration: const Duration(milliseconds: 200),
       child: InkWell(
         borderRadius: BorderRadius.circular(7),
         onTap: onTap,
@@ -318,7 +335,7 @@ class _ActionIcon extends StatelessWidget {
           width: 27,
           height: 27,
           decoration: BoxDecoration(
-            color: AppColors.forestLight.withOpacity(0.10),
+            color: AppColors.forestLight.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(7),
           ),
           child: Icon(

@@ -109,45 +109,92 @@ class MyTransactionsRemoteDataSource {
 
   Future<Either<Failure, dynamic>> createSigningChallenge({
     required String taskId,
-    required String pin,
-    required String decision,
+    required Map<String, dynamic> payload,
     bool isSubmitDocuments = false,
-  }) {
+  }) async {
     final endPoint = isSubmitDocuments
         ? 'api/workflow/tasks/$taskId/submit-documents/signing-challenge'
         : 'api/workflow/tasks/$taskId/signing-challenge';
-    return api.makeRequest(
+
+    print('======================================================================');
+    print('🚀 [API REQUEST] POST $endPoint');
+    print('Task ID: $taskId');
+    print('--- Request Body (JSON) ---');
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      print(encoder.convert(payload));
+    } catch (_) {
+      print(payload.toString());
+    }
+    print('----------------------------------------------------------------------');
+
+    final result = await api.makeRequest(
       method: ApiMethod.post,
       endPoint: endPoint,
-      body: isSubmitDocuments
-          ? {
-              'pin': pin,
-            }
-          : {
-              'pin': pin,
-              'decision': decision,
-            },
+      body: payload,
     );
+
+    print('📥 [API RESPONSE] POST $endPoint');
+    result.fold(
+      (failure) => print('❌ Failure: ${failure.message}'),
+      (response) {
+        print('✅ Success Response (JSON):');
+        try {
+          const encoder = JsonEncoder.withIndent('  ');
+          print(encoder.convert(response));
+        } catch (_) {
+          print(response.toString());
+        }
+      },
+    );
+    print('======================================================================');
+
+    return result;
   }
 
   Future<Either<Failure, dynamic>> completeTask({
     required String taskId,
     required Map<String, dynamic> payload,
     bool isSubmitDocuments = false,
-  }) {
-    print('--- Payload Sent to Backend (JSON) ---');
-    final encoder = JsonEncoder.withIndent('  ');
-    print(encoder.convert(payload));
-    print('--------------------------------------');
-    
+  }) async {
     final endPoint = isSubmitDocuments
         ? 'api/workflow/tasks/$taskId/submit-documents/complete'
         : 'api/workflow/tasks/$taskId/complete';
-    return api.makeRequest(
+
+    print('======================================================================');
+    print('🚀 [API REQUEST] POST $endPoint');
+    print('Task ID: $taskId');
+    print('--- Request Body (JSON) ---');
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      print(encoder.convert(payload));
+    } catch (_) {
+      print(payload.toString());
+    }
+    print('----------------------------------------------------------------------');
+
+    final result = await api.makeRequest(
       method: ApiMethod.post,
       endPoint: endPoint,
       body: payload,
     );
+
+    print('📥 [API RESPONSE] POST $endPoint');
+    result.fold(
+      (failure) => print('❌ Failure: ${failure.message}'),
+      (response) {
+        print('✅ Success Response (JSON):');
+        try {
+          const encoder = JsonEncoder.withIndent('  ');
+          print(encoder.convert(response));
+        } catch (_) {
+          print(response.toString());
+        }
+      },
+    );
+    print('======================================================================');
+
+    return result;
   }
 
   Future<Either<Failure, dynamic>> uploadTransactionFile({

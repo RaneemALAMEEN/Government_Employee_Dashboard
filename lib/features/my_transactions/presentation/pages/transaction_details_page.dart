@@ -46,6 +46,7 @@ import 'transaction_details/widgets/lock_info_card.dart';
 import 'transaction_details/widgets/workflow_timeline_widget.dart';
 import 'transaction_details/widgets/transaction_info_card.dart';
 import 'transaction_details/widgets/task_assignment_card.dart';
+import 'transaction_details/widgets/signers_card.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final String transactionId;
@@ -791,9 +792,13 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               priority: priority,
               status: status,
               canSign: isLocked && lockedByMe,
+              isLockedByMe: isLocked && lockedByMe,
             );
 
             final isWide = MediaQuery.of(context).size.width > 950;
+
+            final signers = data['signers'] as List? ?? [];
+            final finalDoc = data['final_document'] as Map<String, dynamic>?;
 
             final rightContentList = [
               EmployeeInfoCard(applicant: applicant),
@@ -804,16 +809,18 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                 transactionNumber: idProcess,
               ),
               const SizedBox(height: 20),
-              if (data['final_document'] != null &&
-                  ((data['final_document'] as Map<String, dynamic>)['file_url']
-                              ?.toString() ??
-                          (data['final_document']
-                                  as Map<String, dynamic>)['file_path']
-                              ?.toString() ??
-                          '')
-                      .isNotEmpty) ...[
+              if (signers.isNotEmpty) ...[
+                SignersCard(signers: signers),
+                const SizedBox(height: 20),
+              ],
+              if (finalDoc != null || status == 'منجزة') ...[
                 _buildFinalDocumentCard(
-                    data['final_document'] as Map<String, dynamic>),
+                  finalDoc ??
+                      const {
+                        'available': false,
+                        'message': 'لم يتم توليد نسخة pdf من هذا الطلب'
+                      },
+                ),
                 const SizedBox(height: 20),
               ],
               ...completedStages.where((stage) {
@@ -1149,6 +1156,15 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                                     }
                                   ]
                                 : null;
+                        final rawVersion = data['expected_version'] ??
+                            data['version'] ??
+                            (data['transaction'] is Map
+                                ? data['transaction']['version']
+                                : null);
+                        final parsedVersion = rawVersion != null
+                            ? int.tryParse(rawVersion.toString())
+                            : null;
+
                         _showSignatureDialog(
                             currentStageWidgets, formId, formName, true,
                             assignments: assignmentsPayload,
@@ -1156,10 +1172,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                             loadedTemplates: loadedState?.loadedTemplates ?? [],
                             templateFormValues:
                                 loadedState?.templateFormValues ?? {},
-                            expectedVersion: data['expected_version'] != null
-                                ? int.tryParse(
-                                    data['expected_version'].toString())
-                                : null);
+                            expectedVersion: parsedVersion);
                       },
                       onReject: () {
                         if (!_validateRequiredFields(
@@ -1195,6 +1208,16 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                                     }
                                   ]
                                 : null;
+
+                        final rawVersion = data['expected_version'] ??
+                            data['version'] ??
+                            (data['transaction'] is Map
+                                ? data['transaction']['version']
+                                : null);
+                        final parsedVersion = rawVersion != null
+                            ? int.tryParse(rawVersion.toString())
+                            : null;
+
                         _handleRejectAction(
                             currentStageWidgets, formId, formName,
                             assignments: assignmentsPayload,
@@ -1202,10 +1225,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                             loadedTemplates: loadedState?.loadedTemplates ?? [],
                             templateFormValues:
                                 loadedState?.templateFormValues ?? {},
-                            expectedVersion: data['expected_version'] != null
-                                ? int.tryParse(
-                                    data['expected_version'].toString())
-                                : null);
+                            expectedVersion: parsedVersion);
                       },
                     ),
                     const SizedBox(height: 24),
@@ -1221,6 +1241,13 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   }
 
   Widget _buildFinalDocumentCard(Map<String, dynamic> finalDoc) {
+    final fileUrl = finalDoc['file_url']?.toString() ??
+        finalDoc['file_path']?.toString() ??
+        '';
+    final isAvailable = finalDoc['available'] != false && fileUrl.isNotEmpty;
+    final message = finalDoc['message']?.toString() ??
+        'لم يتم توليد نسخة pdf من هذا الطلب';
+
     return FadeInUp(
       duration: const Duration(milliseconds: 300),
       delay: const Duration(milliseconds: 100),
@@ -1229,59 +1256,103 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+          border: Border.all(
+            color: isAvailable
+                ? AppColors.forest.withOpacity(0.3)
+                : AppColors.gold.withOpacity(0.25),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              textDirection: TextDirection.rtl,
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.forestLight.withOpacity(0.1),
+                    color: isAvailable
+                        ? AppColors.forestLight.withOpacity(0.1)
+                        : AppColors.goldLight.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(LucideIcons.fileCheck,
-                      color: AppColors.forest, size: 24),
+                  child: Icon(
+                    isAvailable ? LucideIcons.fileCheck : LucideIcons.fileClock,
+                    color: isAvailable ? AppColors.forest : AppColors.goldDark,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'الوثيقة النهائية (الشهادة)',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: AppTextStyles.bold, color: AppColors.forest),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      Text(
+                        'الوثيقة النهائية (الشهادة)',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: AppTextStyles.bold,
+                          color: isAvailable
+                              ? AppColors.forest
+                              : AppColors.charcoalDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isAvailable
+                            ? 'تم إصدار الشهادة بنجاح. يمكنك عرضها وتحميلها أدناه.'
+                            : message,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isAvailable
+                              ? AppColors.charcoal
+                              : AppColors.charcoal.withOpacity(0.75),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isAvailable
+                        ? AppColors.forest.withOpacity(0.1)
+                        : AppColors.goldLight,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isAvailable ? 'متوفرة' : 'غير متوفرة',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isAvailable ? AppColors.forest : AppColors.goldDark,
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'تم إصدار الشهادة بنجاح. يمكنك عرضها وتحميلها أدناه.',
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.charcoal),
-            ),
-            const SizedBox(height: 24),
-            if ((finalDoc['file_url']?.toString() ??
-                    finalDoc['file_path']?.toString() ??
-                    '')
-                .isNotEmpty)
+            if (isAvailable) ...[
+              const SizedBox(height: 20),
               Row(
+                textDirection: TextDirection.rtl,
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        final url =
-                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
-                        if (url.isNotEmpty) {
-                          final fullUrl = _buildFileUrl(url);
+                        if (fileUrl.isNotEmpty) {
+                          final fullUrl = _buildFileUrl(fileUrl);
                           context.push('/pdf-viewer', extra: fullUrl);
                         }
                       },
-                      icon: const Icon(LucideIcons.eye),
+                      icon: const Icon(LucideIcons.eye, size: 18),
                       label: const Text('عرض الوثيقة'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.gold,
-                        foregroundColor: AppColors.charcoal,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        foregroundColor: AppColors.charcoalDark,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
@@ -1289,26 +1360,29 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        final url =
-                            finalDoc['file_url'] ?? finalDoc['file_path'] ?? '';
                         final originalName =
-                            finalDoc['original_name'] ?? 'certificate.pdf';
-                        if (url.isNotEmpty) {
-                          _downloadFile(url, originalName,
+                            finalDoc['original_name']?.toString() ??
+                                'certificate.pdf';
+                        if (fileUrl.isNotEmpty) {
+                          _downloadFile(fileUrl, originalName,
                               documentType: 'الوثيقة النهائية');
                         }
                       },
-                      icon: const Icon(LucideIcons.download),
+                      icon: const Icon(LucideIcons.download, size: 18),
                       label: const Text('تحميل الوثيقة'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.forest,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+            ],
           ],
         ),
       ),

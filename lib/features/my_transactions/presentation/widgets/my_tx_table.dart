@@ -106,7 +106,7 @@ class _MyTxTableState extends State<MyTxTable> {
           ],
           LayoutBuilder(
             builder: (context, constraints) {
-              const double minTableWidth = 1050;
+              const double minTableWidth = 650;
               final double availableWidth = constraints.maxWidth;
 
               final Widget tableContent = Column(
@@ -114,81 +114,83 @@ class _MyTxTableState extends State<MyTxTable> {
                   const _TableHeader(),
                   if (filteredTransactions.isEmpty)
                     _buildEmptyState(widget.activeFilter)
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: filteredTransactions.length,
-                  separatorBuilder: (_, __) => Container(
-                    height: 1,
-                    color: AppColors.gold.withOpacity(0.18),
-                  ),
-                  itemBuilder: (context, index) {
-                    return FadeInUp(
-                      duration: const Duration(milliseconds: 350),
-                      delay: Duration(milliseconds: index * 50),
-                      child: _TransactionRow(
-                        tx: filteredTransactions[index],
-                        onSign: widget.onSign,
-                        onReject: widget.onReject,
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredTransactions.length,
+                      separatorBuilder: (_, __) => Container(
+                        height: 1,
+                        color: AppColors.gold.withValues(alpha: 0.18),
                       ),
-                    );
-                  },
-                ),
-              // Loading more indicator
-              if (widget.isLoadingMore)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: AppColors.forest,
+                      itemBuilder: (context, index) {
+                        return FadeInUp(
+                          duration: const Duration(milliseconds: 350),
+                          delay: Duration(milliseconds: index * 50),
+                          child: _TransactionRow(
+                            tx: filteredTransactions[index],
+                            onSign: widget.onSign,
+                            onReject: widget.onReject,
+                          ),
+                        );
+                      },
+                    ),
+                  // Loading more indicator
+                  if (widget.isLoadingMore)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.forest,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              // "No more data" indicator
-              if (!widget.hasMore && filteredTransactions.isNotEmpty && !widget.isLoadingMore)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Center(
-                    child: Text(
-                      'تم عرض جميع المعاملات',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.charcoal.withOpacity(0.5),
+                  // "No more data" indicator
+                  if (!widget.hasMore &&
+                      filteredTransactions.isNotEmpty &&
+                      !widget.isLoadingMore)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Text(
+                          'تم عرض جميع المعاملات',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.charcoal.withValues(alpha: 0.5),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-            ],
-          );
+                ],
+              );
 
-          if (availableWidth < minTableWidth) {
-            return Scrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: minTableWidth,
-                  child: tableContent,
-                ),
-              ),
-            );
-          } else {
-            return tableContent;
-          }
-        },
+              if (availableWidth < minTableWidth) {
+                return Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: minTableWidth,
+                      child: tableContent,
+                    ),
+                  ),
+                );
+              } else {
+                return tableContent;
+              }
+            },
+          ),
+        ],
       ),
-    ],
-  ),
-);
-}
+    );
+  }
 
   Widget _buildEmptyState(String filter) {
     String svgPath;
@@ -250,16 +252,22 @@ class _MyTxTableState extends State<MyTxTable> {
               const SizedBox(height: 24),
               Text(
                 title,
-                style: AppTextStyles.titleMedium,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headlineSmall.copyWith(
+                  fontWeight: AppTextStyles.semiBold,
+                  color: AppColors.charcoalDark,
+                ),
               ),
               const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+              SizedBox(
+                width: 380,
                 child: Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.charcoal.withOpacity(0.60), height: 1.4),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.charcoal.withValues(alpha: 0.65),
+                    height: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -282,15 +290,15 @@ class _TableHeader extends StatelessWidget {
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderText('رقم المعاملة', flex: 16),
+          _HeaderText('رقم المعاملة', flex: 15),
           _HeaderText('اسم المعاملة', flex: 14),
           _HeaderText('النوع', flex: 12),
           _HeaderText('مقدم الطلب', flex: 14),
           _HeaderText('الدائرة', flex: 13),
           _HeaderText('التاريخ', flex: 10),
           _HeaderText('الأولوية', flex: 9),
-          _HeaderText('الحالة', flex: 11),
-          _HeaderText('إجراء', flex: 11),
+          _HeaderText('الحالة', flex: 14),
+          _HeaderText('إجراء', flex: 8),
         ],
       ),
     );
@@ -322,31 +330,36 @@ class _TransactionRow extends StatelessWidget {
           children: [
             // Transaction Number
             Expanded(
-              flex: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isUrgentPending) ...[
-                    const Icon(
-                      LucideIcons.alertTriangle,
-                      color: AppColors.umber,
-                      size: 13,
+              flex: 15,
+              child: Tooltip(
+                message: tx.number,
+                waitDuration: const Duration(milliseconds: 250),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isUrgentPending) ...[
+                      const Icon(
+                        LucideIcons.alertTriangle,
+                        color: AppColors.umber,
+                        size: 13,
+                      ),
+                      const SizedBox(width: 3),
+                    ],
+                    Flexible(
+                      child: Text(
+                        tx.number,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.labelLarge.copyWith(
+                            fontWeight: AppTextStyles.semiBold,
+                            color: isUrgentPending
+                                ? AppColors.umber
+                                : AppColors.charcoalDark),
+                      ),
                     ),
-                    const SizedBox(width: 3),
                   ],
-                  Flexible(
-                    child: Text(
-                      tx.number,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelLarge.copyWith(
-                          fontWeight: AppTextStyles.semiBold,
-                          color: isUrgentPending
-                              ? AppColors.umber
-                              : AppColors.charcoalDark),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             // Process Name (اسم المعاملة)
@@ -359,11 +372,12 @@ class _TransactionRow extends StatelessWidget {
             _CellText(tx.department, flex: 13),
             // Date
             _CellText(
-                (tx.status == 'منجزة' || tx.status == 'تم الرفض') && tx.completedAt != null
+                (tx.status == 'منجزة' || tx.status == 'تم الرفض') &&
+                        tx.completedAt != null
                     ? tx.completedAt!
                     : tx.date,
                 flex: 10,
-                color: AppColors.charcoal.withOpacity(0.70)),
+                color: AppColors.charcoal.withValues(alpha: 0.70)),
             // Priority
             Expanded(
               flex: 9,
@@ -371,12 +385,12 @@ class _TransactionRow extends StatelessWidget {
             ),
             // Status
             Expanded(
-              flex: 11,
+              flex: 14,
               child: Center(child: _StatusBadge(tx: tx)),
             ),
             // Actions
             Expanded(
-              flex: 11,
+              flex: 8,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -392,6 +406,7 @@ class _TransactionRow extends StatelessWidget {
                         extra: {
                           'status': tx.status,
                           'transaction_id': numericId,
+                          'is_locked_by_me': tx.isLockedByMe,
                         },
                       );
                     },
@@ -416,11 +431,17 @@ class _HeaderText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.labelLarge
-            .copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge
+              .copyWith(fontWeight: AppTextStyles.semiBold, height: 1),
+        ),
       ),
     );
   }
@@ -443,15 +464,19 @@ class _CellText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.labelLarge.copyWith(
-            fontWeight: fontWeight,
-            color: color ?? AppColors.charcoalDark,
-            height: 1.25),
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(
+              fontWeight: fontWeight,
+              color: color ?? AppColors.charcoalDark,
+              height: 1.25),
+        ),
       ),
     );
   }
@@ -469,28 +494,34 @@ class _PriorityBadge extends StatelessWidget {
 
     switch (priority) {
       case 'عالية':
-        bg = AppColors.umber.withOpacity(0.08);
+        bg = AppColors.umber.withValues(alpha: 0.08);
         fg = AppColors.umber;
         break;
       case 'عادية':
-        bg = AppColors.gold.withOpacity(0.14);
+        bg = AppColors.gold.withValues(alpha: 0.14);
         fg = AppColors.goldDark;
         break;
       default: // منخفضة
-        bg = AppColors.forestLight.withOpacity(0.12);
+        bg = AppColors.forestLight.withValues(alpha: 0.12);
         fg = AppColors.forest;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        priority,
-        style: AppTextStyles.labelMedium
-            .copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
+    return Tooltip(
+      message: 'درجة الأولوية: $priority',
+      waitDuration: const Duration(milliseconds: 250),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          priority,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelMedium
+              .copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
+        ),
       ),
     );
   }
@@ -505,36 +536,86 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color bg;
     Color fg;
-    String label = tx.status;
+    Color border;
+    IconData icon;
+    String label;
+    String tooltip;
 
     switch (tx.status) {
       case 'بانتظار الاستلام':
         bg = Colors.blue.shade50;
         fg = Colors.blue.shade700;
+        border = Colors.blue.shade200;
+        icon = LucideIcons.clock;
+        label = 'بانتظار الاستلام';
+        tooltip = 'معاملة واردة بانتظار استلامها للبدء في تنفيذها';
         break;
       case 'قيد التنفيذ':
-        bg = Colors.orange.shade50;
-        fg = Colors.orange.shade700;
+        if (tx.isLockedByMe) {
+          bg = const Color(0xFFECFDF5);
+          fg = const Color(0xFF047857);
+          border = const Color(0xFFA7F3D0);
+          icon = LucideIcons.userCheck;
+          label = 'مستلمة بواسطتي';
+          tooltip = 'هذه المعاملة قيد التنفيذ ومستلمة بواسطتك حالياً';
+        } else {
+          bg = const Color(0xFFFFFBEB);
+          fg = const Color(0xFFB45309);
+          border = const Color(0xFFFDE68A);
+          icon = LucideIcons.users;
+          label = 'موظف آخر';
+          tooltip = 'هذه المعاملة قيد التنفيذ ومستلمة من قِبل موظف آخر';
+        }
         break;
       case 'منجزة':
-        bg = AppColors.forestLight.withOpacity(0.12);
+        bg = AppColors.forestLight.withValues(alpha: 0.14);
         fg = AppColors.forest;
+        border = AppColors.forest.withValues(alpha: 0.25);
+        icon = LucideIcons.checkCheck;
+        label = 'منجزة';
+        tooltip = 'تم إنجاز وتوقيع هذه المعاملة بنجاح';
         break;
       default: // تم الرفض
-        bg = AppColors.umber.withOpacity(0.08);
+        bg = AppColors.umber.withValues(alpha: 0.10);
         fg = AppColors.umber;
+        border = AppColors.umber.withValues(alpha: 0.25);
+        icon = LucideIcons.xCircle;
+        label = 'تم الرفض';
+        tooltip = 'تم رفض هذه المعاملة';
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.labelMedium
-            .copyWith(fontWeight: AppTextStyles.semiBold, color: fg, height: 1),
+    return Tooltip(
+      message: tooltip,
+      waitDuration: const Duration(milliseconds: 200),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: border, width: 0.8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          textDirection: TextDirection.rtl,
+          children: [
+            Icon(icon, size: 12, color: fg),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.labelMedium.copyWith(
+                  fontWeight: AppTextStyles.semiBold,
+                  color: fg,
+                  fontSize: 10.5,
+                  height: 1,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

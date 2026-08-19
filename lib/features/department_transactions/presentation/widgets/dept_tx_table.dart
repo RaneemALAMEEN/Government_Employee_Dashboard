@@ -120,7 +120,7 @@ class _DeptTxTableState extends State<DeptTxTable> {
 
           LayoutBuilder(
             builder: (context, constraints) {
-              const double minTableWidth = 900;
+              const double minTableWidth = 650;
               final double availableWidth = constraints.maxWidth;
 
               final Widget tableContent = Column(
@@ -180,38 +180,42 @@ class _DeptTxTableState extends State<DeptTxTable> {
     if (widget.searchQuery.isNotEmpty) {
       svgPath = 'assets/vectors/empty search.svg';
       title = 'لا توجد نتائج تطابق بحثك';
-      description =
-          'تأكد من كتابة الاسم أو رقم المعاملة بشكل صحيح وحاول مرة أخرى.';
+      description = 'تأكد من كتابة الاسم أو رقم المعاملة بشكل صحيح وحاول مرة أخرى.';
     } else {
       switch (filter) {
-        case 'قيد التنفيذ':
-        case 'قيد المعالجة':
-          svgPath = 'assets/vectors/in progress.svg';
-          title = 'لا توجد معاملات قيد المعالجة';
-          description =
-              'لا توجد معاملات قيد المعالجة حالياً ضمن الدائرة.';
-          break;
         case 'بانتظار الاستلام':
+        case 'pending_pickup':
+        case 'pending':
           svgPath = 'assets/vectors/waiting.svg';
           title = 'لا توجد معاملات بانتظار الاستلام';
-          description =
-              'جميع المعاملات الواردة تم استلامها للبدء بالعمل عليها.';
+          description = 'جميع المعاملات الواردة تم استلامها للبدء بالعمل عليها.';
+          break;
+        case 'قيد التنفيذ':
+        case 'قيد المعالجة':
+        case 'in_progress':
+          svgPath = 'assets/vectors/in progress.svg';
+          title = 'لا توجد معاملات قيد التنفيذ';
+          description = 'لا توجد معاملات قيد الإجراء حالياً ضمن هذه الدائرة.';
           break;
         case 'منجزة':
+        case 'منجز':
+        case 'completed':
           svgPath = 'assets/vectors/approved.svg';
           title = 'لا توجد معاملات منجزة';
-          description = 'لا توجد معاملات منجزة مطابقة للشروط المحددة.';
+          description = 'لم تقم بإنجاز أي معاملات خلال الفترة الحالية.';
           break;
-        case 'تم الرفض':
         case 'مرفوضة':
+        case 'تم الرفض':
+        case 'مرفوض':
+        case 'rejected':
           svgPath = 'assets/vectors/rejected.svg';
           title = 'لا توجد معاملات مرفوضة';
           description = 'سجلك خالي من أي معاملات مرفوضة.';
           break;
-        default: // الكل
+        default:
           svgPath = 'assets/vectors/waiting.svg';
           title = 'لا توجد معاملات متوفرة';
-          description = 'لا توجد معاملات متاحة حالياً ضمن هذه الدائرة.';
+          description = 'قائمتك فارغة تماماً ولا تحتوي على أي معاملات.';
       }
     }
 
@@ -234,17 +238,21 @@ class _DeptTxTableState extends State<DeptTxTable> {
               const SizedBox(height: 24),
               Text(
                 title,
-                style: AppTextStyles.titleMedium,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headlineSmall.copyWith(
+                  fontWeight: AppTextStyles.semiBold,
+                  color: AppColors.charcoalDark,
+                ),
               ),
               const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+              SizedBox(
+                width: 380,
                 child: Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.charcoal.withValues(alpha: 0.60),
-                    height: 1.4,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.charcoal.withValues(alpha: 0.65),
+                    height: 1.5,
                   ),
                 ),
               ),
@@ -268,13 +276,13 @@ class _TableHeader extends StatelessWidget {
       child: const Row(
         textDirection: TextDirection.rtl,
         children: [
-          _HeaderText('رقم المعاملة', flex: 12),
-          _HeaderText('النوع', flex: 16),
-          _HeaderText('اسم المعاملة', flex: 14),
+          _HeaderText('رقم المعاملة', flex: 13),
+          _HeaderText('النوع', flex: 15),
+          _HeaderText('الدائرة', flex: 14),
           _HeaderText('التاريخ', flex: 12),
-          _HeaderText('المقدم', flex: 18),
-          _HeaderText('الحالة', flex: 14),
-          _HeaderText('عرض التفاصيل', flex: 20),
+          _HeaderText('مقدم الطلب', flex: 18),
+          _HeaderText('الحالة', flex: 13),
+          _HeaderText('إجراء', flex: 15),
         ],
       ),
     );
@@ -288,9 +296,9 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Generate avatar background color based on name letter
-    final String firstLetter = tx.applicantName.isNotEmpty ? tx.applicantName[0] : '';
-    final Color avatarBgColor = _getAvatarColor(firstLetter);
+    final firstLetter =
+        tx.applicantName.isNotEmpty ? tx.applicantName.characters.first : 'م';
+    final avatarBgColor = _getAvatarColor(firstLetter);
 
     return SizedBox(
       height: 65,
@@ -301,59 +309,75 @@ class _TransactionRow extends StatelessWidget {
           children: [
             // Transaction Number
             Expanded(
-              flex: 12,
+              flex: 13,
               child: Center(
-                child: Text(
-                  tx.transactionNumber,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: AppTextStyles.semiBold,
-                    color: AppColors.forest,
+                child: Tooltip(
+                  message: tx.transactionNumber,
+                  waitDuration: const Duration(milliseconds: 250),
+                  child: Text(
+                    tx.transactionNumber,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: AppTextStyles.semiBold,
+                      color: AppColors.forest,
+                    ),
                   ),
                 ),
               ),
             ),
             // Type
             Expanded(
-              flex: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    LucideIcons.fileText,
-                    size: 15,
-                    color: AppColors.charcoal,
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      tx.type,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
+              flex: 15,
+              child: Tooltip(
+                message: tx.type,
+                waitDuration: const Duration(milliseconds: 250),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      LucideIcons.fileText,
+                      size: 15,
+                      color: AppColors.charcoal,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        tx.type,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Department Badge
             Expanded(
               flex: 14,
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.forestLight.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: AppColors.forest.withValues(alpha: 0.12)),
-                  ),
-                  child: Text(
-                    tx.department,
-                    style: AppTextStyles.labelMedium.copyWith(
-                      fontWeight: AppTextStyles.medium,
-                      color: AppColors.forest,
-                      height: 1,
+                child: Tooltip(
+                  message: tx.department,
+                  waitDuration: const Duration(milliseconds: 250),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.forestLight.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.forest.withValues(alpha: 0.12)),
+                    ),
+                    child: Text(
+                      tx.department,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.labelMedium.copyWith(
+                        fontWeight: AppTextStyles.medium,
+                        color: AppColors.forest,
+                        height: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -368,42 +392,47 @@ class _TransactionRow extends StatelessWidget {
             // Applicant Name
             Expanded(
               flex: 18,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: avatarBgColor,
-                    child: Text(
-                      firstLetter,
-                      style: AppTextStyles.labelMedium.copyWith(
-                        fontWeight: AppTextStyles.semiBold,
-                        color: Colors.white,
+              child: Tooltip(
+                message: tx.applicantName,
+                waitDuration: const Duration(milliseconds: 250),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: avatarBgColor,
+                      child: Text(
+                        firstLetter,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          fontWeight: AppTextStyles.semiBold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      tx.applicantName,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        tx.applicantName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.labelLarge.copyWith(color: AppColors.charcoalDark),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             // Status Badge
             Expanded(
-              flex: 14,
+              flex: 13,
               child: Center(
                 child: _StatusBadge(status: tx.status, statusLabel: tx.statusLabel),
               ),
             ),
             // Details Action Button
             Expanded(
-              flex: 20,
+              flex: 15,
               child: Center(
                 child: Material(
                   color: AppColors.forestLight.withValues(alpha: 0.12),
@@ -473,12 +502,18 @@ class _HeaderText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.labelLarge.copyWith(
-          fontWeight: AppTextStyles.semiBold,
-          height: 1,
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(
+            fontWeight: AppTextStyles.semiBold,
+            height: 1,
+          ),
         ),
       ),
     );
@@ -500,14 +535,18 @@ class _CellText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.labelLarge.copyWith(
-          color: color ?? AppColors.charcoalDark,
-          height: 1.25,
+      child: Tooltip(
+        message: text,
+        waitDuration: const Duration(milliseconds: 250),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelLarge.copyWith(
+            color: color ?? AppColors.charcoalDark,
+            height: 1.25,
+          ),
         ),
       ),
     );
@@ -544,18 +583,24 @@ class _StatusBadge extends StatelessWidget {
         fg = AppColors.umber;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        statusLabel,
-        style: AppTextStyles.labelMedium.copyWith(
-          fontWeight: AppTextStyles.semiBold,
-          color: fg,
-          height: 1,
+    return Tooltip(
+      message: 'الحالة: $statusLabel',
+      waitDuration: const Duration(milliseconds: 200),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          statusLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.labelMedium.copyWith(
+            fontWeight: AppTextStyles.semiBold,
+            color: fg,
+            height: 1,
+          ),
         ),
       ),
     );

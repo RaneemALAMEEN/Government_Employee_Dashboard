@@ -733,6 +733,8 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
   }
 
   String _fileDisplayName(dynamic file) {
+    final label = widget.widgetEntity.data['label']?.toString().trim() ?? '';
+    if (label.isNotEmpty) return label;
     if (file is PlatformFile) return file.name;
 
     if (file is Map) {

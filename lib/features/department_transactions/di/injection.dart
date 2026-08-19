@@ -6,6 +6,7 @@ import '../../department_transactions/domain/repositories/department_transaction
 import '../../department_transactions/domain/usecases/get_accessible_departments.dart';
 import '../../department_transactions/domain/usecases/get_department_transactions.dart';
 import '../../department_transactions/domain/usecases/get_department_stats.dart';
+import '../../department_transactions/domain/usecases/delete_final_document.dart';
 import '../../department_transactions/presentation/bloc/dept_tx_bloc.dart';
 import '../../department_transactions/presentation/bloc/certificate_details/department_certificate_bloc.dart';
 import '../../department_transactions/presentation/bloc/final_document_generator/final_document_generator_cubit.dart';
@@ -38,6 +39,12 @@ Future<void> setupDepartmentTransactionsInjection() async {
   if (!getIt.isRegistered<GetAccessibleDepartments>()) {
     getIt.registerLazySingleton<GetAccessibleDepartments>(
       () => GetAccessibleDepartments(getIt<DepartmentTransactionsRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<DeleteFinalDocumentUseCase>()) {
+    getIt.registerLazySingleton<DeleteFinalDocumentUseCase>(
+      () => DeleteFinalDocumentUseCase(getIt<DepartmentTransactionsRepository>()),
     );
   }
 

@@ -235,6 +235,42 @@ class StageHistoryCard extends StatelessWidget {
               ),
             ],
 
+            // Sealed badge if stage was sealed with USB signature
+            if (stage['sealed'] == true) ...[
+              const SizedBox(height: 8),
+              Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.forest.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                          color: AppColors.forest.withOpacity(0.2)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.shieldCheck,
+                            size: 13, color: AppColors.forest),
+                        SizedBox(width: 4),
+                        Text(
+                          'مرحلة مختومة وموقّعة رقمياً بالـ USB',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.forest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 16),
             Divider(height: 1, color: AppColors.charcoal.withValues(alpha: 0.1)),
             const SizedBox(height: 16),
@@ -252,8 +288,241 @@ class StageHistoryCard extends StatelessWidget {
 
               return _buildReadonlyField(widgetConfig, val);
             }),
+
+            // Render templates if present in the stage
+            if ((stage['templates'] as List? ?? []).isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Divider(
+                  height: 1,
+                  color: AppColors.charcoal.withValues(alpha: 0.1)),
+              const SizedBox(height: 14),
+              const Text(
+                'المستندات والقوالب المولدة في هذه المرحلة:',
+                textDirection: TextDirection.rtl,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoalDark,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...(stage['templates'] as List).map((templateItem) {
+                final templateMap = templateItem is Map<String, dynamic>
+                    ? templateItem
+                    : Map<String, dynamic>.from(templateItem as Map);
+                return _buildTemplateItem(context, templateMap);
+              }),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTemplateItem(
+      BuildContext context, Map<String, dynamic> template) {
+    final templateId = template['id_template'] ??
+        template['template_id'] ??
+        template['id'];
+    final templateName = template['name']?.toString() ??
+        template['template_name']?.toString() ??
+        template['title']?.toString() ??
+        'قالب وثيقة #${templateId ?? ''}';
+    final val = template['value'];
+    final valMap =
+        val is Map ? Map<String, dynamic>.from(val) : <String, dynamic>{};
+
+    final generatedPdfUrl = valMap['generated_pdf_url']?.toString() ??
+        valMap['generated_pdf_path']?.toString() ??
+        valMap['pdf_url']?.toString() ??
+        valMap['file_url']?.toString() ??
+        template['generated_pdf_url']?.toString() ??
+        template['generated_pdf_path']?.toString() ??
+        template['pdf_url']?.toString() ??
+        template['file_url']?.toString();
+
+    final stageName = stage['stage_name']?.toString() ??
+        stage['form_name']?.toString() ??
+        'مرحلة سابقة';
+
+    const technicalKeys = {
+      'id',
+      'template_id',
+      'id_template',
+      'form_id',
+      'stage_code',
+      'completed_by',
+      'generated_pdf_url',
+      'generated_pdf_path',
+      'pdf_url',
+      'file_url',
+      'url',
+      'path',
+      'id_document_instance',
+      'document_instance_id',
+      'created_at',
+      'updated_at',
+      'deleted_at',
+      'config',
+      'is_active',
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.goldLight.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.rtl,
+        children: [
+          Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.forest.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(LucideIcons.fileCode,
+                    size: 16, color: AppColors.forest),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                templateName,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoalDark,
+                ),
+              ),
+              const Spacer(),
+              if (templateId != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldLight,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'ID: $templateId',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.charcoal,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (generatedPdfUrl != null && generatedPdfUrl.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.forest.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDEEEF),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(LucideIcons.fileText,
+                        color: Color(0xFFC62828), size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        Text(
+                          'المستند المولد للقالب (PDF)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.charcoalDark,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'نسخة PDF معتمدة ومولدة تلقائياً',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.charcoal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(LucideIcons.eye,
+                        size: 16, color: AppColors.forest),
+                    tooltip: 'عرض المستند',
+                    onPressed: () {
+                      final fullUrl = buildFileUrl(generatedPdfUrl);
+                      context.push('/pdf-viewer', extra: fullUrl);
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.download,
+                        size: 16, color: AppColors.goldDark),
+                    tooltip: 'تحميل المستند',
+                    onPressed: () {
+                      onDownloadFile(generatedPdfUrl, 'قالب_$templateId.pdf',
+                          documentType: 'قالب مرحلة - $stageName');
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (valMap.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              textDirection: TextDirection.rtl,
+              spacing: 16,
+              runSpacing: 6,
+              children: valMap.entries
+                  .where((e) => !technicalKeys.contains(e.key.toLowerCase()))
+                  .map((e) {
+                return Row(
+                  textDirection: TextDirection.rtl,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${e.key}: ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.charcoal.withValues(alpha: 0.65),
+                      ),
+                    ),
+                    Text(
+                      '${e.value}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.charcoalDark,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -356,8 +625,9 @@ class StageHistoryCard extends StatelessWidget {
             textDirection: TextDirection.rtl,
             spacing: 12,
             runSpacing: 12,
-            children: filesList.map((fileMap) {
-              final file = fileMap as Map;
+            children: filesList.asMap().entries.map((entry) {
+              final index = entry.key;
+              final file = entry.value as Map;
               final rawPath = file['url']?.toString() ?? file['path']?.toString() ?? '';
               final realExt = AppFileDownloader.extractExtension(
                 rawPath,
@@ -372,7 +642,9 @@ class StageHistoryCard extends StatelessWidget {
                 'webp'
               ].contains(realExt);
 
-              var filename = file['original_name']?.toString() ?? file['name']?.toString() ?? '';
+              var filename = label.trim().isNotEmpty && label.trim() != 'مرفقات'
+                  ? (filesList.length > 1 ? '${label.trim()} (${index + 1})' : label.trim())
+                  : (file['original_name']?.toString() ?? file['name']?.toString() ?? '');
               if (filename.isEmpty || filename == 'ملف_مرفق.pdf' || filename == 'ملف_مرفق') {
                 filename = isImage ? 'صورة_مرفقة.$realExt' : 'مستند_مرفق.$realExt';
               } else if (isImage && filename.toLowerCase().endsWith('.pdf')) {
@@ -386,7 +658,7 @@ class StageHistoryCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.18)),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.18)),
                 ),
                 child: Row(
                   textDirection: TextDirection.rtl,

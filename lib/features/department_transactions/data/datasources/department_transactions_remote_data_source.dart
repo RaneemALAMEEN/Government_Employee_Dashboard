@@ -203,6 +203,13 @@ class DepartmentTransactionsRemoteDataSource {
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
   }
+
+  Future<Either<Failure, dynamic>> deleteFinalDocument(int transactionId) {
+    return api.makeRequest(
+      method: ApiMethod.delete,
+      endPoint: 'api/transaction/$transactionId/final-document',
+    );
+  }
 }
 
 

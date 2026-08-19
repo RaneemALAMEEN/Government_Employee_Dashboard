@@ -234,5 +234,19 @@ class DepartmentTransactionsRepositoryImpl implements DepartmentTransactionsRepo
       },
     );
   }
+
+  @override
+  Future<Either<Failure, String>> deleteFinalDocument(int transactionId) async {
+    final result = await remoteDataSource.deleteFinalDocument(transactionId);
+    return result.fold(
+      (failure) => Left(failure),
+      (data) {
+        if (data is Map && data['message'] != null) {
+          return Right(data['message'].toString());
+        }
+        return const Right('تم حذف الوثيقة النهائية بنجاح');
+      },
+    );
+  }
 }
 

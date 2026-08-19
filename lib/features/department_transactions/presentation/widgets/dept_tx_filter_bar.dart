@@ -63,33 +63,46 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
-    final initialDateRange = DateTimeRange(
-      start: widget.fromDate != null ? DateTime.tryParse(widget.fromDate!) ?? DateTime.now().subtract(const Duration(days: 30)) : DateTime.now().subtract(const Duration(days: 30)),
-      end: widget.toDate != null ? DateTime.tryParse(widget.toDate!) ?? DateTime.now() : DateTime.now(),
-    );
+    final initialDateRange = (widget.fromDate != null && widget.toDate != null)
+        ? DateTimeRange(
+            start: DateTime.tryParse(widget.fromDate!) ??
+                DateTime.now().subtract(const Duration(days: 30)),
+            end: DateTime.tryParse(widget.toDate!) ?? DateTime.now(),
+          )
+        : null;
 
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
       initialDateRange: initialDateRange,
+      initialEntryMode: DatePickerEntryMode.input,
+      helpText: 'تحديد الفترة الزمنية',
+      saveText: 'تطبيق',
+      cancelText: 'إلغاء',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
               primary: AppColors.forest,
               onPrimary: Colors.white,
+              surface: Colors.white,
               onSurface: AppColors.charcoalDark,
             ),
           ),
-          child: child!,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: child!,
+          ),
         );
       },
     );
 
     if (picked != null) {
-      final fromStr = "${picked.start.year}-${picked.start.month.toString().padLeft(2, '0')}-${picked.start.day.toString().padLeft(2, '0')}";
-      final toStr = "${picked.end.year}-${picked.end.month.toString().padLeft(2, '0')}-${picked.end.day.toString().padLeft(2, '0')}";
+      final fromStr =
+          "${picked.start.year}-${picked.start.month.toString().padLeft(2, '0')}-${picked.start.day.toString().padLeft(2, '0')}";
+      final toStr =
+          "${picked.end.year}-${picked.end.month.toString().padLeft(2, '0')}-${picked.end.day.toString().padLeft(2, '0')}";
       widget.onDateRangeChanged(fromStr, toStr);
     }
   }
@@ -97,6 +110,7 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
   @override
   Widget build(BuildContext context) {
     final statuses = ['منجزة', 'مرفوضة'];
+    final hasDateFilter = widget.fromDate != null || widget.toDate != null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -113,18 +127,22 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: 'بحث برقم المعاملة، النوع، أو اسم المسؤول...',
-                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
-                prefixIcon: const Icon(LucideIcons.search, size: 20, color: AppColors.charcoal),
+                hintStyle: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.charcoal.withOpacity(0.6)),
+                prefixIcon: const Icon(LucideIcons.search,
+                    size: 20, color: AppColors.charcoal),
                 filled: true,
                 fillColor: AppColors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
+                  borderSide:
+                      BorderSide(color: AppColors.gold.withOpacity(0.25)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
+                  borderSide:
+                      BorderSide(color: AppColors.gold.withOpacity(0.25)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -135,39 +153,126 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
           ),
         );
 
-        final datePickerButton = InkWell(
-          onTap: () => _selectDateRange(context),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.gold.withOpacity(0.25)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(LucideIcons.calendar, color: AppColors.forest, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  (widget.fromDate != null && widget.toDate != null) 
-                    ? '${widget.fromDate} إلى ${widget.toDate}'
-                    : 'تحديد الفترة الزمنية',
-                  style: AppTextStyles.bodySmall.copyWith(fontWeight: AppTextStyles.medium, color: AppColors.charcoalDark),
+        final datePickerButton = Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _selectDateRange(context),
+            borderRadius: BorderRadius.circular(8),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: hasDateFilter ? AppColors.forest : AppColors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: hasDateFilter
+                      ? AppColors.forestDark
+                      : AppColors.gold.withOpacity(0.25),
+                  width: hasDateFilter ? 1.2 : 1.0,
                 ),
-                if (widget.fromDate != null || widget.toDate != null) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => widget.onDateRangeChanged(null, null),
-                    child: const Icon(LucideIcons.x, size: 16, color: Colors.grey),
+                boxShadow: hasDateFilter
+                    ? [
+                        BoxShadow(
+                          color: AppColors.forest.withOpacity(0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    hasDateFilter
+                        ? LucideIcons.calendarCheck
+                        : LucideIcons.calendar,
+                    color: hasDateFilter ? Colors.white : AppColors.forest,
+                    size: 18,
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    hasDateFilter
+                        ? '${widget.fromDate} إلى ${widget.toDate}'
+                        : 'تحديد الفترة الزمنية',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: hasDateFilter
+                          ? FontWeight.w600
+                          : AppTextStyles.medium,
+                      color:
+                          hasDateFilter ? Colors.white : AppColors.charcoalDark,
+                    ),
+                  ),
+                  if (hasDateFilter) ...[
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'إلغاء فلترة التاريخ',
+                      child: InkWell(
+                        onTap: () => widget.onDateRangeChanged(null, null),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            LucideIcons.x,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
+
+        final clearDateFilterButton = hasDateFilter
+            ? Material(
+                color: Colors.transparent,
+                child: Tooltip(
+                  message: 'إلغاء فلترة التاريخ والعودة للكل',
+                  child: InkWell(
+                    onTap: () => widget.onDateRangeChanged(null, null),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      height: 42,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.umber.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.umber.withOpacity(0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            LucideIcons.rotateCcw,
+                            size: 14,
+                            color: AppColors.umber,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'إلغاء الفلترة',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.umber,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : null;
 
         final statusChips = Row(
           mainAxisSize: MainAxisSize.min,
@@ -272,6 +377,10 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
               Row(
                 children: [
                   datePickerButton,
+                  if (clearDateFilterButton != null) ...[
+                    const SizedBox(width: 8),
+                    clearDateFilterButton,
+                  ],
                   const Spacer(),
                 ],
               ),
@@ -301,6 +410,10 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
                 searchBox,
                 const SizedBox(width: 12),
                 datePickerButton,
+                if (clearDateFilterButton != null) ...[
+                  const SizedBox(width: 8),
+                  clearDateFilterButton,
+                ],
                 const Spacer(),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,

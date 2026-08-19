@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 
@@ -116,20 +118,24 @@ class SubmitTransaction {
         });
       }
 
-      // 4. Complete Task payload structure
-      final completePayload = <String, dynamic>{
+      // 4. Base Task payload structure
+      final basePayload = <String, dynamic>{
         'form_id': formId,
         'form_name': formName,
         'widgets': payload['widgets'],
         'templates': templatesPayload,
         'note': note ?? '',
         'decision': decisionValue,
-        if (expectedVersion != null) 'expected_version': expectedVersion,
         if (assignments != null && assignments.isNotEmpty)
           'assignments': assignments,
       };
 
-      // 4. Handle Signature if required (when pin/keys exist)
+      final completePayload = <String, dynamic>{
+        ...basePayload,
+        if (expectedVersion != null) 'expected_version': expectedVersion,
+      };
+
+      // 5. Handle Signature if required (when pin/keys exist)
       if (pin != null &&
           keysDirectoryPath != null &&
           pin.isNotEmpty &&
@@ -138,12 +144,31 @@ class SubmitTransaction {
         debugPrint('[SubmitTransaction] 🔐 Transaction Signing PIN: $pin');
         debugPrint('==================================================');
 
-        // Request Signing Challenge
+        final challengePayload = <String, dynamic>{
+          'pin': pin,
+          ...basePayload,
+        };
 
+        debugPrint('==================================================');
+        debugPrint('[SubmitTransaction] 🔐 Signing Challenge Request:');
+        debugPrint('Task ID: $taskId');
+        debugPrint('--- Signing Challenge Payload (JSON) ---');
+        try {
+          const encoder = JsonEncoder.withIndent('  ');
+          final prettyJson = encoder.convert(challengePayload);
+          for (final line in prettyJson.split('\n')) {
+            debugPrint(line, wrapWidth: 1024);
+          }
+        } catch (_) {
+          debugPrint(challengePayload.toString());
+        }
+        debugPrint('----------------------------------------');
+        debugPrint('==================================================');
+
+        // Request Signing Challenge
         final challengeResult = await repository.createSigningChallenge(
           taskId: taskId,
-          pin: pin,
-          decision: decisionValue,
+          payload: challengePayload,
           isSubmitDocuments: isSubmitDocuments,
         );
 
@@ -181,7 +206,23 @@ class SubmitTransaction {
         }
       }
 
-      // 5. Submit Complete Task API
+      debugPrint('==================================================');
+      debugPrint('[SubmitTransaction] 🚀 Complete Task Request:');
+      debugPrint('Task ID: $taskId');
+      debugPrint('--- Complete Task Payload (JSON) ---');
+      try {
+        const encoder = JsonEncoder.withIndent('  ');
+        final prettyJson = encoder.convert(completePayload);
+        for (final line in prettyJson.split('\n')) {
+          debugPrint(line, wrapWidth: 1024);
+        }
+      } catch (_) {
+        debugPrint(completePayload.toString());
+      }
+      debugPrint('------------------------------------');
+      debugPrint('==================================================');
+
+      // 6. Submit Complete Task API
       return await repository.completeTask(
         taskId: taskId,
         payload: completePayload,

@@ -13,6 +13,7 @@ class MyTransactionEntity {
   final String processName; // اسم المعاملة (process_name)
   final int progressPercent; // نسبة الإنجاز (progress_percent)
   final int? transactionId; // معرف المعاملة الرقمي (transaction_id)
+  final bool isLockedByMe; // هل تم استلامها/قفلها من قبلي (is_locked_by_me)
 
   const MyTransactionEntity({
     required this.idTask,
@@ -29,6 +30,7 @@ class MyTransactionEntity {
     this.processName = '',
     this.progressPercent = 0,
     this.transactionId,
+    this.isLockedByMe = false,
   });
 
   MyTransactionEntity copyWith({
@@ -45,6 +47,8 @@ class MyTransactionEntity {
     String? completedAt,
     String? processName,
     int? progressPercent,
+    int? transactionId,
+    bool? isLockedByMe,
   }) {
     return MyTransactionEntity(
       idTask: idTask ?? this.idTask,
@@ -60,6 +64,8 @@ class MyTransactionEntity {
       completedAt: completedAt ?? this.completedAt,
       processName: processName ?? this.processName,
       progressPercent: progressPercent ?? this.progressPercent,
+      transactionId: transactionId ?? this.transactionId,
+      isLockedByMe: isLockedByMe ?? this.isLockedByMe,
     );
   }
 }

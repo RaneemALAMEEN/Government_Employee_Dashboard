@@ -15,6 +15,7 @@ import '../../../../shared/utils/app_file_downloader.dart';
 import '../../../../shared/utils/app_file_url.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../../../department_transactions/domain/usecases/delete_final_document.dart';
 import '../../../department_transactions/presentation/widgets/generate_final_document_dialog.dart';
 import '../../../my_transactions/presentation/pages/pdf_viewer_page.dart';
 import '../../domain/entities/document_verification_entity.dart';
@@ -1221,6 +1222,116 @@ class _FinalDocumentCard extends StatelessWidget {
     }
   }
 
+  Future<void> _delete(BuildContext context) async {
+    final tId = transactionId;
+    if (tId == null || tId == 0) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  LucideIcons.trash2,
+                  color: Color(0xFFDC2626),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'حذف الوثيقة النهائية',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.charcoalDark,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'هل أنت متأكد من رغبتك في حذف الوثيقة النهائية لهذه المعاملة؟\nسيتم مسح سجل الوثيقة وإلغاء ملف الـ PDF من الخادم نهائياً.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.charcoal,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(60, 38),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              ),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(
+                  color: AppColors.charcoal.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              icon: const Icon(LucideIcons.trash2, size: 15),
+              label: const Text('تأكيد الحذف'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(100, 38),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    AppSnackBar.show(context, message: 'جاري حذف الوثيقة النهائية...');
+
+    final useCase = getIt<DeleteFinalDocumentUseCase>();
+    final result = await useCase(tId);
+
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) {
+        AppSnackBar.show(
+          context,
+          title: 'فشل في حذف الوثيقة',
+          message: failure.message,
+          isError: true,
+        );
+      },
+      (successMessage) {
+        AppSnackBar.show(
+          context,
+          title: 'تم الحذف بنجاح',
+          message: successMessage,
+          isError: false,
+        );
+        onDocumentGenerated?.call();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAvailable = document.available && document.fileUrl.isNotEmpty;
@@ -1428,6 +1539,18 @@ class _FinalDocumentCard extends StatelessWidget {
                         foregroundColor: AppColors.charcoalDark,
                         side: BorderSide(
                             color: AppColors.gold.withOpacity(0.5)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _delete(context),
+                      icon: const Icon(LucideIcons.trash2, size: 14, color: Color(0xFFDC2626)),
+                      label: const Text('حذف الوثيقة'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        side: const BorderSide(color: Color(0xFFFCA5A5)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

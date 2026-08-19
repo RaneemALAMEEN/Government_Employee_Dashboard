@@ -1,13 +1,17 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/utils/app_file_downloader.dart';
+import '../../../../shared/utils/app_file_url.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
-import '../../../my_transactions/presentation/pages/pdf_viewer_page.dart';
 import '../../domain/entities/document_verification_entity.dart';
 
 class TransactionHistoryTimeline extends StatefulWidget {
@@ -41,7 +45,7 @@ class _TransactionHistoryTimelineState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.forest.withOpacity(0.08),
+                  color: AppColors.forest.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -78,8 +82,7 @@ class _TransactionHistoryTimelineState
               ),
             ],
           ),
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           if (stages.isEmpty)
             _HistoryEmptyState(
               message: widget.history.idProcess.isEmpty
@@ -92,6 +95,7 @@ class _TransactionHistoryTimelineState
               (index) => _TimelineStage(
                 index: index,
                 stage: stages[index],
+                applicantName: widget.history.data.applicant?.fullName,
                 expanded: _expanded.contains(index),
                 isLast: index == stages.length - 1,
                 onToggle: () => setState(() {
@@ -108,6 +112,7 @@ class _TransactionHistoryTimelineState
 class _TimelineStage extends StatelessWidget {
   final int index;
   final TransactionHistoryStageEntity stage;
+  final String? applicantName;
   final bool expanded;
   final bool isLast;
   final VoidCallback onToggle;
@@ -115,6 +120,7 @@ class _TimelineStage extends StatelessWidget {
   const _TimelineStage({
     required this.index,
     required this.stage,
+    this.applicantName,
     required this.expanded,
     required this.isLast,
     required this.onToggle,
@@ -124,143 +130,158 @@ class _TimelineStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final widgets = stage.widgets;
     final valuedCount = widgets.where(_hasActualValue).length;
-    return Stack(
-      children: [
-        if (!isLast)
-          PositionedDirectional(
-            start: 13.5,
-            top: 28,
-            bottom: 0,
-            child: Container(
-              width: 1,
-              color: AppColors.border.withValues(alpha: .45),
-            ),
-          ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 38,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      color: AppColors.surface,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.rtl,
+        children: [
+          // Step indicator: Circle badge
+          Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(top: 12),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.forest,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.forest.withValues(alpha: 0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
+              ],
+            ),
+            child: Text(
+              '${index + 1}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(
-                    color: expanded
-                        ? AppColors.primary.withValues(alpha: .32)
-                        : AppColors.border.withValues(alpha: .28),
-                  ),
+          ),
+          const SizedBox(width: 12),
+          // Main Stage Card
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: expanded
+                      ? AppColors.forest.withValues(alpha: 0.35)
+                      : AppColors.gold.withValues(alpha: 0.22),
                 ),
-                child: Column(
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onToggle,
-                        borderRadius: BorderRadius.circular(13),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            children: [
-                              Icon(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onToggle,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          textDirection: TextDirection.rtl,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: AppColors.forest.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
                                 stage.isDocumentGeneration
                                     ? LucideIcons.fileCog
                                     : LucideIcons.clipboardCheck,
+                                size: 18,
+                                color: AppColors.forest,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                textDirection: TextDirection.rtl,
+                                children: [
+                                  Text(
+                                    stage.displayName,
+                                    style: AppTextStyles.titleSmall.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.charcoalDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    textDirection: TextDirection.rtl,
+                                    spacing: 8,
+                                    runSpacing: 5,
+                                    children: [
+                                      if (stage.decision?.isNotEmpty == true)
+                                        _DecisionBadge(
+                                          decision: stage.decision!,
+                                        ),
+                                      if (stage.completedAt != null)
+                                        _MetaChip(
+                                          text: formatHistoryDate(
+                                            stage.completedAt,
+                                          ),
+                                          icon: LucideIcons.calendarDays,
+                                          type: _ChipType.date,
+                                        ),
+                                      if (valuedCount > 0)
+                                        _MetaChip(
+                                          text:
+                                              '$valuedCount ${valuedCount == 1 ? 'حقل' : 'حقول'}',
+                                          icon: LucideIcons.listChecks,
+                                          type: _ChipType.count,
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            AnimatedRotation(
+                              turns: expanded ? .5 : 0,
+                              duration: const Duration(milliseconds: 180),
+                              child: Icon(
+                                LucideIcons.chevronDown,
                                 size: 19,
-                                color: AppColors.primary,
+                                color: AppColors.charcoal.withValues(alpha: 0.6),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      stage.displayName,
-                                      style: AppTextStyles.titleSmall,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 5,
-                                      children: [
-                                        if (stage.decision?.isNotEmpty == true)
-                                          _MetaChip(
-                                            text: decisionText(stage.decision!),
-                                          ),
-                                        if (stage.completedAt != null)
-                                          _MetaChip(
-                                            text: formatHistoryDate(
-                                              stage.completedAt,
-                                            ),
-                                            icon: LucideIcons.calendarDays,
-                                          ),
-                                        if (valuedCount > 0)
-                                          _MetaChip(
-                                            text:
-                                                '$valuedCount ${valuedCount == 1 ? 'حقل' : 'حقول'}',
-                                            icon: LucideIcons.listChecks,
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              AnimatedRotation(
-                                turns: expanded ? .5 : 0,
-                                duration: const Duration(milliseconds: 180),
-                                child: const Icon(
-                                  LucideIcons.chevronDown,
-                                  size: 19,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    AnimatedCrossFade(
-                      firstChild: const SizedBox(width: double.infinity),
-                      secondChild: _StageDetails(
-                        stage: stage,
-                        widgets: widgets,
-                      ),
-                      crossFadeState: expanded
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 220),
-                      sizeCurve: Curves.easeOutCubic,
+                  ),
+                  if (expanded)
+                    _StageDetails(
+                      stage: stage,
+                      widgets: widgets,
+                      applicantName: applicantName,
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -268,18 +289,29 @@ class _TimelineStage extends StatelessWidget {
 class _StageDetails extends StatelessWidget {
   final TransactionHistoryStageEntity stage;
   final List<TransactionHistoryWidgetEntity> widgets;
+  final String? applicantName;
 
-  const _StageDetails({required this.stage, required this.widgets});
+  const _StageDetails({
+    required this.stage,
+    required this.widgets,
+    this.applicantName,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          textDirection: TextDirection.rtl,
           children: [
-            Divider(color: AppColors.border.withValues(alpha: .25)),
-            if (stage.note?.isNotEmpty == true)
+            Divider(
+              color: AppColors.gold.withValues(alpha: 0.18),
+              height: 1,
+            ),
+            const SizedBox(height: 14),
+            if (stage.note?.isNotEmpty == true &&
+                stage.note != stage.rejectionReason)
               _MessageBox(label: 'ملاحظة', value: stage.note!),
             if (stage.rejectionReason?.isNotEmpty == true)
               _MessageBox(
@@ -288,12 +320,18 @@ class _StageDetails extends StatelessWidget {
                 warning: true,
               ),
             if (stage.isDocumentGeneration)
-              _GeneratedDocumentStage(stage: stage)
+              _GeneratedDocumentStage(
+                stage: stage,
+                applicantName: applicantName,
+              )
             else if (widgets.isEmpty && stage.templates.isEmpty)
-              Text(
-                'لا توجد قيم مدخلة ضمن هذه المرحلة',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'لا توجد قيم مدخلة ضمن هذه المرحلة',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               )
             else if (widgets.isNotEmpty)
@@ -304,6 +342,7 @@ class _StageDetails extends StatelessWidget {
                       ? constraints.maxWidth
                       : (constraints.maxWidth - 10) / 2;
                   return Wrap(
+                    textDirection: TextDirection.rtl,
                     spacing: 10,
                     runSpacing: 10,
                     children: widgets
@@ -314,6 +353,8 @@ class _StageDetails extends StatelessWidget {
                                 : width,
                             child: TransactionHistoryValueRenderer(
                               widget: item,
+                              stageName: stage.displayName,
+                              applicantName: applicantName,
                             ),
                           ),
                         )
@@ -322,9 +363,11 @@ class _StageDetails extends StatelessWidget {
                 },
               ),
             if (!stage.isDocumentGeneration && stage.templates.isNotEmpty) ...[
-              if (widgets.isNotEmpty) const SizedBox(height: 10),
+              if (widgets.isNotEmpty) const SizedBox(height: 12),
               _TemplateValues(
                 templates: stage.templates,
+                stage: stage,
+                applicantName: applicantName,
                 excludedValues: widgets.map((item) => item.value).toList(),
               ),
             ],
@@ -335,42 +378,331 @@ class _StageDetails extends StatelessWidget {
 
 class _TemplateValues extends StatelessWidget {
   final List<TransactionHistoryTemplateEntity> templates;
+  final TransactionHistoryStageEntity stage;
+  final String? applicantName;
   final List<dynamic> excludedValues;
 
   const _TemplateValues({
     required this.templates,
+    required this.stage,
+    this.applicantName,
     required this.excludedValues,
   });
 
   @override
   Widget build(BuildContext context) {
     final excluded = excludedValues.map((value) => value?.toString()).toSet();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      textDirection: TextDirection.rtl,
+      children: templates.map((template) {
+        return _SingleTemplateCard(
+          template: template,
+          stage: stage,
+          applicantName: applicantName,
+          excluded: excluded,
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _SingleTemplateCard extends StatelessWidget {
+  final TransactionHistoryTemplateEntity template;
+  final TransactionHistoryStageEntity stage;
+  final String? applicantName;
+  final Set<String?> excluded;
+
+  const _SingleTemplateCard({
+    required this.template,
+    required this.stage,
+    this.applicantName,
+    required this.excluded,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final values = template.values;
+
+    // 1. Extract Template ID & Name
+    final templateId = values['id_template'] ??
+        values['template_id'] ??
+        values['id_document_instance'] ??
+        values['document_instance_id'] ??
+        values['id'];
+
+    final templateName = values['name']?.toString() ??
+        values['template_name']?.toString() ??
+        values['title']?.toString() ??
+        (templateId != null ? 'قالب وثيقة #$templateId' : 'قالب الوثيقة');
+
+    // 2. Extract PDF URL / Path
+    final rawPdfUrl = _firstReadable([
+      values['generated_pdf_url'],
+      values['generated_pdf_path'],
+      values['pdf_url'],
+      values['file_url'],
+      values['url'],
+      stage.generatedPdfUrl,
+      stage.generatedDocument?.url,
+    ]);
+
+    // 3. Extract user-facing template field entries (filtering out technical metadata)
     final entries = <MapEntry<String, String>>[];
-    for (final template in templates) {
-      for (final entry in template.values.entries) {
-        if (_technicalTemplateKeys.contains(entry.key.toLowerCase())) continue;
-        final value = entry.value;
-        if (value is! String && value is! num && value is! bool) continue;
-        final readable =
-            value is bool ? (value ? 'نعم' : 'لا') : value.toString();
-        if (readable.trim().isEmpty || excluded.contains(value.toString())) {
-          continue;
-        }
-        entries.add(MapEntry(_templateLabel(entry.key), readable));
+    for (final entry in values.entries) {
+      if (_technicalTemplateKeys.contains(entry.key.toLowerCase())) continue;
+      final value = entry.value;
+      if (value == null) continue;
+      if (value is! String && value is! num && value is! bool) continue;
+      final readable =
+          value is bool ? (value ? 'نعم' : 'لا') : value.toString().trim();
+      if (readable.isEmpty || excluded.contains(value.toString())) {
+        continue;
       }
+      entries.add(MapEntry(_templateLabel(entry.key), readable));
     }
-    if (entries.isEmpty) return const SizedBox.shrink();
-    return _ValueShell(
-      label: 'بيانات القالب',
-      icon: LucideIcons.layoutTemplate,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: entries
-            .map(
-              (entry) => _ValueChip(text: '${entry.key}: ${entry.value}'),
-            )
-            .toList(growable: false),
+
+    final hasPdf = rawPdfUrl.isNotEmpty;
+    final hasFields = entries.isNotEmpty;
+
+    if (!hasPdf && !hasFields) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBFBFA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.rtl,
+        children: [
+          // Template Header
+          Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.forest.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  LucideIcons.layoutTemplate,
+                  size: 16,
+                  color: AppColors.forest,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'بيانات ومستند القالب: $templateName',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoalDark,
+                ),
+              ),
+              const Spacer(),
+              if (templateId != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldLight,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                  ),
+                  child: Text(
+                    'ID: $templateId',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.charcoalDark,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          // PDF Document Preview & Download Box
+          if (hasPdf) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.forest.withValues(alpha: 0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDEEEF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      LucideIcons.fileText,
+                      color: Color(0xFFC62828),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        const Text(
+                          'المستند المولد للقالب (PDF)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.charcoalDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'نسخة PDF معتمدة ومولدة تلقائياً من القالب',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.charcoal.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // View PDF Button
+                  OutlinedButton.icon(
+                    onPressed: () => _openPdfInsideApp(
+                      context,
+                      rawPdfUrl,
+                      'قالب_$templateName',
+                    ),
+                    icon: const Icon(LucideIcons.eye, size: 15),
+                    label: const Text('عرض المستند'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.forest,
+                      side: BorderSide(color: AppColors.forest.withValues(alpha: 0.35)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Download PDF Button
+                  ElevatedButton.icon(
+                    onPressed: () => _downloadFileFromUrl(
+                      context,
+                      rawUrl: rawPdfUrl,
+                      defaultFilename: 'قالب_${templateId ?? "وثيقة"}.pdf',
+                      documentType: 'قالب مرحلة - ${stage.displayName}',
+                      applicantName: applicantName,
+                    ),
+                    icon: const Icon(LucideIcons.download, size: 15),
+                    label: const Text('تنزيل'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.forest,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Dynamic Field Values
+          if (hasFields) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'البيانات المدخلة في القالب:',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              textDirection: TextDirection.rtl,
+              spacing: 8,
+              runSpacing: 8,
+              children: entries
+                  .map(
+                    (entry) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        textDirection: TextDirection.rtl,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${entry.key}: ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.charcoal.withValues(alpha: 0.65),
+                            ),
+                          ),
+                          Text(
+                            entry.value,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.charcoalDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -378,13 +710,26 @@ class _TemplateValues extends StatelessWidget {
 
 class TransactionHistoryValueRenderer extends StatelessWidget {
   final TransactionHistoryWidgetEntity widget;
+  final String stageName;
+  final String? applicantName;
 
-  const TransactionHistoryValueRenderer({super.key, required this.widget});
+  const TransactionHistoryValueRenderer({
+    super.key,
+    required this.widget,
+    required this.stageName,
+    this.applicantName,
+  });
 
   @override
   Widget build(BuildContext context) {
     final type = widget.widgetType.toLowerCase();
-    if (type == 'file_picker') return _FileValueCard(widget: widget);
+    if (type == 'file_picker') {
+      return _FileValueCard(
+        widget: widget,
+        stageName: stageName,
+        applicantName: applicantName,
+      );
+    }
     if (type == 'check_list' || widget.value is List) {
       return _ListValueCard(widget: widget);
     }
@@ -420,7 +765,13 @@ class _SimpleValueCard extends StatelessWidget {
   Widget build(BuildContext context) => _ValueShell(
         label: _label(widget),
         icon: icon,
-        child: SelectableText(displayValue, style: AppTextStyles.bodyMedium),
+        child: SelectableText(
+          displayValue,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.charcoalDark,
+          ),
+        ),
       );
 }
 
@@ -456,6 +807,7 @@ class _ListValueCard extends StatelessWidget {
       child: readable.isEmpty
           ? const Text('لم يتم إدخال قيمة')
           : Wrap(
+              textDirection: TextDirection.rtl,
               spacing: 6,
               runSpacing: 6,
               children: readable
@@ -468,26 +820,44 @@ class _ListValueCard extends StatelessWidget {
 
 class _FileValueCard extends StatelessWidget {
   final TransactionHistoryWidgetEntity widget;
+  final String stageName;
+  final String? applicantName;
 
-  const _FileValueCard({required this.widget});
+  const _FileValueCard({
+    required this.widget,
+    required this.stageName,
+    this.applicantName,
+  });
 
   @override
   Widget build(BuildContext context) {
     final rawFiles =
         widget.value is List ? widget.value as List : [widget.value];
-    final files = rawFiles.whereType<Map>().map((value) {
-      final map = Map<String, dynamic>.from(value);
+    final label = _label(widget);
+    final validFiles = rawFiles.whereType<Map>().toList();
+    final files = validFiles.asMap().entries.map((entry) {
+      final index = entry.key;
+      final map = Map<String, dynamic>.from(entry.value);
       final typeDoc = map['type_doc'] is Map
           ? Map<String, dynamic>.from(map['type_doc'] as Map)
           : <String, dynamic>{};
+
+      String computedName = label;
+      if (validFiles.length > 1 && label.isNotEmpty && label != 'بيانات الحقل') {
+        computedName = '$label (${index + 1})';
+      } else if (label.isEmpty || label == 'بيانات الحقل') {
+        computedName = _firstReadable([map['original_name'], map['name']]);
+      }
+
       return (
-        url: _firstReadable([map['url'], map['file_url']]),
-        name: _firstReadable([map['original_name'], map['name']]),
+        url: _firstReadable([map['url'], map['file_url'], map['path']]),
+        name: computedName,
         type: _firstReadable([typeDoc['name'], map['mime_type'], map['type']]),
       );
     }).toList(growable: false);
+
     return _ValueShell(
-      label: _label(widget),
+      label: label,
       icon: LucideIcons.paperclip,
       child: files.isEmpty
           ? const Text('لم يتم إرفاق ملف')
@@ -497,9 +867,11 @@ class _FileValueCard extends StatelessWidget {
                     (file) => _FileTile(
                       url: file.url,
                       name: file.name.isEmpty
-                          ? 'عرض ${_label(widget)}'
+                          ? 'عرض $label'
                           : file.name,
                       type: file.type,
+                      stageName: stageName,
+                      applicantName: applicantName,
                     ),
                   )
                   .toList(growable: false),
@@ -508,122 +880,254 @@ class _FileValueCard extends StatelessWidget {
   }
 }
 
-class _FileTile extends StatefulWidget {
+class _FileTile extends StatelessWidget {
   final String url;
   final String name;
   final String type;
+  final String stageName;
+  final String? applicantName;
 
-  const _FileTile({required this.url, required this.name, required this.type});
-
-  @override
-  State<_FileTile> createState() => _FileTileState();
-}
-
-class _FileTileState extends State<_FileTile> {
-  bool _hovered = false;
-
-  Future<void> _open() async {
-    final uri = Uri.tryParse(widget.url);
-    if (uri == null || !uri.hasScheme) {
-      if (mounted) {
-        AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
-      }
-      return;
-    }
-    if (_isPdf(widget.url, widget.name, widget.type)) {
-      context.push('/pdf-viewer', extra: {
-        'fileUrl': widget.url,
-        'title': widget.name,
-      });
-      return;
-    }
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
-      AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
-    }
-  }
+  const _FileTile({
+    required this.url,
+    required this.name,
+    required this.type,
+    required this.stageName,
+    this.applicantName,
+  });
 
   @override
-  Widget build(BuildContext context) => MouseRegion(
-        cursor: widget.url.isEmpty
-            ? SystemMouseCursors.basic
-            : SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          margin: const EdgeInsets.only(top: 7),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: _hovered ? AppColors.lightPrimary : AppColors.background,
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: AppColors.border.withValues(alpha: .3)),
+  Widget build(BuildContext context) {
+    final isPdfFile = _isPdf(url, name, type);
+    final realExt = AppFileDownloader.extractExtension(
+      url,
+      fallbackExtension: isPdfFile ? 'pdf' : 'png',
+    );
+    final isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+        .contains(realExt.toLowerCase());
+
+    var displayName = name;
+    if (displayName.isEmpty ||
+        displayName == 'ملف_مرفق.pdf' ||
+        displayName == 'ملف_مرفق') {
+      displayName = isImage ? 'صورة_مرفقة.$realExt' : 'مستند_مرفق.$realExt';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: isImage
+                  ? const Color(0xFFEFF6FF)
+                  : const Color(0xFFFDEEEF),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Icon(
+              isImage ? LucideIcons.image : LucideIcons.fileText,
+              color: isImage
+                  ? const Color(0xFF1D4ED8)
+                  : const Color(0xFFC62828),
+              size: 18,
+            ),
           ),
-          child: Row(
-            children: [
-              const Icon(LucideIcons.file, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.name, style: AppTextStyles.bodyMedium),
-                    if (widget.type.isNotEmpty)
-                      Text(
-                        widget.type,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                  ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              textDirection: TextDirection.rtl,
+              children: [
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.charcoalDark,
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: widget.url.isEmpty ? null : _open,
-                child: const Text('عرض الملف'),
-              ),
-            ],
+                if (type.isNotEmpty)
+                  Text(
+                    type,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.charcoal.withValues(alpha: 0.55),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      );
+          const SizedBox(width: 8),
+          // View Button
+          IconButton(
+            icon: const Icon(LucideIcons.eye, size: 16, color: AppColors.forest),
+            tooltip: 'عرض الملف',
+            onPressed: url.isEmpty
+                ? null
+                : () {
+                    if (isImage) {
+                      _openImageInsideApp(context, url, displayName);
+                    } else {
+                      _openPdfInsideApp(context, url, displayName);
+                    }
+                  },
+          ),
+          // Download Button
+          IconButton(
+            icon: const Icon(
+              LucideIcons.download,
+              size: 16,
+              color: AppColors.goldDark,
+            ),
+            tooltip: 'تحميل الملف',
+            onPressed: url.isEmpty
+                ? null
+                : () => _downloadFileFromUrl(
+                      context,
+                      rawUrl: url,
+                      defaultFilename: displayName,
+                      documentType: 'مرفق - $stageName',
+                      applicantName: applicantName,
+                    ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _GeneratedDocumentStage extends StatelessWidget {
   final TransactionHistoryStageEntity stage;
+  final String? applicantName;
 
-  const _GeneratedDocumentStage({required this.stage});
+  const _GeneratedDocumentStage({
+    required this.stage,
+    this.applicantName,
+  });
 
   @override
   Widget build(BuildContext context) {
     final url = stage.generatedPdfUrl ?? stage.generatedDocument?.url ?? '';
-    return _ValueShell(
-      label: 'توليد الوثيقة',
-      icon: LucideIcons.fileCog,
+    final hasUrl = url.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBFBFA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.forest.withValues(alpha: 0.2)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: TextDirection.rtl,
         children: [
-          Text(
-            url.isEmpty
-                ? 'لم يتم إنشاء ملف قابل للعرض في هذه المرحلة'
-                : 'تم إنشاء ملف PDF خلال هذه المرحلة',
-          ),
-          if (url.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: () => _openPdfInsideApp(
-                context,
-                url,
-                'الملف المولّد',
+          Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDEEEF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  LucideIcons.fileText,
+                  color: Color(0xFFC62828),
+                  size: 22,
+                ),
               ),
-              icon: const Icon(LucideIcons.externalLink, size: 16),
-              label: const Text('عرض الملف المولّد'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    Text(
+                      'توليد الوثيقة الرسمية (PDF)',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.charcoalDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasUrl
+                          ? 'تم إنشاء ملف PDF معتمد خلال هذه المرحلة.'
+                          : 'لم يتم إنشاء ملف قابل للعرض في هذه المرحلة.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.charcoal.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (hasUrl) ...[
+            const SizedBox(height: 14),
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openPdfInsideApp(
+                      context,
+                      url,
+                      'الملف المولّد',
+                    ),
+                    icon: const Icon(LucideIcons.eye, size: 16),
+                    label: const Text('عرض الملف المولّد'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.forest,
+                      side: BorderSide(color: AppColors.forest.withValues(alpha: 0.35)),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _downloadFileFromUrl(
+                      context,
+                      rawUrl: url,
+                      defaultFilename: 'وثيقة_${stage.displayName}.pdf',
+                      documentType: 'وثيقة مولدة - ${stage.displayName}',
+                      applicantName: applicantName,
+                    ),
+                    icon: const Icon(LucideIcons.download, size: 16),
+                    label: const Text('تحميل الملف'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.forest,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           Text(
             'هذا ملف ناتج عن مرحلة آلية، وليس بالضرورة الوثيقة النهائية المعتمدة.',
             style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -637,36 +1141,50 @@ class _ValueShell extends StatelessWidget {
   final IconData icon;
   final Widget child;
 
-  const _ValueShell(
-      {required this.label, required this.icon, required this.child});
+  const _ValueShell({
+    required this.label,
+    required this.icon,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: const Color(0xFFFBFBFA),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border.withValues(alpha: .28)),
+          border: Border.all(color: const Color(0xFFE8E4DC)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          textDirection: TextDirection.rtl,
           children: [
             Row(
+              textDirection: TextDirection.rtl,
               children: [
-                Icon(icon, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Icon(icon, size: 14, color: AppColors.forest),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     label,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.charcoal.withValues(alpha: 0.75),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 8),
             child,
           ],
         ),
@@ -678,59 +1196,187 @@ class _MessageBox extends StatelessWidget {
   final String value;
   final bool warning;
 
-  const _MessageBox(
-      {required this.label, required this.value, this.warning = false});
+  const _MessageBox({
+    required this.label,
+    required this.value,
+    this.warning = false,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(11),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: warning
-              ? AppColors.error.withValues(alpha: .07)
-              : AppColors.lightPrimary,
+              ? const Color(0xFFFEF2F2)
+              : AppColors.goldLight.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: warning
+                ? const Color(0xFFFCA5A5)
+                : AppColors.gold.withValues(alpha: 0.3),
+          ),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
+          textDirection: TextDirection.rtl,
           children: [
-            Text(label,
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: warning ? AppColors.error : AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                )),
-            const SizedBox(height: 3),
-            Text(value),
+            Icon(
+              warning ? LucideIcons.messageCircleX : LucideIcons.messageSquare,
+              size: 16,
+              color: warning ? const Color(0xFFDC2626) : AppColors.goldDark,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                textDirection: TextDirection.rtl,
+                children: [
+                  Text(
+                    '$label:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: warning
+                          ? const Color(0xFF991B1B)
+                          : AppColors.charcoalDark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: warning
+                          ? const Color(0xFFB91C1C)
+                          : AppColors.charcoalDark,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       );
 }
 
+enum _ChipType { date, count }
+
 class _MetaChip extends StatelessWidget {
   final String text;
   final IconData? icon;
+  final _ChipType type;
 
-  const _MetaChip({required this.text, this.icon});
+  const _MetaChip({
+    required this.text,
+    this.icon,
+    this.type = _ChipType.date,
+  });
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: AppColors.lightPrimary,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 12, color: AppColors.primary),
-              const SizedBox(width: 4),
-            ],
-            Text(text, style: AppTextStyles.labelSmall),
+  Widget build(BuildContext context) {
+    final isDate = type == _ChipType.date;
+    final bg = isDate
+        ? const Color(0xFFF3F4F6)
+        : AppColors.forest.withValues(alpha: 0.06);
+    final border = isDate
+        ? const Color(0xFFE5E7EB)
+        : AppColors.forest.withValues(alpha: 0.18);
+    final fg = isDate ? AppColors.charcoal : AppColors.forest;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        textDirection: TextDirection.rtl,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: fg),
+            const SizedBox(width: 4),
           ],
-        ),
-      );
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DecisionBadge extends StatelessWidget {
+  final String decision;
+
+  const _DecisionBadge({required this.decision});
+
+  @override
+  Widget build(BuildContext context) {
+    final lower = decision.trim().toLowerCase();
+    String label = decisionText(decision);
+    Color bg;
+    Color fg;
+    Color border;
+    IconData icon;
+
+    if (lower == 'approve') {
+      bg = AppColors.forest.withValues(alpha: 0.08);
+      fg = AppColors.forest;
+      border = AppColors.forest.withValues(alpha: 0.25);
+      icon = LucideIcons.circleCheck;
+    } else if (lower == 'reject') {
+      bg = const Color(0xFFFEF2F2);
+      fg = const Color(0xFFDC2626);
+      border = const Color(0xFFFECACA);
+      icon = LucideIcons.circleX;
+    } else if (lower == 'submit') {
+      bg = AppColors.goldLight.withValues(alpha: 0.7);
+      fg = AppColors.charcoalDark;
+      border = AppColors.gold.withValues(alpha: 0.4);
+      icon = LucideIcons.send;
+    } else {
+      bg = const Color(0xFFFFFBEB);
+      fg = const Color(0xFFB45309);
+      border = const Color(0xFFFDE68A);
+      icon = LucideIcons.rotateCcw;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        textDirection: TextDirection.rtl,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ValueChip extends StatelessWidget {
@@ -740,13 +1386,20 @@ class _ValueChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.lightPrimary,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border.withValues(alpha: .25)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
         ),
-        child: Text(text, style: AppTextStyles.bodySmall),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.charcoalDark,
+          ),
+        ),
       );
 }
 
@@ -758,11 +1411,12 @@ class _HistoryEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(24),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: const Color(0xFFFBFBFA),
           borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
         ),
         child: Text(
           message,
@@ -771,6 +1425,107 @@ class _HistoryEmptyState extends StatelessWidget {
               AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
       );
+}
+
+// Download & File View Helper Methods
+Future<void> _downloadFileFromUrl(
+  BuildContext context, {
+  required String rawUrl,
+  required String defaultFilename,
+  String? documentType,
+  String? applicantName,
+}) async {
+  try {
+    final absoluteUrl = buildAbsoluteFileUrl(rawUrl);
+    if (absoluteUrl.isEmpty) {
+      AppSnackBar.show(context, message: 'رابط الملف غير صالح', isError: true);
+      return;
+    }
+
+    AppSnackBar.show(context, message: 'جاري تحميل الملف...');
+
+    final dio = getIt<Dio>();
+    final response = await dio.get<List<int>>(
+      absoluteUrl,
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': '*/*'},
+      ),
+    );
+
+    final bytes =
+        response.data != null ? Uint8List.fromList(response.data!) : null;
+
+    if (response.statusCode != 200 || bytes == null || bytes.isEmpty) {
+      throw Exception('فشل في تنزيل الملف');
+    }
+
+    final contentType = response.headers.value('content-type');
+    final savePath = await AppFileDownloader.getSavePath(
+      applicantName: applicantName,
+      documentType: documentType ?? 'مستند',
+      originalFilename: defaultFilename,
+      contentType: contentType,
+      bytes: bytes,
+      fallbackExtension: 'pdf',
+    );
+
+    final file = File(savePath);
+    await file.writeAsBytes(bytes);
+
+    if (context.mounted) {
+      AppSnackBar.show(
+        context,
+        title: 'تم التحميل بنجاح',
+        message: 'تم حفظ الملف في:\n$savePath',
+        isError: false,
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      AppSnackBar.show(
+        context,
+        title: 'فشل التحميل',
+        message: 'تعذر تحميل الملف، يرجى التأكد من توفره على الخادم.',
+        isError: true,
+      );
+    }
+  }
+}
+
+Future<void> _openPdfInsideApp(
+  BuildContext context,
+  String url,
+  String title,
+) async {
+  final absoluteUrl = buildAbsoluteFileUrl(url);
+  final uri = Uri.tryParse(absoluteUrl);
+  if (uri == null || !uri.hasScheme) {
+    AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
+    return;
+  }
+  context.push('/pdf-viewer', extra: {
+    'fileUrl': absoluteUrl,
+    'title': title,
+    'readOnly': true,
+  });
+}
+
+Future<void> _openImageInsideApp(
+  BuildContext context,
+  String url,
+  String title,
+) async {
+  final absoluteUrl = buildAbsoluteFileUrl(url);
+  final uri = Uri.tryParse(absoluteUrl);
+  if (uri == null || !uri.hasScheme) {
+    AppSnackBar.show(context, message: 'تعذر فتح الصورة', isError: true);
+    return;
+  }
+  context.push('/image-viewer', extra: {
+    'fileUrl': absoluteUrl,
+    'title': title,
+  });
 }
 
 bool _hasActualValue(TransactionHistoryWidgetEntity widget) {
@@ -866,6 +1621,19 @@ const _technicalTemplateKeys = {
   'form_id',
   'stage_code',
   'completed_by',
+  'generated_pdf_url',
+  'generated_pdf_path',
+  'pdf_url',
+  'file_url',
+  'url',
+  'path',
+  'id_document_instance',
+  'document_instance_id',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+  'config',
+  'is_active',
 };
 
 String _templateLabel(String key) {
@@ -886,22 +1654,6 @@ String _templateLabel(String key) {
           .join(' ');
 }
 
-Future<void> _openPdfInsideApp(
-  BuildContext context,
-  String url,
-  String title,
-) async {
-  final uri = Uri.tryParse(url);
-  if (uri == null || !uri.hasScheme) {
-    AppSnackBar.show(context, message: 'تعذر فتح الملف', isError: true);
-    return;
-  }
-  context.push('/pdf-viewer', extra: {
-    'fileUrl': url,
-    'title': title,
-  });
-}
-
 bool _isPdf(String url, String name, String type) {
   final combined = '$url $name $type'.toLowerCase().split('?').first;
   return combined.contains('application/pdf') || combined.contains('.pdf');
@@ -909,14 +1661,13 @@ bool _isPdf(String url, String name, String type) {
 
 BoxDecoration _historyDecoration() => BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.gold.withValues(alpha: 0.22)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.02),
+          color: Colors.black.withValues(alpha: 0.02),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],
     );
-

@@ -16,6 +16,7 @@ class MyTransactionModel extends MyTransactionEntity {
     super.processName,
     super.progressPercent,
     super.transactionId,
+    super.isLockedByMe,
   });
 
   factory MyTransactionModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +35,9 @@ class MyTransactionModel extends MyTransactionEntity {
     } else if (rawStatus == 'rejected') {
       statusLabel = 'تم الرفض';
     }
+
+    // is_locked_by_me
+    final isLockedByMe = json['is_locked_by_me'] == true;
 
     // Map priority:
     // 1 -> "عالية", 2 -> "عادية", others -> "منخفضة"
@@ -67,6 +71,7 @@ class MyTransactionModel extends MyTransactionEntity {
       processName: json['process_name'] as String? ?? '',
       progressPercent: json['progress_percent'] as int? ?? 0,
       transactionId: transactionId,
+      isLockedByMe: isLockedByMe,
     );
   }
 }

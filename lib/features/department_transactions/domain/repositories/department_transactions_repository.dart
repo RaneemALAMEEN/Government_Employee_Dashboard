@@ -62,6 +62,8 @@ abstract class DepartmentTransactionsRepository {
     String? documentSignatureIds,
     String? documentInstanceIds,
   });
+
+  Future<Either<Failure, String>> deleteFinalDocument(int transactionId);
 }
 
 
