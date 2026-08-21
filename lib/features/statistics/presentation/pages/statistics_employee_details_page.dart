@@ -159,7 +159,6 @@ class _EmployeeProfile extends StatelessWidget {
                     employee.organization.name,
                     employee.department.name,
                     employee.role.name,
-                    employee.role.code,
                   ]))
                     SizedBox(
                       width: cardWidth,
@@ -170,8 +169,6 @@ class _EmployeeProfile extends StatelessWidget {
                           _InfoItem('الجهة', employee.organization.name),
                           _InfoItem('الدائرة', employee.department.name),
                           _InfoItem('الدور', employee.role.name),
-                          _InfoItem('كود الدور', employee.role.code,
-                              isLtr: true),
                         ],
                       ),
                     ),
@@ -357,9 +354,7 @@ class _DetailsSectionCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             _available(item.value),
-                            textDirection: item.isLtr
-                                ? TextDirection.ltr
-                                : TextDirection.rtl,
+                            textDirection: TextDirection.rtl,
                             textAlign: TextAlign.end,
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: AppColors.textPrimary,
@@ -381,9 +376,8 @@ class _DetailsSectionCard extends StatelessWidget {
 class _InfoItem {
   final String label;
   final String value;
-  final bool isLtr;
 
-  const _InfoItem(this.label, this.value, {this.isLtr = false});
+  const _InfoItem(this.label, this.value);
 }
 
 class _LegacyPageHeader extends StatelessWidget {
@@ -649,9 +643,7 @@ class _LegacyDetailsSectionCard extends StatelessWidget {
                                 const SizedBox(height: 3),
                                 SelectableText(
                                   item.value,
-                                  textDirection: item.isLtr
-                                      ? TextDirection.ltr
-                                      : TextDirection.rtl,
+                                  textDirection: TextDirection.rtl,
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: AppColors.textPrimary,
                                     fontWeight: FontWeight.w600,
@@ -707,7 +699,6 @@ class _EmployeeDetailsSkeleton extends StatelessWidget {
         ],
       );
 }
-
 
 class _EmployeeDetailsError extends StatelessWidget {
   final String message;
