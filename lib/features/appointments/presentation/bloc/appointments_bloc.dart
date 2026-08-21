@@ -30,7 +30,11 @@ class CreateAppointmentSlot extends AppointmentsEvent {
 class UpdateAppointmentSlot extends AppointmentsEvent {
   final int id;
   final AppointmentSlotInput input;
-  const UpdateAppointmentSlot(this.id, this.input);
+  final String? successMessage;
+  const UpdateAppointmentSlot(this.id, this.input, {this.successMessage});
+
+  @override
+  List<Object?> get props => [id, input, successMessage];
 }
 
 class DeleteAppointmentSlot extends AppointmentsEvent {
@@ -70,9 +74,11 @@ class AppointmentsState extends Equatable {
   final List<AppointmentSlot> slots;
   final List<AppointmentSlot> availableSlots;
   final bool loading;
+  final bool availableLoading;
   final bool refreshing;
   final bool actionLoading;
   final String? error;
+  final String? availableError;
   final String? actionError;
   final String? successMessage;
 
@@ -81,9 +87,11 @@ class AppointmentsState extends Equatable {
     this.slots = const [],
     this.availableSlots = const [],
     this.loading = false,
+    this.availableLoading = false,
     this.refreshing = false,
     this.actionLoading = false,
     this.error,
+    this.availableError,
     this.actionError,
     this.successMessage,
   });
@@ -93,9 +101,11 @@ class AppointmentsState extends Equatable {
     List<AppointmentSlot>? slots,
     List<AppointmentSlot>? availableSlots,
     bool? loading,
+    bool? availableLoading,
     bool? refreshing,
     bool? actionLoading,
     String? error,
+    String? availableError,
     String? actionError,
     String? successMessage,
     bool clearMessages = false,
@@ -105,9 +115,11 @@ class AppointmentsState extends Equatable {
         slots: slots ?? this.slots,
         availableSlots: availableSlots ?? this.availableSlots,
         loading: loading ?? this.loading,
+        availableLoading: availableLoading ?? this.availableLoading,
         refreshing: refreshing ?? this.refreshing,
         actionLoading: actionLoading ?? this.actionLoading,
         error: clearMessages ? null : error ?? this.error,
+        availableError: availableError,
         actionError: clearMessages ? null : actionError ?? this.actionError,
         successMessage:
             clearMessages ? null : successMessage ?? this.successMessage,
@@ -119,9 +131,11 @@ class AppointmentsState extends Equatable {
         slots,
         availableSlots,
         loading,
+        availableLoading,
         refreshing,
         actionLoading,
         error,
+        availableError,
         actionError,
         successMessage
       ];
@@ -132,14 +146,11 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
   AppointmentsBloc(this.useCases) : super(const AppointmentsState()) {
     on<LoadAppointments>(_load);
     on<LoadAvailableAppointmentSlots>(_loadAvailable);
-    on<CreateAppointmentSlot>((event, emit) => _act(emit,
-        () => useCases.createSlot(event.input), 'تمت إضافة الموعد بنجاح'));
-    on<UpdateAppointmentSlot>((event, emit) => _act(
-        emit,
-        () => useCases.updateSlot(event.id, event.input),
-        'تم تعديل الموعد بنجاح'));
-    on<DeleteAppointmentSlot>((event, emit) =>
-        _act(emit, () => useCases.deleteSlot(event.id), 'تم حذف الموعد بنجاح'));
+    on<CreateAppointmentSlot>((event, emit) => _act(
+        emit, () => useCases.createSlot(event.input), 'تمت إضافة الموعد بنجاح',
+        reloadAvailable: true));
+    on<UpdateAppointmentSlot>(_updateSlot);
+    on<DeleteAppointmentSlot>(_deleteSlot);
     on<DecideAppointmentBooking>((event, emit) => _act(
         emit,
         () => useCases.decide(event.id, event.decision, event.note),
@@ -158,10 +169,28 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
 
   Future<void> _loadAvailable(LoadAvailableAppointmentSlots event,
       Emitter<AppointmentsState> emit) async {
+    emit(state.copyWith(
+      availableLoading: state.availableSlots.isEmpty,
+      availableError: null,
+    ));
     final result = await useCases.getAvailable();
     result.fold(
-      (_) {},
-      (slots) => emit(state.copyWith(availableSlots: slots)),
+      (failure) => emit(state.copyWith(
+        availableLoading: false,
+        availableError: failure.message,
+      )),
+      (slots) {
+        final fetchedSlots = slots as List<AppointmentSlot>;
+        final fetchedIds = fetchedSlots.map((slot) => slot.id).toSet();
+        final locallyInactive = state.availableSlots.where(
+          (slot) => !slot.isActive && !fetchedIds.contains(slot.id),
+        );
+        emit(state.copyWith(
+          availableSlots: [...fetchedSlots, ...locallyInactive],
+          availableLoading: false,
+          availableError: null,
+        ));
+      },
     );
   }
 
@@ -185,11 +214,58 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     );
   }
 
+  Future<void> _updateSlot(
+    UpdateAppointmentSlot event,
+    Emitter<AppointmentsState> emit,
+  ) async {
+    emit(state.copyWith(actionLoading: true, clearMessages: true));
+    final result = await useCases.updateSlot(event.id, event.input);
+    result.fold(
+      (failure) => emit(state.copyWith(
+        actionLoading: false,
+        actionError: failure.message,
+      )),
+      (updatedSlot) {
+        final typedSlot = updatedSlot as AppointmentSlot;
+        final updatedSlots = state.availableSlots
+            .map((slot) => slot.id == typedSlot.id ? typedSlot : slot)
+            .toList(growable: false);
+        emit(state.copyWith(
+          availableSlots: updatedSlots,
+          actionLoading: false,
+          successMessage: event.successMessage ?? 'تم تعديل الموعد بنجاح',
+        ));
+      },
+    );
+  }
+
+  Future<void> _deleteSlot(
+    DeleteAppointmentSlot event,
+    Emitter<AppointmentsState> emit,
+  ) async {
+    emit(state.copyWith(actionLoading: true, clearMessages: true));
+    final result = await useCases.deleteSlot(event.id);
+    result.fold(
+      (failure) => emit(state.copyWith(
+        actionLoading: false,
+        actionError: failure.message,
+      )),
+      (_) => emit(state.copyWith(
+        availableSlots: state.availableSlots
+            .where((slot) => slot.id != event.id)
+            .toList(growable: false),
+        actionLoading: false,
+        successMessage: 'تم حذف الموعد بنجاح',
+      )),
+    );
+  }
+
   Future<void> _act(
     Emitter<AppointmentsState> emit,
     Future<dynamic> Function() action,
-    String success,
-  ) async {
+    String success, {
+    bool reloadAvailable = false,
+  }) async {
     emit(state.copyWith(actionLoading: true, clearMessages: true));
     final result = await action();
     await result.fold(
@@ -197,7 +273,11 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
           state.copyWith(actionLoading: false, actionError: failure.message)),
       (_) async {
         emit(state.copyWith(actionLoading: false, successMessage: success));
-        add(LoadAppointments(state.filter, refresh: true));
+        if (reloadAvailable) {
+          add(const LoadAvailableAppointmentSlots());
+        } else {
+          add(LoadAppointments(state.filter, refresh: true));
+        }
       },
     );
   }

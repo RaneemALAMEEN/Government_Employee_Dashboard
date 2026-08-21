@@ -13,6 +13,7 @@ class AppointmentFilterTabs extends StatelessWidget {
       {super.key, required this.value, required this.onChanged});
 
   static const tabs = {
+    'available': 'المواعيد المتاحة',
     'pending': 'بانتظار الموافقة',
     'approved': 'الموافق عليها',
     'past': 'السابقة',
@@ -43,6 +44,285 @@ class AppointmentFilterTabs extends StatelessWidget {
           );
         }).toList(),
       );
+}
+
+class AppointmentSlotCard extends StatefulWidget {
+  final AppointmentSlot slot;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final ValueChanged<bool>? onActiveChanged;
+
+  const AppointmentSlotCard({
+    super.key,
+    required this.slot,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onActiveChanged,
+  });
+
+  @override
+  State<AppointmentSlotCard> createState() => _AppointmentSlotCardState();
+}
+
+class _AppointmentSlotCardState extends State<AppointmentSlotCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final slot = widget.slot;
+    final today = DateTime.now();
+    final date = DateTime.tryParse(slot.appointmentDate);
+    final isPast = date != null &&
+        date.isBefore(DateTime(today.year, today.month, today.day));
+    final statusText = isPast
+        ? 'منتهي'
+        : slot.isActive
+            ? 'نشط'
+            : 'متوقف مؤقتاً';
+    final statusColor =
+        isPast || !slot.isActive ? AppColors.textSecondary : AppColors.primary;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: _hovered
+                ? AppColors.primary.withValues(alpha: .32)
+                : const Color(0xFFE3E7E4),
+          ),
+          boxShadow: _hovered
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .045),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    LucideIcons.calendarDays,
+                    color: AppColors.primary,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_readableDate(slot.appointmentDate),
+                          style: AppTextStyles.titleMedium),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_time(slot.startTime)} - ${_time(slot.endTime)}',
+                        textDirection: TextDirection.ltr,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: .09),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: statusColor,
+                      fontWeight: AppTextStyles.semiBold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: _SlotMetric(
+                    label: 'السعة',
+                    value: '${slot.capacity}',
+                    icon: LucideIcons.users,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SlotMetric(
+                    label: 'المتبقي',
+                    value: '${slot.remainingSeats}',
+                    icon: LucideIcons.armchair,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: Color(0xFFEEF0EE)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  isPast
+                      ? 'منتهي'
+                      : slot.isActive
+                          ? 'متاح للحجز'
+                          : 'متوقف مؤقتاً',
+                  style: AppTextStyles.bodySmall,
+                ),
+                const SizedBox(width: 4),
+                Transform.scale(
+                  scale: .82,
+                  child: Tooltip(
+                    message: isPast
+                        ? 'لا يمكن تفعيل موعد انتهى تاريخه'
+                        : slot.isActive
+                            ? 'إيقاف الحجز مؤقتاً'
+                            : 'إعادة إتاحة الموعد للحجز',
+                    child: Switch.adaptive(
+                      value: isPast ? false : slot.isActive,
+                      activeTrackColor: AppColors.primary,
+                      onChanged: isPast ? null : widget.onActiveChanged,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: widget.onEdit,
+                  icon: const Icon(LucideIcons.pencil, size: 16),
+                  label: const Text('تعديل'),
+                ),
+                const SizedBox(width: 7),
+                TextButton.icon(
+                  onPressed: widget.onDelete,
+                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                  icon: const Icon(LucideIcons.trash2, size: 16),
+                  label: const Text('حذف'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SlotMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _SlotMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9F7),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Row(children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 7),
+          Text('$label: ', style: AppTextStyles.bodySmall),
+          Text(value,
+              style: AppTextStyles.bodyMedium
+                  .copyWith(fontWeight: AppTextStyles.bold)),
+        ]),
+      );
+}
+
+class AppointmentAvailableEmptyState extends StatelessWidget {
+  final VoidCallback onAdd;
+  const AppointmentAvailableEmptyState({
+    super.key,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 58, horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE3E7E4)),
+        ),
+        child: Column(children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: const BoxDecoration(
+              color: AppColors.lightPrimary,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              LucideIcons.calendarPlus,
+              size: 30,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 15),
+          const Text('لا توجد مواعيد متاحة حالياً',
+              style: AppTextStyles.titleMedium),
+          const SizedBox(height: 5),
+          Text(
+            'أضف فترة جديدة لتصبح متاحة للحجز',
+            style: AppTextStyles.bodySmall
+                .copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 18),
+          FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(LucideIcons.plus, size: 17),
+            label: const Text('إضافة موعد'),
+          ),
+        ]),
+      );
+}
+
+String _readableDate(String value) {
+  final date = DateTime.tryParse(value);
+  if (date == null) return value;
+  const months = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
 
 class AppointmentStatusBadge extends StatelessWidget {

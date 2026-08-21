@@ -6,13 +6,21 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/appointment_entities.dart';
 import '../bloc/appointments_bloc.dart';
 import '../widgets/appointment_dialogs.dart';
 import '../widgets/appointment_widgets.dart';
 
-class AppointmentsPage extends StatelessWidget {
+class AppointmentsPage extends StatefulWidget {
   const AppointmentsPage({super.key});
+
+  @override
+  State<AppointmentsPage> createState() => _AppointmentsPageState();
+}
+
+class _AppointmentsPageState extends State<AppointmentsPage> {
+  String _selectedTab = 'available';
 
   @override
   Widget build(BuildContext context) => Directionality(
@@ -24,8 +32,14 @@ class AppointmentsPage extends StatelessWidget {
           listener: (context, state) {
             final message = state.actionError ?? state.successMessage;
             if (message != null) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(message)));
+              AppSnackBar.show(
+                context,
+                message: message,
+                isError: state.actionError != null,
+                title: state.actionError != null
+                    ? 'تعذر إتمام العملية'
+                    : 'تمت العملية بنجاح',
+              );
               context
                   .read<AppointmentsBloc>()
                   .add(const ClearAppointmentAction());
@@ -41,33 +55,46 @@ class AppointmentsPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _Header(
-                          onAdd: () => _slotForm(context),
-                          onBook: () => _book(context, state.availableSlots),
-                        ),
+                            onBook: () => _book(context, state.availableSlots)),
                         const SizedBox(height: 22),
                         AppointmentFilterTabs(
-                            value: state.filter,
-                            onChanged: (value) => context
-                                .read<AppointmentsBloc>()
-                                .add(LoadAppointments(value))),
+                            value: _selectedTab,
+                            onChanged: (value) {
+                              setState(() => _selectedTab = value);
+                              if (value == 'available') {
+                                context
+                                    .read<AppointmentsBloc>()
+                                    .add(const LoadAvailableAppointmentSlots());
+                              } else {
+                                context
+                                    .read<AppointmentsBloc>()
+                                    .add(LoadAppointments(value));
+                              }
+                            }),
                         const SizedBox(height: 18),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 240),
-                          child: state.loading
-                              ? const AppointmentSkeleton(
-                                  key: ValueKey('loading'))
-                              : state.error != null && state.slots.isEmpty
-                                  ? SizedBox(
-                                      height: 360,
-                                      child: AppErrorWidget(
-                                          message: state.error!,
-                                          onRetry: () => context
-                                              .read<AppointmentsBloc>()
-                                              .add(LoadAppointments(
-                                                  state.filter))))
-                                  : _AppointmentList(
-                                      key: ValueKey(state.filter),
-                                      state: state),
+                          child: _selectedTab == 'available'
+                              ? _AvailableSlotsTab(
+                                  key: const ValueKey('available'),
+                                  state: state,
+                                  onAdd: () => _slotForm(context),
+                                )
+                              : state.loading
+                                  ? const AppointmentSkeleton(
+                                      key: ValueKey('loading'))
+                                  : state.error != null && state.slots.isEmpty
+                                      ? SizedBox(
+                                          height: 360,
+                                          child: AppErrorWidget(
+                                              message: state.error!,
+                                              onRetry: () => context
+                                                  .read<AppointmentsBloc>()
+                                                  .add(LoadAppointments(
+                                                      state.filter))))
+                                      : _AppointmentList(
+                                          key: ValueKey(state.filter),
+                                          state: state),
                         ),
                       ]),
                 ),
@@ -94,8 +121,13 @@ class AppointmentsPage extends StatelessWidget {
 
   Future<void> _book(BuildContext context, List<AppointmentSlot> slots) async {
     if (slots.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا توجد مواعيد متاحة حالياً')));
+      AppSnackBar.show(
+        context,
+        message: 'أضف فترة جديدة أولاً لتتمكن من حجز موعد للمراجع.',
+        title: 'لا توجد مواعيد متاحة حالياً',
+        backgroundColor: AppColors.goldDark,
+        icon: LucideIcons.info,
+      );
       return;
     }
     final input = await showEmployeeBookingDialog(context, slots);
@@ -106,9 +138,8 @@ class AppointmentsPage extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  final VoidCallback onAdd;
   final VoidCallback onBook;
-  const _Header({required this.onAdd, required this.onBook});
+  const _Header({required this.onBook});
   @override
   Widget build(BuildContext context) =>
       LayoutBuilder(builder: (_, constraints) {
@@ -131,14 +162,6 @@ class _Header extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12))),
               icon: const Icon(LucideIcons.calendarCheck, size: 18),
               label: const Text('حجز موعد')),
-          FilledButton.icon(
-              onPressed: onAdd,
-              style: FilledButton.styleFrom(
-                  minimumSize: const Size(130, 46),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12))),
-              icon: const Icon(LucideIcons.plus, size: 18),
-              label: const Text('إضافة موعد'))
         ]);
         return compact
             ? Column(
@@ -160,15 +183,7 @@ class _AppointmentList extends StatelessWidget {
       }
     }
     if (entries.isEmpty) {
-      return Column(
-        children: [
-          AppointmentEmptyState(filter: state.filter),
-          if (state.slots.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            _SlotManagement(slots: state.slots),
-          ],
-        ],
-      );
+      return AppointmentEmptyState(filter: state.filter);
     }
     return Column(children: [
       for (var i = 0; i < entries.length; i++) ...[
@@ -196,8 +211,6 @@ class _AppointmentList extends StatelessWidget {
         ),
         if (i != entries.length - 1) const SizedBox(height: 12),
       ],
-      const SizedBox(height: 18),
-      _SlotManagement(slots: state.slots),
     ]);
   }
 
@@ -231,46 +244,152 @@ class _AppointmentList extends StatelessWidget {
   }
 }
 
-class _SlotManagement extends StatelessWidget {
-  final List<AppointmentSlot> slots;
-  const _SlotManagement({required this.slots});
+class _AvailableSlotsTab extends StatelessWidget {
+  final AppointmentsState state;
+  final VoidCallback onAdd;
+  const _AvailableSlotsTab({
+    super.key,
+    required this.state,
+    required this.onAdd,
+  });
+
   @override
-  Widget build(BuildContext context) => ExpansionTile(
-      title: const Text('إدارة فترات المواعيد'),
-      children: slots
-          .map((slot) => ListTile(
-              title: Text(
-                  '${slot.appointmentDate} • ${slot.startTime.substring(0, 5)} - ${slot.endTime.substring(0, 5)}'),
-              subtitle: Text(
-                  'السعة ${slot.capacity} • المتبقي ${slot.remainingSeats}'),
-              trailing: Wrap(children: [
-                IconButton(
-                    tooltip: 'تعديل',
-                    onPressed: () async {
-                      final input =
-                          await showAppointmentSlotDialog(context, slot: slot);
-                      if (input != null && context.mounted) {
-                        context
-                            .read<AppointmentsBloc>()
-                            .add(UpdateAppointmentSlot(slot.id, input));
-                      }
-                    },
-                    icon: const Icon(LucideIcons.pencil, size: 18)),
-                IconButton(
-                    tooltip: 'حذف',
-                    color: AppColors.error,
-                    onPressed: () => showAppConfirmationDialog(context,
-                        title: 'حذف الموعد',
-                        message:
-                            'هل تريد حذف هذا الموعد؟ سيتم إشعار أصحاب الحجوزات المرتبطة به.',
-                        confirmText: 'حذف',
-                        cancelText: 'إلغاء',
-                        icon: LucideIcons.trash2,
-                        isDestructive: true,
-                        onConfirm: () async => context
-                            .read<AppointmentsBloc>()
-                            .add(DeleteAppointmentSlot(slot.id))),
-                    icon: const Icon(LucideIcons.trash2, size: 18))
-              ])))
-          .toList());
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LayoutBuilder(builder: (_, constraints) {
+          final title = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('المواعيد المتاحة للحجز',
+                  style: AppTextStyles.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                'إدارة الفترات التي يمكن للمراجعين الحجز ضمنها',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          );
+          final button = FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(LucideIcons.plus, size: 17),
+            label: const Text('إضافة موعد'),
+          );
+          return constraints.maxWidth < 600
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [title, const SizedBox(height: 14), button],
+                )
+              : Row(children: [Expanded(child: title), button]);
+        }),
+        const SizedBox(height: 18),
+        if (state.availableLoading && state.availableSlots.isEmpty)
+          const AppointmentSkeleton()
+        else if (state.availableError != null && state.availableSlots.isEmpty)
+          SizedBox(
+            height: 330,
+            child: AppErrorWidget(
+              message: state.availableError!,
+              onRetry: () => context
+                  .read<AppointmentsBloc>()
+                  .add(const LoadAvailableAppointmentSlots()),
+            ),
+          )
+        else if (state.availableSlots.isEmpty)
+          AppointmentAvailableEmptyState(onAdd: onAdd)
+        else
+          LayoutBuilder(builder: (_, constraints) {
+            final columns = constraints.maxWidth >= 980 ? 3 : 2;
+            final actualColumns = constraints.maxWidth < 650 ? 1 : columns;
+            const gap = 14.0;
+            final width = (constraints.maxWidth - gap * (actualColumns - 1)) /
+                actualColumns;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: state.availableSlots
+                  .map((slot) => SizedBox(
+                        width: width,
+                        child: AppointmentSlotCard(
+                          slot: slot,
+                          onEdit: () => _edit(context, slot),
+                          onDelete: () => _delete(context, slot),
+                          onActiveChanged: (active) => _toggle(
+                            context,
+                            slot,
+                            active,
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            );
+          }),
+      ],
+    );
+  }
+
+  Future<void> _edit(BuildContext context, AppointmentSlot slot) async {
+    final input = await showAppointmentSlotDialog(context, slot: slot);
+    if (input != null && context.mounted) {
+      context
+          .read<AppointmentsBloc>()
+          .add(UpdateAppointmentSlot(slot.id, input));
+    }
+  }
+
+  Future<void> _delete(BuildContext context, AppointmentSlot slot) async {
+    await showAppConfirmationDialog(
+      context,
+      title: 'حذف الموعد نهائياً؟',
+      message: 'هذا الإجراء مختلف عن الإيقاف المؤقت، وسيتم حذف الموعد '
+          'وإشعار أصحاب الحجوزات المرتبطة به.',
+      confirmText: 'حذف',
+      cancelText: 'إلغاء',
+      icon: LucideIcons.trash2,
+      isDestructive: true,
+      onConfirm: () async =>
+          context.read<AppointmentsBloc>().add(DeleteAppointmentSlot(slot.id)),
+    );
+  }
+
+  Future<void> _toggle(
+    BuildContext context,
+    AppointmentSlot slot,
+    bool active,
+  ) async {
+    final now = DateTime.now();
+    final date = DateTime.tryParse(slot.appointmentDate);
+    final isPast =
+        date != null && date.isBefore(DateTime(now.year, now.month, now.day));
+    if (isPast) return;
+
+    await showAppConfirmationDialog(
+      context,
+      title: active ? 'إعادة تفعيل الموعد؟' : 'إيقاف هذا الموعد مؤقتاً؟',
+      message: active
+          ? 'سيصبح هذا الموعد متاحاً للحجز من جديد.'
+          : 'لن يتم حذف الموعد أو الحجوزات المرتبطة به، ولكن لن يكون '
+              'متاحاً لحجوزات جديدة حتى تتم إعادة تفعيله.',
+      confirmText: active ? 'تفعيل' : 'إيقاف مؤقت',
+      cancelText: 'إلغاء',
+      icon: active ? Icons.check_circle_outline : Icons.pause_circle_outline,
+      onConfirm: () async {
+        context.read<AppointmentsBloc>().add(UpdateAppointmentSlot(
+              slot.id,
+              AppointmentSlotInput(
+                appointmentDate: slot.appointmentDate,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                capacity: slot.capacity,
+                isActive: active,
+              ),
+              successMessage: active
+                  ? 'تم تفعيل الموعد وإتاحته للحجز'
+                  : 'تم إيقاف الموعد مؤقتاً',
+            ));
+      },
+    );
+  }
 }

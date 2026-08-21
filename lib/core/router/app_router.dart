@@ -112,7 +112,6 @@ class AppRouter {
             pageBuilder: (context, state) => NoTransitionPage(
               child: BlocProvider(
                 create: (_) => getIt<AppointmentsBloc>()
-                  ..add(const LoadAppointments('pending'))
                   ..add(const LoadAvailableAppointmentSlots()),
                 child: const AppointmentsPage(),
               ),
