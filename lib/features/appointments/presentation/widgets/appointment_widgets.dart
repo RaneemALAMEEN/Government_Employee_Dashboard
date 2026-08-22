@@ -181,44 +181,76 @@ class _AppointmentSlotCardState extends State<AppointmentSlotCard> {
             const SizedBox(height: 16),
             const Divider(height: 1, color: Color(0xFFEEF0EE)),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Text(
-                  isPast
-                      ? 'منتهي'
-                      : slot.isActive
-                          ? 'متاح للحجز'
-                          : 'متوقف مؤقتاً',
-                  style: AppTextStyles.bodySmall,
-                ),
-                const SizedBox(width: 4),
-                Transform.scale(
-                  scale: .82,
-                  child: Tooltip(
-                    message: isPast
-                        ? 'لا يمكن تفعيل موعد انتهى تاريخه'
-                        : slot.isActive
-                            ? 'إيقاف الحجز مؤقتاً'
-                            : 'إعادة إتاحة الموعد للحجز',
-                    child: Switch.adaptive(
-                      value: isPast ? false : slot.isActive,
-                      activeTrackColor: AppColors.primary,
-                      onChanged: isPast ? null : widget.onActiveChanged,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isPast
+                          ? 'منتهي'
+                          : slot.isActive
+                              ? 'متاح للحجز'
+                              : 'متوقف مؤقتاً',
+                      style: AppTextStyles.bodySmall,
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    Transform.scale(
+                      scale: .82,
+                      child: Tooltip(
+                        message: isPast
+                            ? 'لا يمكن تفعيل موعد انتهى تاريخه'
+                            : slot.isActive
+                                ? 'إيقاف الحجز مؤقتاً'
+                                : 'إعادة إتاحة الموعد للحجز',
+                        child: Switch.adaptive(
+                          value: isPast ? false : slot.isActive,
+                          activeTrackColor: AppColors.primary,
+                          onChanged: isPast ? null : widget.onActiveChanged,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: widget.onEdit,
-                  icon: const Icon(LucideIcons.pencil, size: 16),
-                  label: const Text('تعديل'),
-                ),
-                const SizedBox(width: 7),
-                TextButton.icon(
-                  onPressed: widget.onDelete,
-                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                  icon: const Icon(LucideIcons.trash2, size: 16),
-                  label: const Text('حذف'),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: widget.onEdit,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: Color(0xFFD0D7D3)),
+                        minimumSize: const Size(76, 38),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(LucideIcons.pencil, size: 16),
+                      label: const Text('تعديل'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: widget.onDelete,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                        minimumSize: const Size(76, 38),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(LucideIcons.trash2, size: 16),
+                      label: const Text('حذف'),
+                    ),
+                  ],
                 ),
               ],
             ),

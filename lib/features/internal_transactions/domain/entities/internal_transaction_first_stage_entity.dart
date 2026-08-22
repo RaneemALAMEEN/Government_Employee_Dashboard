@@ -4,6 +4,10 @@ class InternalTransactionFirstStageEntity {
   final String stageName;
   final String authType;
   final int? completedBy;
+  final String? status;
+  final String? idProcess;
+  final String? processDefinitionName;
+  final int? progressPercent;
   final FirstStageContentEntity content;
 
   const InternalTransactionFirstStageEntity({
@@ -12,6 +16,10 @@ class InternalTransactionFirstStageEntity {
     required this.stageName,
     required this.authType,
     required this.completedBy,
+    this.status = '',
+    this.idProcess = '',
+    this.processDefinitionName = '',
+    this.progressPercent = 0,
     required this.content,
   });
 }

@@ -301,8 +301,9 @@ class _AvailableSlotsTab extends StatelessWidget {
           AppointmentAvailableEmptyState(onAdd: onAdd)
         else
           LayoutBuilder(builder: (_, constraints) {
-            final columns = constraints.maxWidth >= 980 ? 3 : 2;
-            final actualColumns = constraints.maxWidth < 650 ? 1 : columns;
+            final actualColumns = constraints.maxWidth >= 1050
+                ? 3
+                : (constraints.maxWidth >= 650 ? 2 : 1);
             const gap = 14.0;
             final width = (constraints.maxWidth - gap * (actualColumns - 1)) /
                 actualColumns;

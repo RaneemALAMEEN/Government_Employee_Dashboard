@@ -241,6 +241,7 @@ class _TransactionRow extends StatelessWidget {
                   onTap: () {
                     context.push(
                       '/internal-transactions/${item.transactionId}/first-stage',
+                      extra: item,
                     );
                   },
                 ),

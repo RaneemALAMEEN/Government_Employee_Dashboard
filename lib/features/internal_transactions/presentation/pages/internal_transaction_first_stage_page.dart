@@ -18,16 +18,19 @@ import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 
 import '../../domain/entities/internal_transaction_first_stage_entity.dart';
+import '../../domain/entities/internal_transaction_entity.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_event.dart';
 import '../bloc/internal_transaction_first_stage/internal_transaction_first_stage_state.dart';
 
 class InternalTransactionFirstStagePage extends StatelessWidget {
   final int transactionId;
+  final InternalTransactionEntity? transaction;
 
   const InternalTransactionFirstStagePage({
     super.key,
     required this.transactionId,
+    this.transaction,
   });
 
   @override
@@ -56,7 +59,10 @@ class InternalTransactionFirstStagePage extends StatelessWidget {
             return const Center(child: Text('لا توجد بيانات'));
           }
 
-          return _DetailsContent(details: details);
+          return _DetailsContent(
+            details: details,
+            transaction: transaction,
+          );
         },
       ),
     );
@@ -149,13 +155,26 @@ class _LoadingSkeleton extends StatelessWidget {
 
 class _DetailsContent extends StatelessWidget {
   final InternalTransactionFirstStageEntity details;
+  final InternalTransactionEntity? transaction;
 
-  const _DetailsContent({required this.details});
+  const _DetailsContent({
+    required this.details,
+    this.transaction,
+  });
 
   @override
   Widget build(BuildContext context) {
     final content = details.content;
-    final stageName = _stageName(details);
+    final stageName = _stageName(details, transaction);
+    final statusData = _resolveStatusData(details, transaction);
+    final txIdProcess = transaction?.idProcess.trim() ?? '';
+    final detailsIdProcess = details.idProcess?.trim() ?? '';
+    final displayId = txIdProcess.isNotEmpty
+        ? txIdProcess
+        : (detailsIdProcess.isNotEmpty
+            ? detailsIdProcess
+            : '#${details.transactionId}');
+
     final textWidgets = content.widgets
         .where((item) => item.widgetType != 'file_picker')
         .where((item) => !_isEmptyValue(item.value))
@@ -176,7 +195,11 @@ class _DetailsContent extends StatelessWidget {
     final isWide = MediaQuery.of(context).size.width > 950;
 
     final rightContentList = <Widget>[
-      _TransactionInfoCard(details: details),
+      _TransactionInfoCard(
+        details: details,
+        statusData: statusData,
+        displayId: displayId,
+      ),
       const SizedBox(height: 20),
       if (content.rejectionReason.trim().isNotEmpty) ...[
         _RejectionReasonCard(reason: content.rejectionReason.trim()),
@@ -223,7 +246,7 @@ class _DetailsContent extends StatelessWidget {
 
     final leftContent = _WorkflowTimelineCard(details: details);
 
-        return SingleChildScrollView(
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(32, 32, 32, 36),
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -262,6 +285,8 @@ class _DetailsContent extends StatelessWidget {
             _HeaderWidget(
               details: details,
               stageName: stageName,
+              statusData: statusData,
+              displayId: displayId,
             ),
             const SizedBox(height: 24),
 
@@ -298,43 +323,127 @@ class _DetailsContent extends StatelessWidget {
     );
   }
 }
+
+class _StatusData {
+  final String label;
+  final Color textColor;
+  final Color backgroundColor;
+  final IconData icon;
+
+  const _StatusData({
+    required this.label,
+    required this.textColor,
+    required this.backgroundColor,
+    required this.icon,
+  });
+}
+
+_StatusData _resolveStatusData(
+  InternalTransactionFirstStageEntity details,
+  InternalTransactionEntity? transaction,
+) {
+  final detailsStatus = details.status?.trim() ?? '';
+  final txStatus = transaction?.status.trim() ?? '';
+  final rawStatus =
+      (detailsStatus.isNotEmpty ? detailsStatus : txStatus).toLowerCase();
+
+  if (rawStatus.isNotEmpty) {
+    switch (rawStatus) {
+      case 'submitted':
+        return const _StatusData(
+          label: 'مقدمة',
+          textColor: AppColors.forest,
+          backgroundColor: Color(0xFFEAF3F0),
+          icon: LucideIcons.send,
+        );
+      case 'in_progress':
+      case 'running':
+        return _StatusData(
+          label: 'قيد المعالجة',
+          textColor: AppColors.goldDark,
+          backgroundColor: AppColors.goldLight.withValues(alpha: 0.45),
+          icon: LucideIcons.clock3,
+        );
+      case 'completed':
+        return const _StatusData(
+          label: 'منجزة',
+          textColor: AppColors.forest,
+          backgroundColor: Color(0xFFE8F5E9),
+          icon: LucideIcons.circleCheck,
+        );
+      case 'rejected':
+        return const _StatusData(
+          label: 'مرفوضة',
+          textColor: AppColors.umber,
+          backgroundColor: Color(0xFFFFEBEE),
+          icon: LucideIcons.circleX,
+        );
+      case 'cancelled':
+        return const _StatusData(
+          label: 'ملغاة',
+          textColor: AppColors.umber,
+          backgroundColor: Color(0xFFF8EDEF),
+          icon: LucideIcons.ban,
+        );
+      default:
+        return _StatusData(
+          label: rawStatus,
+          textColor: const Color(0xFF5A738E),
+          backgroundColor: const Color(0xFFEDF2F7),
+          icon: LucideIcons.info,
+        );
+    }
+  }
+
+  // Fallback to decision if status is not provided
+  final decision = details.content.decision.trim().toLowerCase();
+  if (decision == 'approve') {
+    return const _StatusData(
+      label: 'تمت الموافقة',
+      textColor: AppColors.forest,
+      backgroundColor: Color(0xFFE8F5E9),
+      icon: LucideIcons.circleCheck,
+    );
+  } else if (decision == 'reject') {
+    return const _StatusData(
+      label: 'مرفوضة',
+      textColor: AppColors.umber,
+      backgroundColor: Color(0xFFFFEBEE),
+      icon: LucideIcons.circleX,
+    );
+  } else if (decision == 'return') {
+    return const _StatusData(
+      label: 'أعيدت للتعديل',
+      textColor: Colors.orange,
+      backgroundColor: Color(0xFFFFF3E0),
+      icon: LucideIcons.rotateCcw,
+    );
+  }
+
+  return _StatusData(
+    label: 'قيد المعالجة',
+    textColor: AppColors.goldDark,
+    backgroundColor: AppColors.goldLight.withValues(alpha: 0.45),
+    icon: LucideIcons.clock3,
+  );
+}
+
 class _HeaderWidget extends StatelessWidget {
   final InternalTransactionFirstStageEntity details;
   final String stageName;
+  final _StatusData statusData;
+  final String displayId;
 
   const _HeaderWidget({
     required this.details,
     required this.stageName,
+    required this.statusData,
+    required this.displayId,
   });
 
   @override
   Widget build(BuildContext context) {
-    final decision = details.content.decision.trim().toLowerCase();
-    Color badgeBg;
-    Color badgeFg;
-    String statusText;
-
-    if (decision == 'approve') {
-      badgeBg = AppColors.forestLight.withOpacity(0.12);
-      badgeFg = AppColors.forest;
-      statusText = 'تمت الموافقة';
-    } else if (decision == 'reject') {
-      badgeBg = AppColors.umber.withOpacity(0.08);
-      badgeFg = AppColors.umber;
-      statusText = 'تم الرفض';
-    } else if (decision == 'submit') {
-      badgeBg = Colors.blue.shade50;
-      badgeFg = Colors.blue.shade700;
-      statusText = 'منجزة';
-    } else if (decision == 'return') {
-      badgeBg = Colors.orange.shade50;
-      badgeFg = Colors.orange.shade700;
-      statusText = 'أعيدت للتعديل';
-    } else {
-      badgeBg = AppColors.forestLight.withOpacity(0.12);
-      badgeFg = AppColors.forest;
-      statusText = 'منجزة';
-    }
+    final formattedId = displayId.startsWith('#') ? displayId : '#$displayId';
 
     return FadeInDown(
       duration: const Duration(milliseconds: 300),
@@ -361,14 +470,14 @@ class _HeaderWidget extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: badgeBg,
+                  color: statusData.backgroundColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  statusText,
+                  statusData.label,
                   style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: AppTextStyles.medium,
-                    color: badgeFg,
+                    color: statusData.textColor,
                   ),
                 ),
               ),
@@ -376,7 +485,7 @@ class _HeaderWidget extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '#${details.transactionId}',
+            formattedId,
             style: AppTextStyles.labelLarge.copyWith(
               fontWeight: AppTextStyles.medium,
               color: AppColors.charcoal.withOpacity(0.6),
@@ -390,41 +499,25 @@ class _HeaderWidget extends StatelessWidget {
 
 class _TransactionInfoCard extends StatelessWidget {
   final InternalTransactionFirstStageEntity details;
+  final _StatusData statusData;
+  final String displayId;
 
-  const _TransactionInfoCard({required this.details});
+  const _TransactionInfoCard({
+    required this.details,
+    required this.statusData,
+    required this.displayId,
+  });
 
   @override
   Widget build(BuildContext context) {
     final content = details.content;
-    final decision = content.decision.trim().toLowerCase();
-
-    Color statusColor;
-    IconData statusIcon;
-    String statusLabel;
-
-    if (decision == 'approve' || decision == 'submit') {
-      statusColor = AppColors.forest;
-      statusIcon = LucideIcons.circleCheck;
-      statusLabel = decision == 'approve' ? 'تمت الموافقة' : 'منجزة';
-    } else if (decision == 'reject') {
-      statusColor = AppColors.error;
-      statusIcon = LucideIcons.circleX;
-      statusLabel = 'تم الرفض';
-    } else if (decision == 'return') {
-      statusColor = Colors.orange.shade700;
-      statusIcon = LucideIcons.rotateCcw;
-      statusLabel = 'أعيدت للتعديل';
-    } else {
-      statusColor = AppColors.forest;
-      statusIcon = LucideIcons.circleCheck;
-      statusLabel = 'منجزة';
-    }
+    final formattedId = displayId.startsWith('#') ? displayId : '#$displayId';
 
     final infoItems = <_InfoItem>[
       _InfoItem(
         icon: LucideIcons.hash,
         label: 'رقم المعاملة',
-        value: '#${details.transactionId}',
+        value: formattedId,
         color: AppColors.forest,
       ),
       _InfoItem(
@@ -440,10 +533,10 @@ class _TransactionInfoCard extends StatelessWidget {
         color: AppColors.charcoalDark,
       ),
       _InfoItem(
-        icon: statusIcon,
+        icon: statusData.icon,
         label: 'الحالة',
-        value: statusLabel,
-        color: statusColor,
+        value: statusData.label,
+        color: statusData.textColor,
       ),
     ];
 
@@ -1639,11 +1732,17 @@ const _templateLabels = <String, String>{
   'department': 'القسم',
 };
 
-String _stageName(InternalTransactionFirstStageEntity details) {
+String _stageName(
+  InternalTransactionFirstStageEntity details, [
+  InternalTransactionEntity? transaction,
+]) {
   final contentName = details.content.stageName.trim();
   if (contentName.isNotEmpty) return contentName;
   final stageName = details.stageName.trim();
-  return stageName.isEmpty ? 'المرحلة الأولى' : stageName;
+  if (stageName.isNotEmpty) return stageName;
+  final txStage = transaction?.stageName.trim() ?? '';
+  if (txStage.isNotEmpty) return txStage;
+  return 'المرحلة الأولى';
 }
 
 String _formatDate(String raw) {

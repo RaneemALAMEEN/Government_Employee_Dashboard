@@ -8,6 +8,10 @@ class InternalTransactionFirstStageModel
     required super.stageName,
     required super.authType,
     required super.completedBy,
+    super.status = '',
+    super.idProcess = '',
+    super.processDefinitionName = '',
+    super.progressPercent = 0,
     required super.content,
   });
 
@@ -15,6 +19,7 @@ class InternalTransactionFirstStageModel
     Map<String, dynamic> json,
   ) {
     final data = json['data'] as Map<String, dynamic>? ?? json;
+    final contentJson = data['content'] as Map<String, dynamic>? ?? {};
 
     return InternalTransactionFirstStageModel(
       transactionId: _asInt(data['transaction_id']) ?? 0,
@@ -22,9 +27,24 @@ class InternalTransactionFirstStageModel
       stageName: data['stage_name']?.toString() ?? '',
       authType: data['auth_type']?.toString() ?? '',
       completedBy: _asInt(data['completed_by']),
-      content: FirstStageContentModel.fromJson(
-        data['content'] as Map<String, dynamic>? ?? {},
-      ),
+      status: (data['status'] ??
+              data['transaction_status'] ??
+              contentJson['status'] ??
+              '')
+          ?.toString() ??
+          '',
+      idProcess: (data['id_process'] ??
+              data['process_id_code'] ??
+              '')
+          ?.toString() ??
+          '',
+      processDefinitionName: (data['process_definition_name'] ??
+              data['process_name'] ??
+              '')
+          ?.toString() ??
+          '',
+      progressPercent: _asInt(data['progress_percent']) ?? 0,
+      content: FirstStageContentModel.fromJson(contentJson),
     );
   }
 }

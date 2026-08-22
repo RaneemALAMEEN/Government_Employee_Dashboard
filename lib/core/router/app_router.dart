@@ -14,6 +14,7 @@ import '../../features/internal_transactions/presentation/bloc/internal_transact
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_page.dart';
 import '../../features/internal_transactions/presentation/pages/internal_transaction_first_stage_page.dart';
+import '../../features/internal_transactions/domain/entities/internal_transaction_entity.dart';
 import '../../features/department_transactions/presentation/pages/department_transactions_page.dart';
 import '../../features/department_transactions/presentation/pages/department_transaction_details_page.dart';
 import '../../features/department_transactions/presentation/pages/generate_final_document_page.dart';
@@ -161,6 +162,9 @@ class AppRouter {
             pageBuilder: (context, state) {
               final transactionId =
                   int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              final transaction = state.extra is InternalTransactionEntity
+                  ? state.extra as InternalTransactionEntity
+                  : null;
 
               return NoTransitionPage(
                 child: BlocProvider(
@@ -168,6 +172,7 @@ class AppRouter {
                     ..add(LoadInternalTransactionFirstStage(transactionId)),
                   child: InternalTransactionFirstStagePage(
                     transactionId: transactionId,
+                    transaction: transaction,
                   ),
                 ),
               );
