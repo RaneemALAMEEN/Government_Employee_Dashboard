@@ -9,6 +9,16 @@ import '../../../../core/services/usb_signing_service.dart';
 import '../../../internal_transactions/domain/entities/dynamic_widget_entity.dart';
 import '../repositories/my_transactions_repository.dart';
 
+typedef TransactionSubmitProgressCallback = void Function(
+  String statusMessage, {
+  bool? isUploadingFiles,
+  String? stage,
+  String? currentFileName,
+  int? currentFileIndex,
+  int? totalFiles,
+  double? progress,
+});
+
 class SubmitTransaction {
   final MyTransactionsRepository repository;
   final UsbSigningService usbSigningService;
@@ -30,13 +40,18 @@ class SubmitTransaction {
     Map<String, dynamic> templateFormValues = const {},
     int? expectedVersion,
     List<Map<String, dynamic>>? assignments,
-    void Function(String statusMessage)? onProgress,
+    TransactionSubmitProgressCallback? onProgress,
   }) async {
     try {
       final isSubmitDocuments =
           formId.contains('sign') || formId.contains('document');
 
-      onProgress?.call('جاري فحص المرفقات وتجهيز البيانات...');
+      onProgress?.call(
+        'جاري فحص المرفقات وتجهيز البيانات...',
+        isUploadingFiles: false,
+        stage: 'preparing',
+        progress: 0.1,
+      );
 
       // 1. Set Programmatic Decision Value
       _setProgrammaticDecisionValue(widgets, formValues, isApprove);
@@ -170,7 +185,12 @@ class SubmitTransaction {
         debugPrint('==================================================');
 
         // Request Signing Challenge
-        onProgress?.call('جاري إنشاء طلب التوقيع الرقمي...');
+        onProgress?.call(
+          'جاري إنشاء طلب التوقيع الرقمي...',
+          isUploadingFiles: false,
+          stage: 'signing',
+          progress: 0.85,
+        );
         final challengeResult = await repository.createSigningChallenge(
           taskId: taskId,
           payload: challengePayload,
@@ -193,7 +213,12 @@ class SubmitTransaction {
 
         // Generate Signature
         try {
-          onProgress?.call('جاري توقيع المعاملة رقمياً عبر USB...');
+          onProgress?.call(
+            'جاري توقيع المعاملة رقمياً عبر فلاشة USB...',
+            isUploadingFiles: false,
+            stage: 'signing',
+            progress: 0.90,
+          );
           final signature = await usbSigningService.signMessageFromUsb(
             keysDirectoryPath: keysDirectoryPath,
             pin: pin,
@@ -212,7 +237,12 @@ class SubmitTransaction {
         }
       }
 
-      onProgress?.call('جاري إرسال واعتماد المعاملة...');
+      onProgress?.call(
+        'جاري إرسال واعتماد المعاملة على الخادم...',
+        isUploadingFiles: false,
+        stage: 'submitting',
+        progress: 0.95,
+      );
       debugPrint('==================================================');
       debugPrint('[SubmitTransaction] 🚀 Complete Task Request:');
       debugPrint('Task ID: $taskId');
@@ -298,9 +328,28 @@ class SubmitTransaction {
   Future<Either<Failure, Map<String, dynamic>>> _buildSubmitPayload(
     List<DynamicWidgetEntity> widgets,
     Map<String, dynamic> formValues, {
-    void Function(String statusMessage)? onProgress,
+    TransactionSubmitProgressCallback? onProgress,
   }) async {
     final widgetsPayload = <Map<String, dynamic>>[];
+
+    // Calculate total files to upload across all widgets
+    int totalFilesToUpload = 0;
+    for (final widget in widgets) {
+      if (widget.widgetType == 'file_picker') {
+        final id = widget.data['id']?.toString() ?? '';
+        final value = formValues[id];
+        if (value is List) {
+          for (final f in value) {
+            final path = _extractFilePath(f);
+            if (path != null && path.isNotEmpty && (f is! Map || f['id'] == null)) {
+              totalFilesToUpload++;
+            }
+          }
+        }
+      }
+    }
+
+    int uploadedFilesCounter = 0;
 
     for (final widget in widgets) {
       final id = widget.data['id']?.toString() ?? '';
@@ -314,7 +363,12 @@ class SubmitTransaction {
           label,
           widget.data,
           value,
+          totalFilesOverall: totalFilesToUpload,
+          currentFileCounter: uploadedFilesCounter,
           onProgress: onProgress,
+          onCounterIncrement: () {
+            uploadedFilesCounter++;
+          },
         );
         if (uploadResult.isLeft()) {
           return Left(uploadResult.fold((l) => l, (r) => throw Exception()));
@@ -337,7 +391,10 @@ class SubmitTransaction {
     String widgetLabel,
     Map<String, dynamic> widgetData,
     dynamic value, {
-    void Function(String statusMessage)? onProgress,
+    int totalFilesOverall = 0,
+    int currentFileCounter = 0,
+    TransactionSubmitProgressCallback? onProgress,
+    void Function()? onCounterIncrement,
   }) async {
     if (value == null || (value is! List) || value.isEmpty) {
       return const Right([]);
@@ -351,24 +408,45 @@ class SubmitTransaction {
 
     for (final file in value) {
       index++;
-      if (file is Map && file['path'] != null) {
+      if (file is Map &&
+          file['path'] != null &&
+          file['path'].toString().isNotEmpty) {
         uploadedFiles.add(Map<String, dynamic>.from(file));
         continue;
       }
-      final filePath = file.path;
-      if (filePath == null || filePath.toString().isEmpty) {
+
+      final filePath = _extractFilePath(file);
+      if (filePath == null || filePath.isEmpty) {
         continue;
       }
 
-      final displayName = widgetLabel.isNotEmpty ? widgetLabel : 'الوثيقة';
+      final fileName = _extractFileName(file);
+      final displayName = widgetLabel.isNotEmpty
+          ? widgetLabel
+          : (fileName != null && fileName.isNotEmpty ? fileName : 'الوثيقة');
+
+      onCounterIncrement?.call();
+      final currentOverall = currentFileCounter + index;
+      final displayTotal = totalFilesOverall > 0 ? totalFilesOverall : total;
+
+      final progressVal = displayTotal > 0
+          ? 0.15 + (0.65 * (currentOverall / displayTotal).clamp(0.0, 1.0))
+          : 0.5;
+
       onProgress?.call(
-        total > 1
-            ? 'جاري رفع $displayName ($index من $total)...'
-            : 'جاري رفع $displayName إلى الخادم...',
+        displayTotal > 1
+            ? 'جاري رفع «$displayName» ($currentOverall من $displayTotal) إلى السيرفر...'
+            : 'جاري رفع «$displayName» إلى السيرفر...',
+        isUploadingFiles: true,
+        stage: 'uploading',
+        currentFileName: fileName ?? displayName,
+        currentFileIndex: currentOverall,
+        totalFiles: displayTotal,
+        progress: progressVal,
       );
 
       final uploadedResult = await repository.uploadTransactionFile(
-        filePath: filePath.toString(),
+        filePath: filePath,
         typeDocId: typeDocId is int
             ? typeDocId
             : int.tryParse(typeDocId.toString()) ?? 1,
@@ -383,5 +461,34 @@ class SubmitTransaction {
     }
 
     return Right(uploadedFiles);
+  }
+
+  String? _extractFilePath(dynamic file) {
+    if (file == null) return null;
+    if (file is String) return file;
+    if (file is Map) return file['path']?.toString();
+    try {
+      final path = (file as dynamic).path?.toString();
+      if (path != null && path.isNotEmpty) return path;
+    } catch (_) {}
+    return null;
+  }
+
+  String? _extractFileName(dynamic file) {
+    if (file == null) return null;
+    if (file is Map) {
+      return file['name']?.toString() ??
+          file['original_name']?.toString() ??
+          file['filename']?.toString();
+    }
+    try {
+      final name = (file as dynamic).name?.toString();
+      if (name != null && name.isNotEmpty) return name;
+    } catch (_) {}
+    final path = _extractFilePath(file);
+    if (path != null && path.isNotEmpty) {
+      return path.split(RegExp(r'[\\/]')).last;
+    }
+    return null;
   }
 }

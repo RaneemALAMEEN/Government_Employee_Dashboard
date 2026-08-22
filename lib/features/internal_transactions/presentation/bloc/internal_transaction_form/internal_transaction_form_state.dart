@@ -13,6 +13,10 @@ class InternalTransactionFormState extends Equatable {
   final Map<String, dynamic> formValues;
   final Map<String, dynamic> templateValues;
   final Map<String, dynamic>? submittedTransaction;
+  final int? assignmentOrgId;
+  final int? assignmentDepartmentId;
+  final int? assignmentRoleId;
+  final String? assignmentError;
 
   const InternalTransactionFormState({
     required this.loading,
@@ -24,6 +28,10 @@ class InternalTransactionFormState extends Equatable {
     this.form,
     this.template,
     this.submittedTransaction,
+    this.assignmentOrgId,
+    this.assignmentDepartmentId,
+    this.assignmentRoleId,
+    this.assignmentError,
   });
 
   factory InternalTransactionFormState.initial() {
@@ -32,6 +40,10 @@ class InternalTransactionFormState extends Equatable {
       submitting: false,
       formValues: {},
       templateValues: {},
+      assignmentOrgId: null,
+      assignmentDepartmentId: null,
+      assignmentRoleId: null,
+      assignmentError: null,
     );
   }
 
@@ -47,6 +59,11 @@ class InternalTransactionFormState extends Equatable {
     Map<String, dynamic>? templateValues,
     Map<String, dynamic>? submittedTransaction,
     bool clearSubmittedTransaction = false,
+    int? assignmentOrgId,
+    int? assignmentDepartmentId,
+    int? assignmentRoleId,
+    String? assignmentError,
+    bool clearAssignmentError = false,
   }) {
     return InternalTransactionFormState(
       loading: loading ?? this.loading,
@@ -61,6 +78,13 @@ class InternalTransactionFormState extends Equatable {
       submittedTransaction: clearSubmittedTransaction
           ? null
           : submittedTransaction ?? this.submittedTransaction,
+      assignmentOrgId: assignmentOrgId ?? this.assignmentOrgId,
+      assignmentDepartmentId:
+          assignmentDepartmentId ?? this.assignmentDepartmentId,
+      assignmentRoleId: assignmentRoleId ?? this.assignmentRoleId,
+      assignmentError: clearAssignmentError
+          ? null
+          : assignmentError ?? this.assignmentError,
     );
   }
 
@@ -75,5 +99,9 @@ class InternalTransactionFormState extends Equatable {
         formValues,
         templateValues,
         submittedTransaction,
+        assignmentOrgId,
+        assignmentDepartmentId,
+        assignmentRoleId,
+        assignmentError,
       ];
 }

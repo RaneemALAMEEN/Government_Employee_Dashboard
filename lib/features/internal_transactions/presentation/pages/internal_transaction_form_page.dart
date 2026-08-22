@@ -5,6 +5,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:government_employee_dashboard/features/my_transactions/presentation/pages/transaction_details/widgets/task_assignment_card.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sfpdf;
 
@@ -26,6 +27,7 @@ import '../bloc/internal_transaction_form/internal_transaction_form_event.dart';
 import '../bloc/internal_transaction_form/internal_transaction_form_state.dart';
 import '../widgets/dynamic_form_widget_renderer.dart';
 import '../widgets/transaction_success_summary.dart';
+import '../../../my_transactions/presentation/widgets/transaction_upload_progress_overlay.dart';
 
 class InternalTransactionFormPage extends StatefulWidget {
   final int processId;
@@ -81,7 +83,6 @@ class _InternalTransactionFormPageState
       return null;
     }
 
-
     /*
     // Manual Signature Dialog Fallback:
     if (!mounted) return null;
@@ -100,9 +101,22 @@ class _InternalTransactionFormPageState
   }
 
   Future<void> _submit() async {
-    final validationError =
-        context.read<InternalTransactionFormBloc>().validateCurrentForm();
+    final bloc = context.read<InternalTransactionFormBloc>();
+    final validationError = bloc.validateCurrentForm();
     if (validationError != null) {
+      final isAssignmentMissing = (bloc.state.form?.isAssignment ?? false) &&
+          (bloc.state.assignmentDepartmentId == null ||
+              bloc.state.assignmentRoleId == null);
+      if (isAssignmentMissing) {
+        bloc.add(
+          UpdateInternalTransactionAssignment(
+            organizationId: bloc.state.assignmentOrgId,
+            departmentId: bloc.state.assignmentDepartmentId,
+            roleId: bloc.state.assignmentRoleId,
+            errorText: validationError,
+          ),
+        );
+      }
       _showSnackBar(validationError, isError: true);
       return;
     }
@@ -198,93 +212,76 @@ class _InternalTransactionFormPageState
           );
         }
 
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: IconButton.outlined(
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/create-internal-transaction');
-                        }
-                      },
-                      tooltip: 'العودة لاختيار المعاملة',
-                      icon: const Icon(Icons.arrow_forward),
-                      color: AppColors.forest,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FadeInDown(
-                  duration: const Duration(milliseconds: 400),
-                  child: _FormHeader(
-                    form: form,
-                    processName: widget.initialProcessName,
-                    stageCount: widget.stageCount,
-                    hasTemplate:
-                        state.template != null || form.templates.isNotEmpty,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FadeInUp(
-                  duration: const Duration(milliseconds: 400),
-                  delay: const Duration(milliseconds: 100),
-                  child: _SectionCard(
-                    title: 'بيانات المرحلة',
-                    subtitle: 'يرجى تعبئة الحقول المطلوبة لإكمال هذه المرحلة',
-                    icon: Icons.dynamic_form_outlined,
-                    child: _FormFields(
-                      form: form,
-                      values: state.formValues,
-                      emptyMessage: 'لا توجد حقول مباشرة في هذه المرحلة.',
-                      onChanged: (id, value) {
-                        context.read<InternalTransactionFormBloc>().add(
-                              UpdateInternalTransactionFormValue(
-                                id: id,
-                                value: value,
-                              ),
-                            );
-                      },
-                    ),
-                  ),
-                ),
-                if (state.template != null) ...[
-                  const SizedBox(height: 22),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 400),
-                    delay: const Duration(milliseconds: 160),
-                    child: _TemplateSection(
-                      template: state.template!,
-                      values: state.templateValues,
-                      onChanged: (id, value) {
-                        context.read<InternalTransactionFormBloc>().add(
-                              UpdateInternalTransactionTemplateValue(
-                                id: id,
-                                value: value,
-                              ),
-                            );
-                      },
-                    ),
-                  ),
-                ],
-                ...form.templates.toList().asMap().entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.only(top: 22),
-                        child: FadeInUp(
+        return Stack(
+          children: [
+            AbsorbPointer(
+              absorbing: state.submitting,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: IconButton.outlined(
+                            onPressed: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/create-internal-transaction');
+                              }
+                            },
+                            tooltip: 'العودة لاختيار المعاملة',
+                            icon: const Icon(Icons.arrow_forward),
+                            color: AppColors.forest,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      FadeInDown(
+                        duration: const Duration(milliseconds: 400),
+                        child: _FormHeader(
+                          form: form,
+                          processName: widget.initialProcessName,
+                          stageCount: widget.stageCount,
+                          hasTemplate:
+                              state.template != null || form.templates.isNotEmpty,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 400),
+                        delay: const Duration(milliseconds: 100),
+                        child: _SectionCard(
+                          title: 'بيانات المرحلة',
+                          subtitle: 'يرجى تعبئة الحقول المطلوبة لإكمال هذه المرحلة',
+                          icon: Icons.dynamic_form_outlined,
+                          child: _FormFields(
+                            form: form,
+                            values: state.formValues,
+                            emptyMessage: 'لا توجد حقول مباشرة في هذه المرحلة.',
+                            onChanged: (id, value) {
+                              context.read<InternalTransactionFormBloc>().add(
+                                    UpdateInternalTransactionFormValue(
+                                      id: id,
+                                      value: value,
+                                    ),
+                                  );
+                            },
+                          ),
+                        ),
+                      ),
+                      if (state.template != null) ...[
+                        const SizedBox(height: 22),
+                        FadeInUp(
                           duration: const Duration(milliseconds: 400),
-                          delay: Duration(milliseconds: 180 + (entry.key * 50)),
-                          child: _InlineTemplateSection(
-                            template: entry.value,
+                          delay: const Duration(milliseconds: 160),
+                          child: _TemplateSection(
+                            template: state.template!,
                             values: state.templateValues,
                             onChanged: (id, value) {
                               context.read<InternalTransactionFormBloc>().add(
@@ -296,24 +293,76 @@ class _InternalTransactionFormPageState
                             },
                           ),
                         ),
+                      ],
+                      ...form.templates.toList().asMap().entries.map(
+                            (entry) => Padding(
+                              padding: const EdgeInsets.only(top: 22),
+                              child: FadeInUp(
+                                duration: const Duration(milliseconds: 400),
+                                delay: Duration(milliseconds: 180 + (entry.key * 50)),
+                                child: _InlineTemplateSection(
+                                  template: entry.value,
+                                  values: state.templateValues,
+                                  onChanged: (id, value) {
+                                    context.read<InternalTransactionFormBloc>().add(
+                                          UpdateInternalTransactionTemplateValue(
+                                            id: id,
+                                            value: value,
+                                          ),
+                                        );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                      if (form.isAssignment) ...[
+                        const SizedBox(height: 22),
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: const Duration(milliseconds: 200),
+                          child: TaskAssignmentCard(
+                            isEnabled: !state.submitting,
+                            errorText: state.assignmentError,
+                            initialDepartmentId: state.assignmentDepartmentId,
+                            initialRoleId: state.assignmentRoleId,
+                            onAssignmentChanged: (orgId, deptId, roleId) {
+                              context.read<InternalTransactionFormBloc>().add(
+                                    UpdateInternalTransactionAssignment(
+                                      organizationId: orgId,
+                                      departmentId: deptId,
+                                      roleId: roleId,
+                                    ),
+                                  );
+                            },
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 350),
+                        delay: const Duration(milliseconds: 220),
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: _SubmitButton(
+                            submitting: state.submitting,
+                            statusMessage: state.submitStatusMessage,
+                            onPressed: _submit,
+                          ),
+                        ),
                       ),
-                    ),
-                const SizedBox(height: 24),
-                FadeInUp(
-                  duration: const Duration(milliseconds: 350),
-                  delay: const Duration(milliseconds: 220),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: _SubmitButton(
-                      submitting: state.submitting,
-                      statusMessage: state.submitStatusMessage,
-                      onPressed: _submit,
-                    ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+
+            if (state.submitting &&
+                (state.submitStatusMessage?.contains('رفع') == true ||
+                    state.submitStatusMessage?.contains('المرفقات') == true))
+              TransactionUploadProgressOverlay(
+                message: state.submitStatusMessage,
+              ),
+          ],
         );
       },
     );
@@ -557,7 +606,8 @@ class _TemplateInfo extends StatelessWidget {
                           onPressed: () {
                             if (Navigator.of(dialogContext, rootNavigator: true)
                                 .canPop()) {
-                              Navigator.of(dialogContext, rootNavigator: true).pop();
+                              Navigator.of(dialogContext, rootNavigator: true)
+                                  .pop();
                             }
                           },
                           icon: const Icon(
@@ -974,4 +1024,3 @@ class _FormLoadingSkeleton extends StatelessWidget {
     );
   }
 }
-

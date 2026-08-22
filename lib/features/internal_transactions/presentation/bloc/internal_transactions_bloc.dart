@@ -127,10 +127,12 @@ class InternalTransactionsBloc
         );
       },
       (pageData) {
+        final filteredNewItems =
+            pageData.items.where((i) => i.status.toLowerCase() != 'draft').toList();
         final currentItems = state.transactionsPageData?.items ?? const [];
         final resultData = append
             ? InternalTransactionsPageEntity(
-                items: [...currentItems, ...pageData.items],
+                items: [...currentItems, ...filteredNewItems],
                 page: page,
                 limit: pageData.limit,
                 total: pageData.total,
@@ -138,7 +140,15 @@ class InternalTransactionsBloc
                 hasNext: pageData.hasNext,
                 hasPrev: pageData.hasPrev,
               )
-            : pageData;
+            : InternalTransactionsPageEntity(
+                items: filteredNewItems,
+                page: page,
+                limit: pageData.limit,
+                total: pageData.total,
+                totalPages: pageData.totalPages,
+                hasNext: pageData.hasNext,
+                hasPrev: pageData.hasPrev,
+              );
 
         emit(
           state.copyWith(

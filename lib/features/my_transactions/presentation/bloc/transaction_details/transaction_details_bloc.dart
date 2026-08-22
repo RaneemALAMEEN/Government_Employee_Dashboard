@@ -202,14 +202,24 @@ class TransactionDetailsBloc
     Emitter<TransactionDetailsState> emit,
   ) async {
     final currentState = state;
-    emit(TransactionDetailsSubmitting(message: 'جاري استلام المعاملة...'));
+    final lastLoaded = currentState is TransactionDetailsLoaded
+        ? currentState
+        : (currentState is TransactionDetailsSubmitting
+            ? currentState.previousLoadedState
+            : null);
+
+    emit(TransactionDetailsSubmitting(
+      message: 'جاري استلام المعاملة...',
+      previousLoadedState: lastLoaded,
+      stage: 'preparing',
+    ));
     final result = await pickupTask(taskId: event.taskId);
 
     result.fold(
       (failure) {
         emit(TransactionDetailsFailure(failure.message));
-        if (currentState is TransactionDetailsLoaded) {
-          emit(currentState);
+        if (lastLoaded != null) {
+          emit(lastLoaded);
         }
       },
       (_) {
@@ -226,14 +236,24 @@ class TransactionDetailsBloc
     Emitter<TransactionDetailsState> emit,
   ) async {
     final currentState = state;
-    emit(TransactionDetailsSubmitting(message: 'جاري إرجاع المعاملة...'));
+    final lastLoaded = currentState is TransactionDetailsLoaded
+        ? currentState
+        : (currentState is TransactionDetailsSubmitting
+            ? currentState.previousLoadedState
+            : null);
+
+    emit(TransactionDetailsSubmitting(
+      message: 'جاري إرجاع المعاملة...',
+      previousLoadedState: lastLoaded,
+      stage: 'preparing',
+    ));
     final result = await releaseTask(taskId: event.taskId);
 
     result.fold(
       (failure) {
         emit(TransactionDetailsFailure(failure.message));
-        if (currentState is TransactionDetailsLoaded) {
-          emit(currentState);
+        if (lastLoaded != null) {
+          emit(lastLoaded);
         }
       },
       (_) {
@@ -250,7 +270,18 @@ class TransactionDetailsBloc
     Emitter<TransactionDetailsState> emit,
   ) async {
     final currentState = state;
-    emit(TransactionDetailsSubmitting(message: 'جاري معالجة وتجهيز المعاملة...'));
+    final lastLoaded = currentState is TransactionDetailsLoaded
+        ? currentState
+        : (currentState is TransactionDetailsSubmitting
+            ? currentState.previousLoadedState
+            : null);
+
+    emit(TransactionDetailsSubmitting(
+      message: 'جاري فحص وتجهيز المرفقات...',
+      previousLoadedState: lastLoaded,
+      stage: 'preparing',
+      progress: 0.1,
+    ));
 
     final result = await submitTransaction(
       taskId: event.taskId,
@@ -267,8 +298,23 @@ class TransactionDetailsBloc
       loadedTemplates: event.loadedTemplates,
       expectedVersion: event.expectedVersion,
       assignments: event.assignments,
-      onProgress: (msg) {
-        emit(TransactionDetailsSubmitting(message: msg));
+      onProgress: (msg,
+          {bool? isUploadingFiles,
+          stage,
+          currentFileName,
+          currentFileIndex,
+          totalFiles,
+          progress}) {
+        emit(TransactionDetailsSubmitting(
+          message: msg,
+          previousLoadedState: lastLoaded,
+          isUploadingFiles: isUploadingFiles ?? (stage == 'uploading'),
+          stage: stage,
+          currentFileName: currentFileName,
+          currentFileIndex: currentFileIndex,
+          totalFiles: totalFiles,
+          progress: progress,
+        ));
       },
     );
 

@@ -77,24 +77,27 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
               const double minTableWidth = 600;
               final double availableWidth = constraints.maxWidth;
 
+              final filteredItems =
+                  data.items.where((t) => t.status.toLowerCase() != 'draft').toList();
+
               final Widget tableContent = Column(
                 children: [
                   const _TableHeader(),
-                  if (data.items.isEmpty && state.loadingTransactions)
+                  if (filteredItems.isEmpty && state.loadingTransactions)
                     const SizedBox(
                       height: 180,
                       child: Center(
                         child: CircularProgressIndicator(color: AppColors.forest),
                       ),
                     )
-                  else if (data.items.isEmpty)
+                  else if (filteredItems.isEmpty)
                     const _EmptyTransactionsState()
                   else
                     ListView.separated(
                       shrinkWrap: true,
                       padding: EdgeInsets.zero,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: data.items.length,
+                      itemCount: filteredItems.length,
                       separatorBuilder: (_, __) => Container(
                         height: 1,
                         color: AppColors.gold.withValues(alpha: 0.18),
@@ -103,11 +106,11 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
                         return FadeInUp(
                           duration: const Duration(milliseconds: 350),
                           delay: Duration(milliseconds: (index % 10) * 45),
-                          child: _TransactionRow(item: data.items[index]),
+                          child: _TransactionRow(item: filteredItems[index]),
                         );
                       },
                     ),
-                  if (state.loadingTransactions && data.items.isNotEmpty)
+                  if (state.loadingTransactions && filteredItems.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: const Center(
@@ -382,12 +385,6 @@ class _StatusBadge extends StatelessWidget {
 
   _StatusViewData _statusData(String status) {
     switch (status) {
-      case 'draft':
-        return const _StatusViewData(
-          text: 'مسودة',
-          textColor: Color(0xFF5A738E),
-          background: Color(0xFFEDF2F7),
-        );
       case 'submitted':
         return const _StatusViewData(
           text: 'مقدمة',

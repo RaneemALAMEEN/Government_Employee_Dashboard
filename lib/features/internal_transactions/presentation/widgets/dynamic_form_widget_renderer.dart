@@ -158,7 +158,8 @@ class _TextFieldWidgetState extends State<_TextFieldWidget> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-              color: widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              color:
+                  widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
               width: widget.hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
@@ -277,7 +278,8 @@ class _DatePickerWidgetState extends State<_DatePickerWidget> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
-              color: widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              color:
+                  widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
               width: widget.hasError ? 2.0 : 1.2),
         ),
         focusedBorder: OutlineInputBorder(
@@ -446,7 +448,6 @@ class _FilePickerWidget extends StatefulWidget {
     required this.onChanged,
     this.hasError = false,
   });
-
 
   @override
   State<_FilePickerWidget> createState() => _FilePickerWidgetState();
@@ -714,8 +715,7 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
                           child: LinearProgressIndicator(
                             value: _uploadProgress,
                             minHeight: 6,
-                            backgroundColor:
-                                AppColors.forest.withOpacity(0.15),
+                            backgroundColor: AppColors.forest.withOpacity(0.15),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                                 AppColors.forest),
                           ),
@@ -733,7 +733,7 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
   }
 
   String _fileDisplayName(dynamic file) {
-    final label = widget.widgetEntity.data['label']?.toString().trim() ?? '';
+    final label = (widget.widgetEntity.data['label']?.toString() ?? '').trim();
     if (label.isNotEmpty) return label;
     if (file is PlatformFile) return file.name;
 
@@ -748,4 +748,3 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
     return file?.toString() ?? 'ملف مرفق';
   }
 }
-

@@ -9,6 +9,7 @@ class DynamicFormModel extends DynamicFormEntity {
     required super.note,
     required super.decision,
     required super.requiresDigitalSignature,
+    super.isAssignment,
     required super.widgets,
     super.expectedVersion,
     super.templateIds,
@@ -21,6 +22,27 @@ class DynamicFormModel extends DynamicFormEntity {
   factory DynamicFormModel.fromJson(Map<String, dynamic> json) {
     final config = json['config_json'] as Map<String, dynamic>? ?? json;
     final widgetsJson = config['widgets'] as List? ?? [];
+
+    final rawIsAssignment = json['is_assignment'] ??
+        json['has_assignments'] ??
+        config['is_assignment'] ??
+        config['has_assignments'] ??
+        (json['stage'] is Map
+            ? (json['stage'] as Map)['is_assignment'] ??
+                (json['stage'] as Map)['has_assignments']
+            : null) ??
+        (json['current_stage'] is Map
+            ? (json['current_stage'] as Map)['is_assignment'] ??
+                (json['current_stage'] as Map)['has_assignments']
+            : null);
+
+    final isAssignment = rawIsAssignment == true ||
+        rawIsAssignment == 1 ||
+        rawIsAssignment == '1' ||
+        rawIsAssignment == 'true' ||
+        rawIsAssignment == 'TRUE' ||
+        (json['assignments'] is List && (json['assignments'] as List).isNotEmpty) ||
+        (config['assignments'] is List && (config['assignments'] as List).isNotEmpty);
 
     final templateJson =
         config['template'] as List? ?? config['templates'] as List? ?? [];
@@ -58,6 +80,7 @@ class DynamicFormModel extends DynamicFormEntity {
       expectedVersion:
           int.tryParse(config['expected_version']?.toString() ?? ''),
       requiresDigitalSignature: config['requires_digital_signature'] == true,
+      isAssignment: isAssignment,
       widgets: widgetsJson
           .map(
             (item) => DynamicWidgetModel.fromJson(

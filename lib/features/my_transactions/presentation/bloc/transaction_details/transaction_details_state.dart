@@ -38,7 +38,24 @@ class TransactionDetailsLoaded extends TransactionDetailsState {
 
 class TransactionDetailsSubmitting extends TransactionDetailsState {
   final String? message;
-  TransactionDetailsSubmitting({this.message});
+  final TransactionDetailsLoaded? previousLoadedState;
+  final bool isUploadingFiles;
+  final String? stage; // 'preparing', 'uploading', 'signing', 'submitting'
+  final String? currentFileName;
+  final int? currentFileIndex;
+  final int? totalFiles;
+  final double? progress;
+
+  TransactionDetailsSubmitting({
+    this.message,
+    this.previousLoadedState,
+    this.isUploadingFiles = false,
+    this.stage,
+    this.currentFileName,
+    this.currentFileIndex,
+    this.totalFiles,
+    this.progress,
+  });
 }
 
 class TransactionDetailsActionSuccess extends TransactionDetailsState {

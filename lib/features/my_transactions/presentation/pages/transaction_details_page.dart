@@ -33,6 +33,7 @@ import '../widgets/reject_transaction_dialog.dart';
 import '../widgets/secure_signature_dialog.dart';
 import '../widgets/transaction_signed_success_widget.dart';
 import '../widgets/transaction_error_widget.dart';
+import '../widgets/transaction_upload_progress_overlay.dart';
 
 import '../bloc/transaction_details/transaction_details_bloc.dart';
 import '../bloc/transaction_details/transaction_details_event.dart';
@@ -66,6 +67,7 @@ class TransactionDetailsPage extends StatefulWidget {
 
 class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   late final TransactionDetailsBloc _bloc;
+  TransactionDetailsLoaded? _lastLoadedState;
   final Map<String, dynamic> _formValues = {};
   final Set<String> _formErrors = {};
 
@@ -568,6 +570,10 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
           },
 
           builder: (context, state) {
+            if (state is TransactionDetailsLoaded) {
+              _lastLoadedState = state;
+            }
+
             if (state is TransactionSignedSuccess) {
               return TransactionSignedSuccessWidget(
                 taskId: state.taskId,
@@ -597,8 +603,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               );
             }
 
-            if (state is TransactionDetailsInitial ||
-                state is TransactionDetailsLoading) {
+            if ((state is TransactionDetailsInitial ||
+                    state is TransactionDetailsLoading) &&
+                _lastLoadedState == null) {
               final isWide = MediaQuery.of(context).size.width > 950;
               return Padding(
                 padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
@@ -680,6 +687,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
             }
 
             if (state is TransactionDetailsFailure &&
+                _lastLoadedState == null &&
                 _bloc.state is! TransactionDetailsLoaded) {
               return AppErrorWidget(
                 onRetry: () =>
@@ -689,27 +697,29 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
             TransactionDetailsLoaded? loadedState;
             bool isSubmitting = false;
+            bool isUploadingFiles = false;
             String? submittingMessage;
+            String? submittingStage;
+            String? submittingFileName;
+            int? submittingFileIndex;
+            int? submittingTotalFiles;
+            double? submittingProgress;
 
             if (state is TransactionDetailsLoaded) {
               loadedState = state;
-            } else if (state is TransactionDetailsSubmitting ||
-                state is TransactionDetailsActionSuccess ||
-                state is TransactionDetailsFailure) {
-              // Try to find the latest loaded state from the bloc if possible, or just build a disabled view
-              final currentState = _bloc.state;
-              if (currentState is TransactionDetailsLoaded) {
-                loadedState = currentState;
-              }
-              if (state is TransactionDetailsSubmitting) {
-                isSubmitting = true;
-                submittingMessage = state.message;
-              }
-            }
-
-            if (state is TransactionDetailsSubmitting) {
+              _lastLoadedState = state;
+            } else if (state is TransactionDetailsSubmitting) {
+              loadedState = state.previousLoadedState ?? _lastLoadedState;
               isSubmitting = true;
+              isUploadingFiles = state.isUploadingFiles;
               submittingMessage = state.message;
+              submittingStage = state.stage;
+              submittingFileName = state.currentFileName;
+              submittingFileIndex = state.currentFileIndex;
+              submittingTotalFiles = state.totalFiles;
+              submittingProgress = state.progress;
+            } else {
+              loadedState = _lastLoadedState;
             }
 
             // Fallback if we don't have task data
@@ -717,8 +727,18 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
               return const Center(child: Text('لا توجد بيانات'));
             }
 
-            // If we are submitting and have no data, show loading
+            // If we are submitting and have no data
             if (loadedState == null && isSubmitting) {
+              if (isUploadingFiles) {
+                return TransactionUploadProgressOverlay(
+                  message: submittingMessage,
+                  stage: submittingStage,
+                  currentFileName: submittingFileName,
+                  currentFileIndex: submittingFileIndex,
+                  totalFiles: submittingTotalFiles,
+                  progress: submittingProgress,
+                );
+              }
               return const Center(
                   child: CircularProgressIndicator(color: AppColors.forest));
             }
@@ -1086,158 +1106,176 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     ),
             );
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Back breadcrumb
-                    GestureDetector(
-                      onTap: () => context.go('/my-transactions'),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+            return Stack(
+              children: [
+                AbsorbPointer(
+                  absorbing: isSubmitting,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
+                    child: Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            LucideIcons.arrowRight,
-                            color: AppColors.charcoal,
-                            size: 16,
+                          // Back breadcrumb
+                          GestureDetector(
+                            onTap: () => context.go('/my-transactions'),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.arrowRight,
+                                  color: AppColors.charcoal,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'العودة للمعاملات',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                      fontWeight: AppTextStyles.medium,
+                                      color: AppColors.charcoal.withOpacity(0.8)),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'العودة للمعاملات',
-                            style: AppTextStyles.bodySmall.copyWith(
-                                fontWeight: AppTextStyles.medium,
-                                color: AppColors.charcoal.withOpacity(0.8)),
+                          const SizedBox(height: 16),
+
+                          // Header Details Area
+                          TransactionHeaderWidget(
+                            txn: txn,
+                            isLocked: isLocked,
+                            lockedByMe: lockedByMe,
+                            submitting: isSubmitting,
+                            submittingMessage: submittingMessage,
+                            onPickup: () => _bloc
+                                .add(PickupTransactionEvent(widget.transactionId)),
+                            onRelease: () => _bloc
+                                .add(ReleaseTransactionEvent(widget.transactionId)),
+                            onApprove: () {
+                              if (!_validateRequiredFields(
+                                  currentStageWidgets, loadedState)) return;
+                              final isAssignment =
+                                  _checkIsAssignment(data, currentStage, config);
+                              if (isAssignment) {
+                                if (_assignmentDepartmentId == null ||
+                                    _assignmentRoleId == null) {
+                                  setState(() {
+                                    _assignmentError =
+                                        'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة'),
+                                      backgroundColor: AppColors.umber,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                              final List<Map<String, dynamic>>? assignmentsPayload =
+                                  isAssignment &&
+                                          _assignmentDepartmentId != null &&
+                                          _assignmentRoleId != null
+                                      ? [
+                                          {
+                                            'organization_id': _assignmentOrgId ?? 1,
+                                            'department_id': _assignmentDepartmentId,
+                                            'role_id': _assignmentRoleId,
+                                          }
+                                        ]
+                                      : null;
+                              final rawVersion = data['expected_version'] ??
+                                  data['version'] ??
+                                  (data['transaction'] is Map
+                                      ? data['transaction']['version']
+                                      : null);
+                              final parsedVersion = rawVersion != null
+                                  ? int.tryParse(rawVersion.toString())
+                                  : null;
+
+                              _showSignatureDialog(
+                                  currentStageWidgets, formId, formName, true,
+                                  assignments: assignmentsPayload,
+                                  templateIds: templateIds,
+                                  loadedTemplates: loadedState?.loadedTemplates ?? [],
+                                  templateFormValues:
+                                      loadedState?.templateFormValues ?? {},
+                                  expectedVersion: parsedVersion);
+                            },
+                            onReject: () {
+                              if (!_validateRequiredFields(
+                                  currentStageWidgets, loadedState)) return;
+                              final isAssignment =
+                                  _checkIsAssignment(data, currentStage, config);
+                              if (isAssignment) {
+                                if (_assignmentDepartmentId == null ||
+                                    _assignmentRoleId == null) {
+                                  setState(() {
+                                    _assignmentError =
+                                        'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة'),
+                                      backgroundColor: AppColors.umber,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                              final List<Map<String, dynamic>>? assignmentsPayload =
+                                  isAssignment &&
+                                          _assignmentDepartmentId != null &&
+                                          _assignmentRoleId != null
+                                      ? [
+                                          {
+                                            'organization_id': _assignmentOrgId ?? 1,
+                                            'department_id': _assignmentDepartmentId,
+                                            'role_id': _assignmentRoleId,
+                                          }
+                                        ]
+                                      : null;
+
+                              final rawVersion = data['expected_version'] ??
+                                  data['version'] ??
+                                  (data['transaction'] is Map
+                                      ? data['transaction']['version']
+                                      : null);
+                              final parsedVersion = rawVersion != null
+                                  ? int.tryParse(rawVersion.toString())
+                                  : null;
+
+                              _handleRejectAction(
+                                  currentStageWidgets, formId, formName,
+                                  assignments: assignmentsPayload,
+                                  templateIds: templateIds,
+                                  loadedTemplates: loadedState?.loadedTemplates ?? [],
+                                  templateFormValues:
+                                      loadedState?.templateFormValues ?? {},
+                                  expectedVersion: parsedVersion);
+                            },
                           ),
+                          const SizedBox(height: 24),
+                          layoutWidget,
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Header Details Area
-                    TransactionHeaderWidget(
-                      txn: txn,
-                      isLocked: isLocked,
-                      lockedByMe: lockedByMe,
-                      submitting: isSubmitting,
-                      submittingMessage: submittingMessage,
-                      onPickup: () => _bloc
-                          .add(PickupTransactionEvent(widget.transactionId)),
-                      onRelease: () => _bloc
-                          .add(ReleaseTransactionEvent(widget.transactionId)),
-                      onApprove: () {
-                        if (!_validateRequiredFields(
-                            currentStageWidgets, loadedState)) return;
-                        final isAssignment =
-                            _checkIsAssignment(data, currentStage, config);
-                        if (isAssignment) {
-                          if (_assignmentDepartmentId == null ||
-                              _assignmentRoleId == null) {
-                            setState(() {
-                              _assignmentError =
-                                  'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة'),
-                                backgroundColor: AppColors.umber,
-                              ),
-                            );
-                            return;
-                          }
-                        }
-                        final List<Map<String, dynamic>>? assignmentsPayload =
-                            isAssignment &&
-                                    _assignmentDepartmentId != null &&
-                                    _assignmentRoleId != null
-                                ? [
-                                    {
-                                      'organization_id': _assignmentOrgId ?? 1,
-                                      'department_id': _assignmentDepartmentId,
-                                      'role_id': _assignmentRoleId,
-                                    }
-                                  ]
-                                : null;
-                        final rawVersion = data['expected_version'] ??
-                            data['version'] ??
-                            (data['transaction'] is Map
-                                ? data['transaction']['version']
-                                : null);
-                        final parsedVersion = rawVersion != null
-                            ? int.tryParse(rawVersion.toString())
-                            : null;
-
-                        _showSignatureDialog(
-                            currentStageWidgets, formId, formName, true,
-                            assignments: assignmentsPayload,
-                            templateIds: templateIds,
-                            loadedTemplates: loadedState?.loadedTemplates ?? [],
-                            templateFormValues:
-                                loadedState?.templateFormValues ?? {},
-                            expectedVersion: parsedVersion);
-                      },
-                      onReject: () {
-                        if (!_validateRequiredFields(
-                            currentStageWidgets, loadedState)) return;
-                        final isAssignment =
-                            _checkIsAssignment(data, currentStage, config);
-                        if (isAssignment) {
-                          if (_assignmentDepartmentId == null ||
-                              _assignmentRoleId == null) {
-                            setState(() {
-                              _assignmentError =
-                                  'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة'),
-                                backgroundColor: AppColors.umber,
-                              ),
-                            );
-                            return;
-                          }
-                        }
-                        final List<Map<String, dynamic>>? assignmentsPayload =
-                            isAssignment &&
-                                    _assignmentDepartmentId != null &&
-                                    _assignmentRoleId != null
-                                ? [
-                                    {
-                                      'organization_id': _assignmentOrgId ?? 1,
-                                      'department_id': _assignmentDepartmentId,
-                                      'role_id': _assignmentRoleId,
-                                    }
-                                  ]
-                                : null;
-
-                        final rawVersion = data['expected_version'] ??
-                            data['version'] ??
-                            (data['transaction'] is Map
-                                ? data['transaction']['version']
-                                : null);
-                        final parsedVersion = rawVersion != null
-                            ? int.tryParse(rawVersion.toString())
-                            : null;
-
-                        _handleRejectAction(
-                            currentStageWidgets, formId, formName,
-                            assignments: assignmentsPayload,
-                            templateIds: templateIds,
-                            loadedTemplates: loadedState?.loadedTemplates ?? [],
-                            templateFormValues:
-                                loadedState?.templateFormValues ?? {},
-                            expectedVersion: parsedVersion);
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    layoutWidget,
-                  ],
+                  ),
                 ),
-              ),
+
+                // Upload Progress Overlay (ONLY when files are being uploaded to the server)
+                if (isUploadingFiles)
+                  TransactionUploadProgressOverlay(
+                    message: submittingMessage,
+                    stage: submittingStage,
+                    currentFileName: submittingFileName,
+                    currentFileIndex: submittingFileIndex,
+                    totalFiles: submittingTotalFiles,
+                    progress: submittingProgress,
+                  ),
+              ],
             );
           },
         ),

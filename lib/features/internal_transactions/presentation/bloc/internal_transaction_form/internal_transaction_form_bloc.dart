@@ -33,6 +33,7 @@ class InternalTransactionFormBloc
     on<LoadInternalTransactionForm>(_onLoadForm);
     on<UpdateInternalTransactionFormValue>(_onUpdateValue);
     on<UpdateInternalTransactionTemplateValue>(_onUpdateTemplateValue);
+    on<UpdateInternalTransactionAssignment>(_onUpdateAssignment);
     on<SubmitInternalTransactionForm>(_onSubmit);
     on<ResetInternalTransactionForm>(_onReset);
   }
@@ -127,6 +128,22 @@ class InternalTransactionFormBloc
     emit(state.copyWith(templateValues: updatedValues));
   }
 
+  void _onUpdateAssignment(
+    UpdateInternalTransactionAssignment event,
+    Emitter<InternalTransactionFormState> emit,
+  ) {
+    final isComplete = event.departmentId != null && event.roleId != null;
+    emit(
+      state.copyWith(
+        assignmentOrgId: event.organizationId ?? state.assignmentOrgId,
+        assignmentDepartmentId: event.departmentId,
+        assignmentRoleId: event.roleId,
+        assignmentError: event.errorText ?? (isComplete ? null : state.assignmentError),
+        clearAssignmentError: isComplete,
+      ),
+    );
+  }
+
   String? validateCurrentForm() {
     final form = state.form;
 
@@ -156,6 +173,13 @@ class InternalTransactionFormBloc
       if (templateValidationError != null) return templateValidationError;
     }
 
+    if (form.isAssignment) {
+      if (state.assignmentDepartmentId == null ||
+          state.assignmentRoleId == null) {
+        return 'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
+      }
+    }
+
     return null;
   }
 
@@ -165,7 +189,15 @@ class InternalTransactionFormBloc
   ) async {
     final validationError = validateCurrentForm();
     if (validationError != null) {
-      emit(state.copyWith(errorMessage: validationError));
+      final isAssignmentMissing = (state.form?.isAssignment ?? false) &&
+          (state.assignmentDepartmentId == null ||
+              state.assignmentRoleId == null);
+      emit(
+        state.copyWith(
+          errorMessage: validationError,
+          assignmentError: isAssignmentMissing ? validationError : null,
+        ),
+      );
       return;
     }
 
@@ -201,16 +233,29 @@ class InternalTransactionFormBloc
         return;
       }
 
-      final payload = Map<String, dynamic>.unmodifiable({
+      final assignmentsList = (form.isAssignment &&
+              state.assignmentDepartmentId != null &&
+              state.assignmentRoleId != null)
+          ? [
+              {
+                'organization_id': state.assignmentOrgId ?? 1,
+                'department_id': state.assignmentDepartmentId,
+                'role_id': state.assignmentRoleId,
+              }
+            ]
+          : null;
+
+      final challengePayload = <String, dynamic>{
         ...payloadResult.payload!,
         'decision': 'approve',
-      });
-      final gatewayWidget = _findGatewayWidget(payload['widgets']);
+        if (assignmentsList != null) 'assignments': assignmentsList,
+      };
+      final gatewayWidget = _findGatewayWidget(challengePayload['widgets']);
       final gatewayData = gatewayWidget?['data'];
       final gatewayId = gatewayData is Map ? gatewayData['id'] : null;
       final gatewayValue = gatewayWidget?['value'];
 
-      final uploadedFilesCount = _countUploadedFiles(payload);
+      final uploadedFilesCount = _countUploadedFiles(challengePayload);
       debugPrint(
         '[InternalTransactionForm] اكتمل رفع $uploadedFilesCount '
         'مرفق/مرفقات قبل التوقيع وإرسال المعاملة.',
@@ -229,15 +274,16 @@ class InternalTransactionFormBloc
         '[InternalSigning] gateway value = '
         '${gatewayWidget == null ? '(not present)' : gatewayValue}',
       );
+
       debugPrint(
         '[InternalSigning] challenge payload = '
-        '${_payloadForSafeLog(payload)}',
+        '${_payloadForSafeLog(challengePayload)}',
       );
 
       final challengeResult = await createSigningChallenge(
         processId: event.processId,
         pin: event.pin,
-        payload: payload,
+        payload: challengePayload,
       );
 
       await challengeResult.fold(
@@ -292,8 +338,18 @@ class InternalTransactionFormBloc
             submitStatusMessage: 'جاري إرسال واعتماد المعاملة...',
           ));
 
-          final completePayload = {
-            ...payload,
+          final completePayload = <String, dynamic>{
+            ...challengePayload,
+            if (form.isAssignment &&
+                state.assignmentDepartmentId != null &&
+                state.assignmentRoleId != null)
+              'assignments': [
+                {
+                  'organization_id': state.assignmentOrgId ?? 1,
+                  'department_id': state.assignmentDepartmentId,
+                  'role_id': state.assignmentRoleId,
+                }
+              ],
             'signature': {
               'challenge_id': challengeId,
               'signature': signature,
@@ -301,7 +357,7 @@ class InternalTransactionFormBloc
           };
 
           debugPrint(
-            '[InternalSigning] complete payload = '
+            '[InternalSigning] complete payload (with assignments) = '
             '${_payloadForSafeLog(completePayload)}',
           );
 
@@ -446,7 +502,7 @@ class InternalTransactionFormBloc
       });
     }
 
-    final payload = {
+    final payload = <String, dynamic>{
       'form_id': form.formId,
       'form_name': form.formName,
       'widgets': widgetsResult.widgets,

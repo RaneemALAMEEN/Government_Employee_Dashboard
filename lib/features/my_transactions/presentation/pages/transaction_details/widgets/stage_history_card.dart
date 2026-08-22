@@ -327,7 +327,7 @@ class StageHistoryCard extends StatelessWidget {
     final templateName = template['name']?.toString() ??
         template['template_name']?.toString() ??
         template['title']?.toString() ??
-        'قالب وثيقة #${templateId ?? ''}';
+        'قالب وثيقة';
     final val = template['value'];
     final valMap =
         val is Map ? Map<String, dynamic>.from(val) : <String, dynamic>{};
@@ -344,28 +344,6 @@ class StageHistoryCard extends StatelessWidget {
     final stageName = stage['stage_name']?.toString() ??
         stage['form_name']?.toString() ??
         'مرحلة سابقة';
-
-    const technicalKeys = {
-      'id',
-      'template_id',
-      'id_template',
-      'form_id',
-      'stage_code',
-      'completed_by',
-      'generated_pdf_url',
-      'generated_pdf_path',
-      'pdf_url',
-      'file_url',
-      'url',
-      'path',
-      'id_document_instance',
-      'document_instance_id',
-      'created_at',
-      'updated_at',
-      'deleted_at',
-      'config',
-      'is_active',
-    };
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -400,24 +378,6 @@ class StageHistoryCard extends StatelessWidget {
                   color: AppColors.charcoalDark,
                 ),
               ),
-              const Spacer(),
-              if (templateId != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.goldLight,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'ID: $templateId',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.charcoal,
-                    ),
-                  ),
-                ),
             ],
           ),
           if (generatedPdfUrl != null && generatedPdfUrl.isNotEmpty) ...[
@@ -487,39 +447,6 @@ class StageHistoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ],
-          if (valMap.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              textDirection: TextDirection.rtl,
-              spacing: 16,
-              runSpacing: 6,
-              children: valMap.entries
-                  .where((e) => !technicalKeys.contains(e.key.toLowerCase()))
-                  .map((e) {
-                return Row(
-                  textDirection: TextDirection.rtl,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${e.key}: ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.charcoal.withValues(alpha: 0.65),
-                      ),
-                    ),
-                    Text(
-                      '${e.value}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.charcoalDark,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
             ),
           ],
         ],

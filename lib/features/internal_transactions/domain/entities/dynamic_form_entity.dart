@@ -8,6 +8,7 @@ class DynamicFormEntity {
   final String decision;
   final int? expectedVersion;
   final bool requiresDigitalSignature;
+  final bool isAssignment;
   final List<DynamicWidgetEntity> widgets;
   final List<int> templateIds;
   final List<DynamicFormTemplateEntity> templates;
@@ -22,6 +23,7 @@ class DynamicFormEntity {
     required this.note,
     required this.decision,
     required this.requiresDigitalSignature,
+    this.isAssignment = false,
     required this.widgets,
     this.expectedVersion,
     this.templateIds = const [],

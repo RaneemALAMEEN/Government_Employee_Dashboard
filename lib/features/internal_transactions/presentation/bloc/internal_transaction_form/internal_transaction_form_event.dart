@@ -59,6 +59,24 @@ class SubmitInternalTransactionForm extends InternalTransactionFormEvent {
   List<Object?> get props => [processId, keysDirectoryPath, pin];
 }
 
+class UpdateInternalTransactionAssignment
+    extends InternalTransactionFormEvent {
+  final int? organizationId;
+  final int? departmentId;
+  final int? roleId;
+  final String? errorText;
+
+  const UpdateInternalTransactionAssignment({
+    this.organizationId,
+    this.departmentId,
+    this.roleId,
+    this.errorText,
+  });
+
+  @override
+  List<Object?> get props => [organizationId, departmentId, roleId, errorText];
+}
+
 class ResetInternalTransactionForm extends InternalTransactionFormEvent {
   const ResetInternalTransactionForm();
 }
