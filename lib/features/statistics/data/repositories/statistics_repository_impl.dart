@@ -5,6 +5,7 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/statistics_employee_entity.dart';
 import '../../domain/entities/statistics_employee_details_entity.dart';
 import '../../domain/entities/statistics_process_entity.dart';
+import '../../domain/entities/statistics_paginated_result.dart';
 import '../../domain/repositories/statistics_repository.dart';
 import '../datasources/statistics_remote_data_source.dart';
 
@@ -30,11 +31,18 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
   }
 
   @override
-  Future<Either<Failure, List<StatisticsEmployeeEntity>>>
-      getEmployeesByDepartments({required List<int> departmentIds}) async {
+  Future<Either<Failure, StatisticsPaginatedResult<StatisticsEmployeeEntity>>>
+      getEmployeesByDepartments({
+    required List<int> departmentIds,
+    required int limit,
+    String? cursor,
+  }) async {
     try {
       final data = await remoteDataSource.getEmployeesByDepartments(
-          departmentIds: departmentIds);
+        departmentIds: departmentIds,
+        limit: limit,
+        cursor: cursor,
+      );
       return Right(data);
     } on StatisticsDataSourceException catch (e) {
       return Left(e.failure);
@@ -46,15 +54,19 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
   }
 
   @override
-  Future<Either<Failure, List<StatisticsProcessEntity>>>
+  Future<Either<Failure, StatisticsPaginatedResult<StatisticsProcessEntity>>>
       getProcessDefinitionStats({
     required List<int> departmentIds,
+    required int limit,
+    String? cursor,
     String? fromDate,
     String? toDate,
   }) async {
     try {
       final data = await remoteDataSource.getProcessDefinitionStats(
         departmentIds: departmentIds,
+        limit: limit,
+        cursor: cursor,
         fromDate: fromDate,
         toDate: toDate,
       );

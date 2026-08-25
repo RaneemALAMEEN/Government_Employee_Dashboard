@@ -11,6 +11,8 @@ import '../../../../core/storage/secure_storage_service.dart';
 import '../models/statistics_employee_model.dart';
 import '../models/statistics_employee_details_model.dart';
 import '../models/statistics_process_model.dart';
+import '../models/statistics_pagination_model.dart';
+import '../../domain/entities/statistics_paginated_result.dart';
 
 class StatisticsRemoteDataSource {
   final ApiService apiService;
@@ -47,8 +49,11 @@ class StatisticsRemoteDataSource {
     );
   }
 
-  Future<List<StatisticsEmployeeModel>> getEmployeesByDepartments({
+  Future<StatisticsPaginatedResult<StatisticsEmployeeModel>>
+      getEmployeesByDepartments({
     required List<int> departmentIds,
+    required int limit,
+    String? cursor,
   }) async {
     final departmentIdsQuery = await _resolveDepartmentIdsQuery(departmentIds);
     final result = await apiService.makeRequest(
@@ -56,6 +61,8 @@ class StatisticsRemoteDataSource {
       endPoint: _endPoints.employeesByDepartments,
       queryParameters: {
         if (departmentIdsQuery != null) 'department_ids': departmentIdsQuery,
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
       },
     );
 
@@ -65,7 +72,7 @@ class StatisticsRemoteDataSource {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         final items = data['items'] as List? ?? [];
 
-        return items
+        final employees = items
             .whereType<Map>()
             .map(
               (item) => StatisticsEmployeeModel.fromJson(
@@ -73,12 +80,22 @@ class StatisticsRemoteDataSource {
               ),
             )
             .toList();
+        return StatisticsPaginatedResult(
+          items: employees,
+          pagination: StatisticsPaginationModel.fromJson(
+            _asMap(data['pagination']),
+            requestedLimit: limit,
+          ),
+        );
       },
     );
   }
 
-  Future<List<StatisticsProcessModel>> getProcessDefinitionStats({
+  Future<StatisticsPaginatedResult<StatisticsProcessModel>>
+      getProcessDefinitionStats({
     required List<int> departmentIds,
+    required int limit,
+    String? cursor,
     String? fromDate,
     String? toDate,
   }) async {
@@ -88,6 +105,8 @@ class StatisticsRemoteDataSource {
       endPoint: _endPoints.processDefinitionStats,
       queryParameters: {
         if (departmentIdsQuery != null) 'department_ids': departmentIdsQuery,
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
         if (fromDate != null && fromDate.isNotEmpty) 'from_date': fromDate,
         if (toDate != null && toDate.isNotEmpty) 'to_date': toDate,
       },
@@ -99,7 +118,7 @@ class StatisticsRemoteDataSource {
         final data = response['data'] as Map<String, dynamic>? ?? {};
         final items = data['items'] as List? ?? [];
 
-        return items
+        final processes = items
             .whereType<Map>()
             .map(
               (item) => StatisticsProcessModel.fromJson(
@@ -107,6 +126,13 @@ class StatisticsRemoteDataSource {
               ),
             )
             .toList();
+        return StatisticsPaginatedResult(
+          items: processes,
+          pagination: StatisticsPaginationModel.fromJson(
+            _asMap(data['pagination']),
+            requestedLimit: limit,
+          ),
+        );
       },
     );
   }
@@ -118,6 +144,9 @@ class StatisticsRemoteDataSource {
     return storage.getDepartmentIds();
   }
 }
+
+Map<String, dynamic> _asMap(dynamic value) =>
+    value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
 
 class StatisticsDataSourceException implements Exception {
   final Failure failure;

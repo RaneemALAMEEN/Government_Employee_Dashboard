@@ -38,16 +38,34 @@ class _StatisticsView extends StatefulWidget {
 class _StatisticsViewState extends State<_StatisticsView>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  final ScrollController _pageScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _pageScrollController.addListener(_onPageScroll);
+  }
+
+  void _onPageScroll() {
+    if (!_pageScrollController.hasClients ||
+        _pageScrollController.position.extentAfter > 250) {
+      return;
+    }
+    final bloc = context.read<StatisticsBloc>();
+    if (_tabController.index == 0) {
+      bloc.add(const LoadMoreStatisticsEmployees());
+    } else {
+      bloc.add(const LoadMoreStatisticsProcesses());
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _pageScrollController
+      ..removeListener(_onPageScroll)
+      ..dispose();
     super.dispose();
   }
 
@@ -56,6 +74,7 @@ class _StatisticsViewState extends State<_StatisticsView>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SingleChildScrollView(
+        controller: _pageScrollController,
         padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,28 +136,23 @@ class _StatisticsViewState extends State<_StatisticsView>
 
                 final loaded = state as StatisticsLoaded;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      height: 760,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _EmployeeStatsView(
-                            employees: loaded.employees,
-                            status: loaded.employeesStatus,
-                          ),
-                          _TransactionStatsView(
-                            processes: loaded.processes,
-                            status: loaded.transactionsStatus,
-                            fromDate: loaded.processFromDate,
-                            toDate: loaded.processToDate,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                return AnimatedBuilder(
+                  animation: _tabController,
+                  builder: (context, _) => _tabController.index == 0
+                      ? _EmployeeStatsView(
+                          employees: loaded.employees,
+                          status: loaded.employeesStatus,
+                          isLoadingMore: loaded.employeesIsLoadingMore,
+                          loadMoreError: loaded.employeesLoadMoreError,
+                        )
+                      : _TransactionStatsView(
+                          processes: loaded.processes,
+                          status: loaded.transactionsStatus,
+                          fromDate: loaded.processFromDate,
+                          toDate: loaded.processToDate,
+                          isLoadingMore: loaded.processesIsLoadingMore,
+                          loadMoreError: loaded.processesLoadMoreError,
+                        ),
                 );
               },
             ),
@@ -329,10 +343,14 @@ class _TabLabel extends StatelessWidget {
 class _EmployeeStatsView extends StatelessWidget {
   final List<StatisticsEmployeeEntity> employees;
   final StatisticsSectionStatus status;
+  final bool isLoadingMore;
+  final String? loadMoreError;
 
   const _EmployeeStatsView({
     required this.employees,
     required this.status,
+    required this.isLoadingMore,
+    required this.loadMoreError,
   });
 
   @override
@@ -370,46 +388,53 @@ class _EmployeeStatsView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 1040;
-                final table = _Panel(
-                  title: 'توزيع عبء الموظفين',
-                  subtitle: 'بيانات موظفي الدوائر حسب المهام النشطة والمنجزة',
-                  icon: LucideIcons.users,
-                  child: employees.isEmpty
-                      ? const _EmptyState(text: 'لا توجد بيانات موظفين حالياً')
-                      : Column(
-                          children: employees.asMap().entries.map((entry) {
-                            return FadeInUp(
-                              duration: const Duration(milliseconds: 320),
-                              delay: Duration(milliseconds: entry.key * 45),
-                              child: _EmployeeRow(employee: entry.value),
-                            );
-                          }).toList(),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 1040;
+              final employeeList = Column(
+                children: [
+                  for (var index = 0; index < employees.length; index++)
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 320),
+                      delay: Duration(
+                        milliseconds: (index > 7 ? 7 : index) * 45,
+                      ),
+                      child: _EmployeeRow(employee: employees[index]),
+                    ),
+                  _StatisticsPaginationFooter(
+                    isLoading: isLoadingMore,
+                    errorMessage: loadMoreError,
+                    onRetry: () => context.read<StatisticsBloc>().add(
+                          const RetryStatisticsEmployeesLoadMore(),
                         ),
-                );
-                final insights = _InsightsPanel(employees: employees);
+                  ),
+                ],
+              );
+              final table = _Panel(
+                title: 'توزيع عبء الموظفين',
+                subtitle: 'بيانات موظفي الدوائر حسب المهام النشطة والمنجزة',
+                icon: LucideIcons.users,
+                child: employeeList,
+              );
+              final insights = _InsightsPanel(employees: employees);
 
-                return wide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 7, child: table),
-                          const SizedBox(width: 20),
-                          Expanded(flex: 3, child: insights),
-                        ],
-                      )
-                    : ListView(
-                        children: [
-                          table,
-                          const SizedBox(height: 20),
-                          insights,
-                        ],
-                      );
-              },
-            ),
+              return wide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 7, child: table),
+                        const SizedBox(width: 20),
+                        Expanded(flex: 3, child: insights),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        table,
+                        const SizedBox(height: 20),
+                        insights,
+                      ],
+                    );
+            },
           ),
         ],
       ),
@@ -422,12 +447,16 @@ class _TransactionStatsView extends StatefulWidget {
   final StatisticsSectionStatus status;
   final String? fromDate;
   final String? toDate;
+  final bool isLoadingMore;
+  final String? loadMoreError;
 
   const _TransactionStatsView({
     required this.processes,
     required this.status,
     required this.fromDate,
     required this.toDate,
+    required this.isLoadingMore,
+    required this.loadMoreError,
   });
 
   @override
@@ -554,26 +583,35 @@ class _TransactionStatsViewState extends State<_TransactionStatsView> {
             onMetricTap: _toggleFilter,
           ),
           const SizedBox(height: 20),
-          Expanded(
-            child: _Panel(
-              title: 'إحصائيات أنواع المعاملات',
-              subtitle: _activeFilter == null
-                  ? 'حالة العمليات حسب تعريف المعاملة'
-                  : 'تصفية حسب: ${_filterLabel(_activeFilter!)}',
-              icon: LucideIcons.workflow,
-              expandChild: true,
-              child: visibleProcesses.isEmpty
-                  ? const _EmptyState(text: 'لا توجد معاملات ضمن هذا التصنيف')
-                  : ListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: visibleProcesses.length,
-                      itemBuilder: (context, index) => FadeInUp(
-                        duration: const Duration(milliseconds: 320),
-                        delay: Duration(milliseconds: index * 45),
-                        child: _ProcessRow(process: visibleProcesses[index]),
+          _Panel(
+            title: 'إحصائيات أنواع المعاملات',
+            subtitle: _activeFilter == null
+                ? 'حالة العمليات حسب تعريف المعاملة'
+                : 'تصفية حسب: ${_filterLabel(_activeFilter!)}',
+            icon: LucideIcons.workflow,
+            child: visibleProcesses.isEmpty
+                ? const _EmptyState(text: 'لا توجد معاملات ضمن هذا التصنيف')
+                : Column(
+                    children: [
+                      for (var index = 0;
+                          index < visibleProcesses.length;
+                          index++)
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 320),
+                          delay: Duration(
+                            milliseconds: (index > 7 ? 7 : index) * 45,
+                          ),
+                          child: _ProcessRow(process: visibleProcesses[index]),
+                        ),
+                      _StatisticsPaginationFooter(
+                        isLoading: widget.isLoadingMore,
+                        errorMessage: widget.loadMoreError,
+                        onRetry: () => context.read<StatisticsBloc>().add(
+                              const RetryStatisticsProcessesLoadMore(),
+                            ),
                       ),
-                    ),
-            ),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -949,14 +987,12 @@ class _Panel extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Widget child;
-  final bool expandChild;
 
   const _Panel({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.child,
-    this.expandChild = false,
   });
 
   @override
@@ -975,7 +1011,7 @@ class _Panel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (expandChild) Expanded(child: child) else child,
+          child,
         ],
       ),
     );
@@ -1147,6 +1183,51 @@ class _EmptyState extends StatelessWidget {
         style: AppTextStyles.bodyMedium.copyWith(color: AppColors.goldDark),
       ),
     );
+  }
+}
+
+class _StatisticsPaginationFooter extends StatelessWidget {
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback onRetry;
+
+  const _StatisticsPaginationFooter({
+    required this.isLoading,
+    required this.errorMessage,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 18),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('تعذر تحميل المزيد'),
+            const SizedBox(width: 10),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox(height: 12);
   }
 }
 
