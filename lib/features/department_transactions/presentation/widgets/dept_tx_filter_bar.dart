@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_search_field.dart';
 import '../../domain/entities/accessible_department_entity.dart';
 
 import 'dept_tx_date_range_picker_dialog.dart';
@@ -84,41 +85,11 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 950;
 
-        final searchBox = SizedBox(
+        final searchBox = AppSearchField(
+          controller: _searchController,
           width: isNarrow ? double.infinity : 320,
-          height: 42,
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: TextField(
-              controller: _searchController,
-              onChanged: widget.onSearchChanged,
-              textAlign: TextAlign.right,
-              decoration: InputDecoration(
-                hintText: 'بحث برقم المعاملة، النوع، أو اسم المسؤول...',
-                hintStyle: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.charcoal.withOpacity(0.6)),
-                prefixIcon: const Icon(LucideIcons.search,
-                    size: 20, color: AppColors.charcoal),
-                filled: true,
-                fillColor: AppColors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      BorderSide(color: AppColors.gold.withOpacity(0.25)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      BorderSide(color: AppColors.gold.withOpacity(0.25)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.forest),
-                ),
-              ),
-            ),
-          ),
+          hintText: 'بحث برقم المعاملة، النوع، أو اسم المسؤول...',
+          onChanged: widget.onSearchChanged,
         );
 
         final datePickerButton = Material(

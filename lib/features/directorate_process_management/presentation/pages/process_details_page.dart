@@ -6,6 +6,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/utils/app_file_url.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../../internal_transactions/domain/entities/document_template_entity.dart';
 
@@ -83,30 +84,15 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
         alignment: Alignment.centerRight,
-        child: InkWell(
-          onTap: context.canPop() ? () => context.pop() : null,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  LucideIcons.arrowRight,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'العودة إلى القوالب',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        child: AppBackButton(
+          label: 'العودة إلى القوالب والمعاملات',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/directorate-process-management');
+            }
+          },
         ),
       );
 }

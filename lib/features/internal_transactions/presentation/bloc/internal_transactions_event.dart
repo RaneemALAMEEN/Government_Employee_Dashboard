@@ -28,3 +28,21 @@ class LoadInternalTransactionsPage extends InternalTransactionsEvent {
 class LoadMoreInternalTransactions extends InternalTransactionsEvent {
   const LoadMoreInternalTransactions();
 }
+
+class FilterInternalTransactions extends InternalTransactionsEvent {
+  final String status;
+
+  const FilterInternalTransactions(this.status);
+
+  @override
+  List<Object?> get props => [status];
+}
+
+class SearchInternalTransactions extends InternalTransactionsEvent {
+  final String query;
+
+  const SearchInternalTransactions(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}

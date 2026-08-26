@@ -5,6 +5,7 @@ import 'package:animate_do/animate_do.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../bloc/dashboard_bloc.dart';
@@ -374,24 +375,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'لوحة رئيس الدائرة',
-            textAlign: TextAlign.right,
-            style: AppTextStyles.displayMedium,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'الأحد، 31 يناير 2024 — نظرة شاملة على معاملات الدائرة',
-            textAlign: TextAlign.right,
-            style: AppTextStyles.labelLarge.copyWith(color: AppColors.goldDark),
-          ),
-        ],
-      ),
+    return const AppPageHeader(
+      title: 'لوحة رئيس الدائرة',
+      subtitle: 'الأحد، 31 يناير 2024 — نظرة شاملة على معاملات الدائرة',
     );
   }
 }

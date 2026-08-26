@@ -36,7 +36,6 @@ class _AppSidebarState extends State<AppSidebar>
   late final Animation<Offset> _headerSlide;
 
   static const _items = <SidebarNavItem>[
-    SidebarNavItem(LucideIcons.home, 'الرئيسية', '/dashboard'),
     SidebarNavItem(LucideIcons.fileText, 'معاملاتي', '/my-transactions'),
     SidebarNavItem(
       LucideIcons.inbox,
@@ -72,6 +71,11 @@ class _AppSidebarState extends State<AppSidebar>
       LucideIcons.calendarDays,
       'إدارة المواعيد',
       '/appointments',
+    ),
+    SidebarNavItem(
+      LucideIcons.contact,
+      'البطاقة الذاتية',
+      '/self-cards',
     ),
   ];
 

@@ -10,6 +10,8 @@ class InternalTransactionsState extends Equatable {
   final String? errorMessage;
   final InternalTransactionCountsEntity counts;
   final InternalTransactionsPageEntity? transactionsPageData;
+  final String searchQuery;
+  final String statusFilter;
 
   const InternalTransactionsState({
     required this.loadingCounts,
@@ -18,6 +20,8 @@ class InternalTransactionsState extends Equatable {
     required this.counts,
     this.errorMessage,
     this.transactionsPageData,
+    this.searchQuery = '',
+    this.statusFilter = 'الكل',
   });
 
   factory InternalTransactionsState.initial() {
@@ -30,6 +34,8 @@ class InternalTransactionsState extends Equatable {
         inProgress: 0,
         completed: 0,
       ),
+      searchQuery: '',
+      statusFilter: 'الكل',
     );
   }
 
@@ -41,6 +47,8 @@ class InternalTransactionsState extends Equatable {
     bool clearError = false,
     InternalTransactionCountsEntity? counts,
     InternalTransactionsPageEntity? transactionsPageData,
+    String? searchQuery,
+    String? statusFilter,
   }) {
     return InternalTransactionsState(
       loadingCounts: loadingCounts ?? this.loadingCounts,
@@ -49,6 +57,8 @@ class InternalTransactionsState extends Equatable {
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       counts: counts ?? this.counts,
       transactionsPageData: transactionsPageData ?? this.transactionsPageData,
+      searchQuery: searchQuery ?? this.searchQuery,
+      statusFilter: statusFilter ?? this.statusFilter,
     );
   }
 
@@ -60,5 +70,7 @@ class InternalTransactionsState extends Equatable {
         errorMessage,
         counts,
         transactionsPageData,
+        searchQuery,
+        statusFilter,
       ];
 }

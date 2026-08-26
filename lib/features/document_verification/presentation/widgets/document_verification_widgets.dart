@@ -13,6 +13,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/utils/app_file_downloader.dart';
 import '../../../../shared/utils/app_file_url.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../../department_transactions/domain/usecases/delete_final_document.dart';
@@ -25,18 +26,9 @@ class VerificationPageHeader extends StatelessWidget {
   const VerificationPageHeader({super.key});
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('فحص الوثائق', style: AppTextStyles.headlineLarge),
-          const SizedBox(height: 4),
-          Text(
-            'تحقق من بيانات الوثيقة باستخدام رمز التفاصيل المؤقت',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) => const AppPageHeader(
+        title: 'فحص الوثائق',
+        subtitle: 'تحقق من بيانات الوثيقة باستخدام رمز التفاصيل المؤقت',
       );
 }
 

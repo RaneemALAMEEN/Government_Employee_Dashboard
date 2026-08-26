@@ -13,7 +13,7 @@ class GetProcessDefinitionStats {
   Future<Either<Failure, StatisticsPaginatedResult<StatisticsProcessEntity>>>
       call({
     required List<int> departmentIds,
-    required int limit,
+    int limit = 6,
     String? cursor,
     String? fromDate,
     String? toDate,

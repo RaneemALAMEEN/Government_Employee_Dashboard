@@ -6,6 +6,10 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_empty_search_state.dart';
+import '../../../../core/di/injection.dart';
+import '../../../self_cards/domain/entities/self_card_search_item_entity.dart';
+import '../../../self_cards/domain/usecases/search_self_cards_usecase.dart';
 import '../../domain/entities/dynamic_widget_entity.dart';
 import 'employee_picker_widget.dart';
 
@@ -75,6 +79,13 @@ class DynamicFormWidgetRenderer extends StatelessWidget {
             hasError: hasError);
       case 'check_list':
         return _CheckListWidget(
+            key: key,
+            widgetEntity: widgetEntity,
+            value: value,
+            onChanged: onChanged,
+            hasError: hasError);
+      case 'employee_picker':
+        return _EmployeePickerWidget(
             key: key,
             widgetEntity: widgetEntity,
             value: value,
@@ -755,5 +766,424 @@ class _FilePickerWidgetState extends State<_FilePickerWidget> {
     }
 
     return file?.toString() ?? 'ملف مرفق';
+  }
+}
+
+class _EmployeePickerWidget extends StatefulWidget {
+  final DynamicWidgetEntity widgetEntity;
+  final dynamic value;
+  final ValueChanged<dynamic> onChanged;
+  final bool hasError;
+
+  const _EmployeePickerWidget({
+    super.key,
+    required this.widgetEntity,
+    required this.value,
+    required this.onChanged,
+    this.hasError = false,
+  });
+
+  @override
+  State<_EmployeePickerWidget> createState() => _EmployeePickerWidgetState();
+}
+
+class _EmployeePickerWidgetState extends State<_EmployeePickerWidget> {
+  String _displayText = '';
+  int? _selectedId;
+  String? _pathSelfCard;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveValue();
+  }
+
+  @override
+  void didUpdateWidget(covariant _EmployeePickerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != oldWidget.value) {
+      _resolveValue();
+    }
+  }
+
+  void _resolveValue() {
+    final val = widget.value;
+    if (val == null) {
+      _selectedId = null;
+      _displayText = '';
+      _pathSelfCard = null;
+      return;
+    }
+
+    if (val is Map) {
+      final idRaw = val['self_card_id'] ?? val['id'];
+      _selectedId = idRaw is int ? idRaw : int.tryParse(idRaw?.toString() ?? '');
+      _pathSelfCard = val['path_self_card']?.toString() ?? val['pathSelfCard']?.toString();
+
+      final name = val['full_name']?.toString() ?? val['name']?.toString() ?? val['label']?.toString();
+      final selfNum = val['self_number']?.toString();
+
+      if (name != null && name.isNotEmpty) {
+        _displayText = selfNum != null && selfNum.isNotEmpty ? '$name ($selfNum)' : name;
+      } else if (_selectedId != null) {
+        _displayText = 'الموظف المحدد (#$_selectedId)';
+      } else {
+        _displayText = '';
+      }
+    } else if (val is int) {
+      _selectedId = val;
+      _displayText = 'الموظف المحدد (#$val)';
+    } else if (val is String && val.isNotEmpty) {
+      final parsed = int.tryParse(val);
+      if (parsed != null) {
+        _selectedId = parsed;
+        _displayText = 'الموظف المحدد (#$parsed)';
+      } else {
+        _displayText = val;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = _selectedId != null || _displayText.isNotEmpty;
+
+    return InkWell(
+      onTap: () => _openPicker(context),
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: _label(widget.widgetEntity),
+          hintText: 'ابحث عن موظف واختياره من البطاقات الذاتية...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: widget.hasError ? Colors.red.shade700 : Colors.grey.shade400,
+              width: widget.hasError ? 2.0 : 1.2,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(
+              color: widget.hasError ? Colors.red.shade700 : AppColors.forest,
+              width: 2.0,
+            ),
+          ),
+          filled: true,
+          fillColor: widget.hasError ? Colors.red.shade50 : Colors.white,
+          prefixIcon: Tooltip(
+            message: _pathSelfCard != null && _pathSelfCard!.isNotEmpty
+                ? 'ملف البطاقة: $_pathSelfCard'
+                : 'اختيار موظف',
+            child: const Icon(LucideIcons.search, color: AppColors.forest, size: 20),
+          ),
+          suffixIcon: hasSelection
+              ? IconButton(
+                  icon: const Icon(LucideIcons.x, size: 18, color: Colors.grey),
+                  tooltip: 'إلغاء التحديد',
+                  onPressed: () {
+                    setState(() {
+                      _selectedId = null;
+                      _displayText = '';
+                      _pathSelfCard = null;
+                    });
+                    widget.onChanged(null);
+                  },
+                )
+              : const Icon(LucideIcons.chevronDown, size: 20, color: Colors.grey),
+        ),
+        child: Text(
+          hasSelection ? _displayText : 'ابحث عن موظف واختياره...',
+          style: hasSelection
+              ? AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.charcoalDark,
+                )
+              : AppTextStyles.bodySmall.copyWith(
+                  color: Colors.grey.shade500,
+                ),
+          textAlign: TextAlign.right,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPicker(BuildContext context) async {
+    final selected = await showDialog<SelfCardSearchItemEntity>(
+      context: context,
+      builder: (ctx) => const _EmployeePickerDialog(),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedId = selected.id;
+        _displayText = '${selected.displayName} (${selected.selfNumber ?? selected.nationalId ?? "#${selected.id}"})';
+        _pathSelfCard = selected.pathSelfCard;
+      });
+
+      final valueMap = <String, dynamic>{
+        'self_card_id': selected.id,
+        if (selected.pathSelfCard != null && selected.pathSelfCard!.isNotEmpty)
+          'path_self_card': selected.pathSelfCard,
+        'full_name': selected.fullName,
+        if (selected.selfNumber != null) 'self_number': selected.selfNumber,
+        if (selected.nationalId != null) 'national_id': selected.nationalId,
+      };
+
+      widget.onChanged(valueMap);
+    }
+  }
+}
+
+class _EmployeePickerDialog extends StatefulWidget {
+  const _EmployeePickerDialog();
+
+  @override
+  State<_EmployeePickerDialog> createState() => _EmployeePickerDialogState();
+}
+
+class _EmployeePickerDialogState extends State<_EmployeePickerDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<SelfCardSearchItemEntity> _items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEmployees('');
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchEmployees(String query) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final searchUseCase = getIt<SearchSelfCardsUseCase>();
+      final result = await searchUseCase(
+        query: query.trim().isEmpty ? null : query.trim(),
+        limit: 30,
+        activeOnly: true,
+      );
+
+      if (!mounted) return;
+
+      result.fold(
+        (failure) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = failure.message;
+          });
+        },
+        (list) {
+          setState(() {
+            _isLoading = false;
+            _items = list;
+          });
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'حدث خطأ غير متوقع: $e';
+      });
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      _fetchEmployees(query);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 10,
+      backgroundColor: Colors.white,
+      child: Container(
+        width: 600,
+        height: 620,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.forest.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(LucideIcons.userCheck, color: AppColors.forest, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'اختيار موظف من السجلات الذاتية',
+                        style: AppTextStyles.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.charcoalDark,
+                        ),
+                      ),
+                      Text(
+                        'ابحث بالاسم، الرقم الوطني، أو الرقم الذاتي للموظف',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.charcoal.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(LucideIcons.x, size: 20),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Search Box
+            TextField(
+              controller: _searchController,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'ابحث بالاسم أو الرقم الذاتي أو الرقم الوطني...',
+                prefixIcon: const Icon(LucideIcons.search, color: AppColors.forest, size: 20),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(LucideIcons.x, size: 16),
+                        onPressed: () {
+                          _searchController.clear();
+                          _fetchEmployees('');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: AppColors.goldLight.withValues(alpha: 0.35),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.gold.withValues(alpha: 0.4)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.forest, width: 1.8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // List or Loading / Error State
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppColors.forest),
+                    )
+                  : _errorMessage != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.alertCircle, color: Colors.red, size: 36),
+                              const SizedBox(height: 10),
+                              Text(
+                                _errorMessage!,
+                                style: AppTextStyles.bodyMedium.copyWith(color: Colors.red.shade700),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton.icon(
+                                onPressed: () => _fetchEmployees(_searchController.text),
+                                icon: const Icon(LucideIcons.refreshCw, size: 16),
+                                label: const Text('إعادة المحاولة'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.forest,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _items.isEmpty
+                          ? const AppEmptySearchState(
+                              title: 'لم يتم العثور على موظفين مطابقين للبحث',
+                              description: 'تأكد من صحة الاسم أو الرقم المدخل وحاول مجدداً.',
+                              isCard: false,
+                              svgWidth: 90,
+                              svgHeight: 90,
+                              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                            )
+                          : ListView.separated(
+                              itemCount: _items.length,
+                              separatorBuilder: (_, __) => Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Colors.grey.shade200,
+                              ),
+                              itemBuilder: (context, index) {
+                                final item = _items[index];
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  leading: CircleAvatar(
+                                    backgroundColor: AppColors.forest.withValues(alpha: 0.12),
+                                    child: const Icon(LucideIcons.user, color: AppColors.forest, size: 20),
+                                  ),
+                                  title: Text(
+                                    item.displayName,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.charcoalDark,
+                                    ),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      item.subtitle.isNotEmpty
+                                          ? item.subtitle
+                                          : (item.educationDegree ?? 'موظف'),
+                                      style: AppTextStyles.labelSmall.copyWith(
+                                        color: AppColors.charcoal.withValues(alpha: 0.65),
+                                      ),
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    LucideIcons.chevronLeft,
+                                    size: 18,
+                                    color: AppColors.forest,
+                                  ),
+                                  onTap: () => Navigator.of(context).pop(item),
+                                );
+                              },
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

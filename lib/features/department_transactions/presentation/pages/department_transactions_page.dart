@@ -5,6 +5,7 @@ import 'package:animate_do/animate_do.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/accessible_department_entity.dart';
 import '../bloc/dept_tx_bloc.dart';
@@ -105,24 +106,11 @@ class _DepartmentTransactionsViewState
                     // Header Title Section
                     FadeInDown(
                       duration: const Duration(milliseconds: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'معاملات الدائرة',
-                            textAlign: TextAlign.right,
-                            style: AppTextStyles.displayMedium,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            selectedDepartmentName != null
-                                ? 'معاملات $selectedDepartmentName — للعرض والمتابعة فقط'
-                                : 'جميع المعاملات المنجزة والمرفوضة ضمن الدائرة — للعرض والمتابعة فقط',
-                            textAlign: TextAlign.right,
-                            style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.goldDark.withOpacity(0.85)),
-                          ),
-                        ],
+                      child: AppPageHeader(
+                        title: 'معاملات الدائرة',
+                        subtitle: selectedDepartmentName != null
+                            ? 'معاملات $selectedDepartmentName — للعرض والمتابعة فقط'
+                            : 'جميع المعاملات المنجزة والمرفوضة ضمن الدائرة — للعرض والمتابعة فقط',
                       ),
                     ),
                     const SizedBox(height: 32),

@@ -218,6 +218,7 @@ class InternalTransactionsRemoteDataSource {
     required int page,
     required int limit,
     String? status,
+    String? search,
   }) async {
     final result = await apiService.makeRequest(
       method: ApiMethod.get,
@@ -226,6 +227,8 @@ class InternalTransactionsRemoteDataSource {
         'page': page,
         'limit': limit,
         if (status != null && status.isNotEmpty) 'status': status,
+        if (search != null && search.isNotEmpty) 'q': search,
+        if (search != null && search.isNotEmpty) 'search': search,
       },
     );
 

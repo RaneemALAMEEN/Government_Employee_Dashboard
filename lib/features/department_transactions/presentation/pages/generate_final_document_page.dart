@@ -7,6 +7,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/source_documents_entity.dart';
@@ -75,8 +76,9 @@ class _GenerateFinalDocumentView extends StatelessWidget {
                       // Back Breadcrumb
                       FadeInDown(
                         duration: const Duration(milliseconds: 250),
-                        child: GestureDetector(
-                          onTap: () {
+                        child: AppBackButton(
+                          label: 'العودة لتفاصيل المعاملة #$transactionId',
+                          onPressed: () {
                             if (context.canPop()) {
                               context.pop();
                             } else {
@@ -84,24 +86,6 @@ class _GenerateFinalDocumentView extends StatelessWidget {
                                   '/department-transaction-details/$transactionId');
                             }
                           },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                LucideIcons.arrowRight,
-                                color: AppColors.charcoal,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'العودة لتفاصيل المعاملة #$transactionId',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.charcoal.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -710,7 +694,9 @@ class _GenerateFinalDocumentView extends StatelessWidget {
                     Text(
                       doc.isInstance
                           ? 'نموذج نظام مولد (PDF)'
-                          : (doc.isPdf ? 'مستند مرفوع (PDF)' : 'صورة مرفوعة'),
+                          : (doc.typeDocName.isNotEmpty && doc.typeDocName != doc.name
+                              ? '${doc.typeDocName} • ${doc.isPdf ? "مستند مرفوع (PDF)" : "صورة مرفوعة"}'
+                              : (doc.isPdf ? 'مستند مرفوع (PDF)' : 'صورة مرفوعة')),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.charcoal.withOpacity(0.55),

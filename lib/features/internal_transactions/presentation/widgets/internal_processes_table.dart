@@ -7,9 +7,11 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_empty_search_state.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/internal_transaction_entity.dart';
 import '../bloc/internal_transactions_bloc.dart';
+import '../bloc/internal_transactions_event.dart';
 import '../bloc/internal_transactions_state.dart';
 
 class InternalProcessesTable extends StatefulWidget {
@@ -77,8 +79,31 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
               const double minTableWidth = 600;
               final double availableWidth = constraints.maxWidth;
 
-              final filteredItems =
-                  data.items.where((t) => t.status.toLowerCase() != 'draft').toList();
+              final query = state.searchQuery.trim().toLowerCase();
+              final filteredItems = data.items.where((t) {
+                if (t.status.toLowerCase() == 'draft') return false;
+
+                // Status filter matching
+                if (state.statusFilter != 'الكل') {
+                  final mapped = _mapStatusToInternal(t.status);
+                  if (mapped != state.statusFilter) return false;
+                }
+
+                // Query matching
+                if (query.isNotEmpty) {
+                  final match = t.idProcess.toLowerCase().contains(query) ||
+                      t.processDefinitionName.toLowerCase().contains(query) ||
+                      t.stageName.toLowerCase().contains(query) ||
+                      t.status.toLowerCase().contains(query) ||
+                      t.transactionId.toString().contains(query);
+                  if (!match) return false;
+                }
+
+                return true;
+              }).toList();
+
+              final isFilteredOrSearched = state.searchQuery.trim().isNotEmpty ||
+                  state.statusFilter != 'الكل';
 
               final Widget tableContent = Column(
                 children: [
@@ -91,7 +116,17 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
                       ),
                     )
                   else if (filteredItems.isEmpty)
-                    const _EmptyTransactionsState()
+                    isFilteredOrSearched
+                        ? _EmptySearchState(
+                            query: state.searchQuery,
+                            statusFilter: state.statusFilter,
+                            onReset: () {
+                              context.read<InternalTransactionsBloc>()
+                                ..add(const FilterInternalTransactions('الكل'))
+                                ..add(const SearchInternalTransactions(''));
+                            },
+                          )
+                        : const _EmptyTransactionsState()
                   else
                     ListView.separated(
                       shrinkWrap: true,
@@ -550,3 +585,72 @@ class _ErrorBox extends StatelessWidget {
     );
   }
 }
+
+class _EmptySearchState extends StatelessWidget {
+  final String query;
+  final String statusFilter;
+  final VoidCallback onReset;
+
+  const _EmptySearchState({
+    required this.query,
+    required this.statusFilter,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasQuery = query.trim().isNotEmpty;
+    final hasStatus = statusFilter != 'الكل';
+
+    String description = 'تأكد من صحة رقم المعاملة أو الكلمات المدخلة وحاول مجدداً.';
+    if (hasQuery && hasStatus) {
+      description =
+          'لم يتم العثور على نتائج تطابق "$query" في حالة "$statusFilter".';
+    } else if (hasQuery) {
+      description = 'لم يتم العثور على نتائج تطابق "$query".';
+    } else if (hasStatus) {
+      description = 'لا توجد معاملات داخلية بحالة "$statusFilter".';
+    }
+
+    return AppEmptySearchState(
+      title: 'لا توجد نتائج تطابق البحث',
+      description: description,
+      isCard: false,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      action: TextButton.icon(
+        onPressed: onReset,
+        icon: const Icon(LucideIcons.rotateCcw, size: 16),
+        label: const Text('إعادة ضبط الفلاتر'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.forest,
+        ),
+      ),
+    );
+  }
+}
+
+String _mapStatusToInternal(String status) {
+  switch (status.toLowerCase()) {
+    case 'in_progress':
+    case 'قيد المعالجة':
+    case 'قيد التنفيذ':
+      return 'قيد المعالجة';
+    case 'submitted':
+    case 'مقدمة':
+      return 'مقدمة';
+    case 'completed':
+    case 'منجزة':
+    case 'منجز':
+      return 'منجزة';
+    case 'rejected':
+    case 'مرفوضة':
+    case 'تم الرفض':
+      return 'مرفوضة';
+    case 'cancelled':
+    case 'ملغاة':
+      return 'ملغاة';
+    default:
+      return status;
+  }
+}
+

@@ -28,6 +28,7 @@ abstract class InternalTransactionsRepository {
     required int page,
     required int limit,
     String? status,
+    String? search,
   });
 
   Future<Either<Failure, InternalTransactionFirstStageEntity>>

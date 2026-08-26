@@ -7,6 +7,7 @@ import 'package:animate_do/animate_do.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../../document_verification/presentation/widgets/document_verification_widgets.dart';
 import '../bloc/certificate_details/department_certificate_bloc.dart';
@@ -82,32 +83,15 @@ class _DepartmentTransactionDetailsPageState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Breadcrumb
-                          GestureDetector(
-                            onTap: () {
+                          AppBackButton(
+                            label: 'العودة لمعاملات الدائرة',
+                            onPressed: () {
                               if (context.canPop()) {
                                 context.pop();
                               } else {
                                 context.go('/department-transactions');
                               }
                             },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  LucideIcons.arrowRight,
-                                  color: AppColors.charcoal,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'العودة لمعاملات الدائرة',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    fontWeight: AppTextStyles.medium,
-                                    color: AppColors.charcoal.withOpacity(0.8),
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
                           const SizedBox(height: 16),
                           // Header Widget

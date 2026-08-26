@@ -5,6 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_back_button.dart';
+import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_search_field.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/internal_category_entity.dart';
 
@@ -155,26 +158,9 @@ class _BackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerRight,
-      child: TextButton(
+      child: AppBackButton(
+        label: 'العودة لمركز المعاملات',
         onPressed: () => context.go('/internal-transactions'),
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.forest,
-          textStyle: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: AppTextStyles.bold,
-          ),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          textDirection: TextDirection.rtl,
-          children: [
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Icon(Icons.arrow_forward, size: 18),
-            ),
-            SizedBox(width: 8),
-            Text('العودة لمركز المعاملات'),
-          ],
-        ),
       ),
     );
   }
@@ -185,24 +171,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'اختر نوع المعاملة',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                color: AppColors.forest,
-                fontWeight: FontWeight.w900,
-              ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'اختر التصنيف ثم نوع المعاملة التي تريد إنشاءها',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.goldDark,
-              ),
-        ),
-      ],
+    return const AppPageHeader(
+      title: 'اختر نوع المعاملة',
+      subtitle: 'اختر التصنيف ثم نوع المعاملة التي تريد إنشاءها',
     );
   }
 }
@@ -218,35 +189,10 @@ class _SearchBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        textDirection: TextDirection.rtl,
-        textAlign: TextAlign.right,
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: AppColors.white,
-          hintText: 'البحث في أنواع المعاملات...',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.goldDark,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.goldDark,
-            size: 22,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.gold.withOpacity(0.22)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.gold.withOpacity(0.22)),
-          ),
-        ),
-      ),
+    return AppSearchField(
+      controller: controller,
+      onChanged: onChanged,
+      hintText: 'البحث في أنواع المعاملات...',
     );
   }
 }

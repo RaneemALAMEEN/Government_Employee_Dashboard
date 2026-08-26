@@ -118,7 +118,10 @@ class ApiService {
           statusCode: 403,
         );
       case 404:
-        return const ServerFailure("تعذر العثور على المورد المطلوب.");
+        return ServerFailure(
+          serverMessage ?? "تعذر العثور على المورد المطلوب.",
+          statusCode: 404,
+        );
       case 405:
         return const ServerFailure("طريقة الطلب غير مسموح بها.");
       case 500:

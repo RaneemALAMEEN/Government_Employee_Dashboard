@@ -20,6 +20,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
@@ -614,25 +615,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GestureDetector(
-                        onTap: () => context.go('/my-transactions'),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              LucideIcons.arrowRight,
-                              color: AppColors.charcoal,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'العودة للمعاملات',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                  fontWeight: AppTextStyles.medium,
-                                  color: AppColors.charcoal.withOpacity(0.8)),
-                            ),
-                          ],
-                        ),
+                      AppBackButton(
+                        label: 'العودة للمعاملات',
+                        onPressed: () => context.go('/my-transactions'),
                       ),
                       const SizedBox(height: 16),
                       const CustomSkeletonLoader(
@@ -1118,25 +1103,9 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Back breadcrumb
-                          GestureDetector(
-                            onTap: () => context.go('/my-transactions'),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  LucideIcons.arrowRight,
-                                  color: AppColors.charcoal,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'العودة للمعاملات',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                      fontWeight: AppTextStyles.medium,
-                                      color: AppColors.charcoal.withOpacity(0.8)),
-                                ),
-                              ],
-                            ),
+                          AppBackButton(
+                            label: 'العودة للمعاملات',
+                            onPressed: () => context.go('/my-transactions'),
                           ),
                           const SizedBox(height: 16),
 

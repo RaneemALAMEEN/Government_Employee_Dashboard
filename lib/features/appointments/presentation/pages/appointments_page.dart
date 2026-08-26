@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../domain/entities/appointment_entities.dart';
 import '../bloc/appointments_bloc.dart';
@@ -141,34 +142,27 @@ class _Header extends StatelessWidget {
   final VoidCallback onBook;
   const _Header({required this.onBook});
   @override
-  Widget build(BuildContext context) =>
-      LayoutBuilder(builder: (_, constraints) {
-        final compact = constraints.maxWidth < 720;
-        final text =
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('إدارة المواعيد',
-              style: AppTextStyles.displayMedium.copyWith(fontSize: 28)),
-          const SizedBox(height: 5),
-          Text('تنظيم مواعيد المراجعين وإدارة طلبات الحجز',
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary))
-        ]);
-        final actions = Wrap(spacing: 10, runSpacing: 8, children: [
-          OutlinedButton.icon(
-              onPressed: onBook,
-              style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(130, 46),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12))),
-              icon: const Icon(LucideIcons.calendarCheck, size: 18),
-              label: const Text('حجز موعد')),
-        ]);
-        return compact
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [text, const SizedBox(height: 16), actions])
-            : Row(children: [Expanded(child: text), actions]);
-      });
+  Widget build(BuildContext context) {
+    final actions = OutlinedButton.icon(
+      onPressed: onBook,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.forest,
+        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      icon: const Icon(LucideIcons.calendarCheck, size: 18),
+      label: const Text('حجز موعد'),
+    );
+
+    return AppPageHeader(
+      title: 'إدارة المواعيد',
+      subtitle: 'تنظيم مواعيد المراجعين وإدارة طلبات الحجز',
+      trailing: actions,
+    );
+  }
 }
 
 class _AppointmentList extends StatelessWidget {

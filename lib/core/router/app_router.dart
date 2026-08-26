@@ -26,7 +26,6 @@ import '../../features/directorate_process_management/presentation/pages/directo
 import '../../features/directorate_process_management/presentation/bloc/process_details_bloc.dart';
 import '../../features/directorate_process_management/presentation/bloc/process_details_event.dart';
 import '../../features/directorate_process_management/presentation/pages/process_details_page.dart';
-import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/statistics/presentation/pages/statistics_page.dart';
 import '../../features/statistics/presentation/pages/statistics_employee_details_page.dart';
 import '../../features/statistics/presentation/bloc/statistics_employee_details_bloc.dart';
@@ -49,6 +48,9 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/notifications/presentation/widgets/authenticated_notifications_scope.dart';
 import '../../features/appointments/presentation/bloc/appointments_bloc.dart';
 import '../../features/appointments/presentation/pages/appointments_page.dart';
+import '../../features/self_cards/presentation/bloc/self_cards_bloc.dart';
+import '../../features/self_cards/presentation/bloc/self_cards_event.dart';
+import '../../features/self_cards/presentation/pages/self_cards_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -98,9 +100,7 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/dashboard',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: DashboardPage(),
-            ),
+            redirect: (_, __) => '/my-transactions',
           ),
           GoRoute(
             path: '/notifications',
@@ -115,6 +115,16 @@ class AppRouter {
                 create: (_) => getIt<AppointmentsBloc>()
                   ..add(const LoadAvailableAppointmentSlots()),
                 child: const AppointmentsPage(),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/self-cards',
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider(
+                create: (_) => getIt<SelfCardsBloc>()
+                  ..add(const SearchSelfCardsEvent(query: '')),
+                child: const SelfCardsPage(),
               ),
             ),
           ),

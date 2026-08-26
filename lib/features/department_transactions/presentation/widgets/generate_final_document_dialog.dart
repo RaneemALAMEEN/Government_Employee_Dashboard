@@ -1,4 +1,3 @@
-import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -586,7 +585,9 @@ class GenerateFinalDocumentDialog extends StatelessWidget {
                     Text(
                       doc.isInstance
                           ? 'نموذج نظام مولد (PDF)'
-                          : (doc.isPdf ? 'مستند مرفوع (PDF)' : 'صورة مرفوعة'),
+                          : (doc.typeDocName.isNotEmpty && doc.typeDocName != doc.name
+                              ? '${doc.typeDocName} • ${doc.isPdf ? "مستند مرفوع (PDF)" : "صورة مرفوعة"}'
+                              : (doc.isPdf ? 'مستند مرفوع (PDF)' : 'صورة مرفوعة')),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.charcoal.withOpacity(0.55),

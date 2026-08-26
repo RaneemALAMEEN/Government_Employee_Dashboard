@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
@@ -53,12 +54,13 @@ class _DirectorateProcessManagementPageState
           ),
           builder: (context, state) => Container(
             color: AppColors.goldLight,
-            padding: const EdgeInsets.fromLTRB(30, 28, 30, 0),
+            padding: const EdgeInsets.fromLTRB(30, 24, 30, 0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _ManagementTabs(
-                  selected: _selectedTab,
-                  onSelected: _selectTab,
+                _PageHeader(
+                  selectedTab: _selectedTab,
+                  onTabChanged: _selectTab,
                 ),
                 const SizedBox(height: 18),
                 Expanded(
@@ -67,13 +69,13 @@ class _DirectorateProcessManagementPageState
                     sizing: StackFit.expand,
                     children: [
                       AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
+                        duration: const Duration(milliseconds: 260),
                         switchInCurve: Curves.easeOutCubic,
                         transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
                           child: SlideTransition(
                             position: Tween(
-                              begin: const Offset(0, .025),
+                              begin: const Offset(0, .02),
                               end: Offset.zero,
                             ).animate(animation),
                             child: child,
@@ -102,49 +104,101 @@ class _DirectorateProcessManagementPageState
       );
 }
 
-class _ManagementTabs extends StatelessWidget {
-  final _ManagementTab selected;
-  final ValueChanged<_ManagementTab> onSelected;
+class _PageHeader extends StatelessWidget {
+  final _ManagementTab selectedTab;
+  final ValueChanged<_ManagementTab> onTabChanged;
 
-  const _ManagementTabs({required this.selected, required this.onSelected});
+  const _PageHeader({
+    required this.selectedTab,
+    required this.onTabChanged,
+  });
 
   @override
-  Widget build(BuildContext context) => Align(
-        alignment: Alignment.centerRight,
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border.withValues(alpha: .30),
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 720;
+          final titleWidget = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'إدارة العمليات والشكاوى',
+                style: AppTextStyles.displayMedium,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'استعراض وتخصيص أنواع المعاملات وقوالبها ومتابعة مسارات الشكاوى',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.goldDark,
+                ),
+              ),
+            ],
+          );
+
+          final tabsWidget = Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFE3E7E4),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .025),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: _ManagementTab.values
-                .map(
-                  (tab) => _ManagementTabButton(
-                    label: tab == _ManagementTab.transactions
-                        ? 'المعاملات'
-                        : 'الشكاوى',
-                    selected: selected == tab,
-                    onTap: () => onSelected(tab),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ManagementTabButton(
+                  label: 'المعاملات',
+                  icon: LucideIcons.workflow,
+                  selected: selectedTab == _ManagementTab.transactions,
+                  onTap: () => onTabChanged(_ManagementTab.transactions),
+                ),
+                _ManagementTabButton(
+                  label: 'الشكاوى',
+                  icon: LucideIcons.messageSquareText,
+                  selected: selectedTab == _ManagementTab.complaints,
+                  onTap: () => onTabChanged(_ManagementTab.complaints),
+                ),
+              ],
+            ),
+          );
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                titleWidget,
+                const SizedBox(height: 14),
+                tabsWidget,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: titleWidget),
+              tabsWidget,
+            ],
+          );
+        },
       );
 }
 
 class _ManagementTabButton extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
   const _ManagementTabButton({
     required this.label,
+    required this.icon,
     required this.selected,
     required this.onTap,
   });
@@ -154,20 +208,34 @@ class _ManagementTabButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(10),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
               color: selected ? AppColors.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: selected ? AppColors.surface : AppColors.textSecondary,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color:
+                      selected ? AppColors.surface : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color:
+                        selected ? AppColors.surface : AppColors.textSecondary,
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -181,34 +249,30 @@ class _TypesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final columns = constraints.maxWidth >= 1100
+      final columns = constraints.maxWidth >= 1080
           ? 3
-          : constraints.maxWidth >= 650
+          : constraints.maxWidth >= 680
               ? 2
               : 1;
-      final cardAspectRatio = columns == 3
-          ? 2.35
-          : columns == 2
-              ? 2.45
-              : 3.1;
       return CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: DirectorateManagementHeader(types: state.types),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
           SliverToBoxAdapter(
             child: TransactionTypesSectionHeader(
+              totalCount: state.filteredTypes.length,
               onSearchChanged: (value) => context
                   .read<DirectorateProcessBloc>()
                   .add(SearchTransactionTypes(value)),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
           if (state.isTypesLoading)
             const SliverToBoxAdapter(
               child: SizedBox(
-                height: 500,
+                height: 380,
                 child: DirectorateSkeletonGrid(),
               ),
             )
@@ -236,35 +300,21 @@ class _TypesView extends StatelessWidget {
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: cardAspectRatio,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  mainAxisExtent: 140,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final item = state.filteredTypes[index];
-                    return TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: 1),
-                      duration: Duration(
-                        milliseconds: 260 + ((index > 8 ? 8 : index) * 45),
-                      ),
-                      curve: Curves.easeOutCubic,
-                      builder: (_, value, child) => Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 14 * (1 - value)),
-                          child: child,
-                        ),
-                      ),
-                      child: TransactionTypeCard(
-                        item: item,
-                        onTap: () => context.read<DirectorateProcessBloc>().add(
-                              LoadProcessDefinitions(
-                                typeId: item.id,
-                                typeName: item.name,
-                              ),
+                    return TransactionTypeCard(
+                      item: item,
+                      onTap: () => context.read<DirectorateProcessBloc>().add(
+                            LoadProcessDefinitions(
+                              typeId: item.id,
+                              typeName: item.name,
                             ),
-                      ),
+                          ),
                     );
                   },
                   childCount: state.filteredTypes.length,
@@ -330,22 +380,25 @@ class _DefinitionsViewState extends State<_DefinitionsView> {
                   .add(const BackToTransactionTypes()),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 22)),
+          const SliverToBoxAdapter(child: SizedBox(height: 18)),
           SliverToBoxAdapter(
             child: Align(
               alignment: Alignment.centerRight,
-              child: DirectorateSearchBar(
-                onChanged: (value) => context
-                    .read<DirectorateProcessBloc>()
-                    .add(SearchProcessDefinitions(value)),
+              child: SizedBox(
+                width: 360,
+                child: DirectorateSearchBar(
+                  onChanged: (value) => context
+                      .read<DirectorateProcessBloc>()
+                      .add(SearchProcessDefinitions(value)),
+                ),
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 22)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
           if (state.isInitialLoading)
             const SliverToBoxAdapter(
               child: SizedBox(
-                height: 500,
+                height: 380,
                 child: DirectorateSkeletonGrid(),
               ),
             )
@@ -380,9 +433,9 @@ class _DefinitionsViewState extends State<_DefinitionsView> {
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
-                  crossAxisSpacing: 18,
-                  mainAxisSpacing: 18,
-                  mainAxisExtent: 210,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  mainAxisExtent: 205,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (_, index) => ProcessDefinitionCard(
@@ -455,13 +508,13 @@ class _ComplaintsViewState extends State<_ComplaintsView> {
                 SliverToBoxAdapter(
                   child: DirectorateComplaintsHeader(total: state.total),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                const SliverToBoxAdapter(child: SizedBox(height: 18)),
                 SliverToBoxAdapter(
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: SizedBox(
                       width: constraints.maxWidth >= 650
-                          ? 420
+                          ? 360
                           : constraints.maxWidth,
                       child: DirectorateSearchBar(
                         hintText: 'ابحث باسم الشكوى...',
@@ -472,7 +525,7 @@ class _ComplaintsViewState extends State<_ComplaintsView> {
                     ),
                   ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 if (state.isInitialLoading)
                   const SliverToBoxAdapter(
                     child: SizedBox(

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../bloc/document_verification_bloc.dart';
 import '../bloc/document_verification_event.dart';
@@ -91,17 +92,9 @@ class _DocumentVerificationPageState extends State<DocumentVerificationPage> {
                             padding: const EdgeInsets.only(bottom: 16),
                             child: Row(
                               children: [
-                                OutlinedButton.icon(
+                                AppBackButton(
+                                  label: 'فحص وثيقة أخرى',
                                   onPressed: _reset,
-                                  icon: const Icon(LucideIcons.arrowRight,
-                                      size: 16),
-                                  label: const Text('فحص وثيقة أخرى'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.forest,
-                                    side: BorderSide(
-                                      color: AppColors.forest.withOpacity(0.3),
-                                    ),
-                                  ),
                                 ),
                               ],
                             ),

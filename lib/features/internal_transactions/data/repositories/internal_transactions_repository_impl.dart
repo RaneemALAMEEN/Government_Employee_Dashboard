@@ -71,12 +71,14 @@ class InternalTransactionsRepositoryImpl
     required int page,
     required int limit,
     String? status,
+    String? search,
   }) async {
     try {
       final data = await remoteDataSource.getMyTransactions(
         page: page,
         limit: limit,
         status: status,
+        search: search,
       );
       return Right(data);
     } on ServerException catch (e) {

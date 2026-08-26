@@ -5,6 +5,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_empty_search_state.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/dynamic_widget_entity.dart';
 import '../../domain/entities/self_card_entity.dart';
@@ -545,10 +546,13 @@ class _SearchResults extends StatelessWidget {
       );
     }
     if (state.searchStatus == SelfCardSearchStatus.empty) {
-      return const _PickerMessage(
-        icon: LucideIcons.searchX,
+      return const AppEmptySearchState(
         title: 'لا توجد نتائج مطابقة',
-        message: 'جرّب اسماً أو رقماً وطنياً أو رقماً ذاتياً مختلفاً.',
+        description: 'جرّب اسماً أو رقماً وطنياً أو رقماً ذاتياً مختلفاً.',
+        isCard: false,
+        svgWidth: 100,
+        svgHeight: 100,
+        padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       );
     }
     if (state.items.isEmpty) {

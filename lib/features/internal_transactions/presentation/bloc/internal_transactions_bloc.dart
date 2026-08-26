@@ -20,6 +20,26 @@ class InternalTransactionsBloc
     on<LoadInternalTransactionsOverview>(_onLoadOverview);
     on<LoadInternalTransactionsPage>(_onLoadPage);
     on<LoadMoreInternalTransactions>(_onLoadMore);
+    on<FilterInternalTransactions>(_onFilterInternalTransactions);
+    on<SearchInternalTransactions>(_onSearchInternalTransactions);
+  }
+
+  String? _mapStatus(String filter) {
+    switch (filter) {
+      case 'قيد المعالجة':
+        return 'in_progress';
+      case 'مقدمة':
+        return 'submitted';
+      case 'منجزة':
+        return 'completed';
+      case 'مرفوضة':
+        return 'rejected';
+      case 'ملغاة':
+        return 'cancelled';
+      case 'الكل':
+      default:
+        return null;
+    }
   }
 
   Future<void> _onLoadOverview(
@@ -58,7 +78,8 @@ class InternalTransactionsBloc
 
     await _loadTransactionsPage(
       page: 1,
-      status: null,
+      status: _mapStatus(state.statusFilter),
+      search: state.searchQuery.trim().isNotEmpty ? state.searchQuery.trim() : null,
       emit: emit,
       clearError: false,
     );
@@ -71,6 +92,33 @@ class InternalTransactionsBloc
     await _loadTransactionsPage(
       page: event.page,
       status: event.status,
+      search: state.searchQuery.trim().isNotEmpty ? state.searchQuery.trim() : null,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onFilterInternalTransactions(
+    FilterInternalTransactions event,
+    Emitter<InternalTransactionsState> emit,
+  ) async {
+    emit(state.copyWith(statusFilter: event.status));
+    await _loadTransactionsPage(
+      page: 1,
+      status: _mapStatus(event.status),
+      search: state.searchQuery.trim().isNotEmpty ? state.searchQuery.trim() : null,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onSearchInternalTransactions(
+    SearchInternalTransactions event,
+    Emitter<InternalTransactionsState> emit,
+  ) async {
+    emit(state.copyWith(searchQuery: event.query));
+    await _loadTransactionsPage(
+      page: 1,
+      status: _mapStatus(state.statusFilter),
+      search: event.query.trim().isNotEmpty ? event.query.trim() : null,
       emit: emit,
     );
   }
@@ -88,7 +136,8 @@ class InternalTransactionsBloc
 
     await _loadTransactionsPage(
       page: currentData.page + 1,
-      status: null,
+      status: _mapStatus(state.statusFilter),
+      search: state.searchQuery.trim().isNotEmpty ? state.searchQuery.trim() : null,
       emit: emit,
       append: true,
     );
@@ -97,6 +146,7 @@ class InternalTransactionsBloc
   Future<void> _loadTransactionsPage({
     required int page,
     required String? status,
+    String? search,
     required Emitter<InternalTransactionsState> emit,
     bool clearError = true,
     bool append = false,
@@ -114,6 +164,7 @@ class InternalTransactionsBloc
       page: page,
       limit: _limit,
       status: status,
+      search: search,
     );
     if (emit.isDone) return;
 

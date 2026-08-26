@@ -4,8 +4,91 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_empty_search_state.dart';
+import '../../../../shared/widgets/app_search_field.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../domain/entities/transaction_type_entity.dart';
+
+class DirectorateStatCard extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color? iconColor;
+  final Color? valueColor;
+
+  const DirectorateStatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.iconColor,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFE3E7E4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .025),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: (iconColor ?? AppColors.primary).withValues(alpha: .09),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor ?? AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: AppTextStyles.medium,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value.toString(),
+                  style: AppTextStyles.headlineLarge.copyWith(
+                    color: valueColor ?? AppColors.charcoalDark,
+                    fontWeight: AppTextStyles.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class DirectorateManagementHeader extends StatelessWidget {
   final List<TransactionTypeEntity> types;
@@ -21,129 +104,49 @@ class DirectorateManagementHeader extends StatelessWidget {
     final activeTypes = types.where((item) => item.isActive).length;
     final inactiveTypes = types.where((item) => !item.isActive).length;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: .48),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: .035),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  LucideIcons.workflow,
-                  color: AppColors.surface,
-                  size: 19,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'إدارة المعاملات',
-                      style: AppTextStyles.headlineLarge.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'استعراض أنواع المعاملات والقوالب المرتبطة بها',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.lightPrimary,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: .12),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.info,
-                  size: 15,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    'اختر نوع المعاملة لعرض القوالب المرتبطة به',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = constraints.maxWidth >= 850
-                  ? (constraints.maxWidth - 16) / 3
-                  : constraints.maxWidth >= 540
-                      ? (constraints.maxWidth - 8) / 2
-                      : constraints.maxWidth;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth >= 850
+            ? (constraints.maxWidth - 24) / 3
+            : constraints.maxWidth >= 540
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
 
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _HeaderStatCard(
-                    width: cardWidth,
-                    label: 'إجمالي أنواع المعاملات',
-                    value: totalTypes,
-                    icon: LucideIcons.layers3,
-                  ),
-                  _HeaderStatCard(
-                    width: cardWidth,
-                    label: 'الأنواع النشطة',
-                    value: activeTypes,
-                    icon: LucideIcons.circleCheck,
-                  ),
-                  _HeaderStatCard(
-                    width: cardWidth,
-                    label: 'الأنواع غير النشطة',
-                    value: inactiveTypes,
-                    icon: LucideIcons.circlePause,
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: DirectorateStatCard(
+                label: 'إجمالي أنواع المعاملات',
+                value: totalTypes,
+                icon: LucideIcons.layers3,
+                iconColor: AppColors.primary,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: DirectorateStatCard(
+                label: 'الأنواع النشطة',
+                value: activeTypes,
+                icon: LucideIcons.checkCircle2,
+                iconColor: AppColors.forest,
+                valueColor: AppColors.forest,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: DirectorateStatCard(
+                label: 'الأنواع غير النشطة',
+                value: inactiveTypes,
+                icon: LucideIcons.pauseCircle,
+                iconColor: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -154,127 +157,84 @@ class DirectorateComplaintsHeader extends StatelessWidget {
   const DirectorateComplaintsHeader({super.key, required this.total});
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.border.withValues(alpha: .48),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: .035),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.lightPrimary,
-                borderRadius: BorderRadius.circular(11),
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 650;
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE3E7E4),
               ),
-              child: const Icon(
-                LucideIcons.messageSquareText,
-                color: AppColors.primary,
-                size: 20,
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .025),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'إدارة الشكاوى',
-                    style: AppTextStyles.headlineLarge.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightPrimary,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'إجمالي الشكاوى: $total',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                  child: const Icon(
+                    LucideIcons.messageSquareText,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'إدارة مسارات الشكاوى',
+                        style: AppTextStyles.titleMedium.copyWith(
+                          fontWeight: AppTextStyles.bold,
+                          color: AppColors.charcoalDark,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'استعراض ومتابعة قوالب ومسارات معالجة الشكاوى وبلاغات المراجعين',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isCompact) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'إجمالي الشكاوى: $total',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: AppTextStyles.bold,
+                      ),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
-      );
-}
-
-class _HeaderStatCard extends StatelessWidget {
-  final double width;
-  final String label;
-  final int value;
-  final IconData icon;
-
-  const _HeaderStatCard({
-    required this.width,
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: width,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.border.withValues(alpha: .38),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: .035),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppColors.lightPrimary,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 15),
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              value.toString(),
-              style: AppTextStyles.headlineLarge.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
 }
 
@@ -298,36 +258,37 @@ class DirectorateHeader extends StatelessWidget {
               tooltip: 'العودة إلى أنواع المعاملات',
               icon: const Icon(LucideIcons.arrowRight, size: 20),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
           ],
           Container(
-            width: 52,
-            height: 52,
+            padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(
               color: AppColors.forest,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.forest.withValues(alpha: .18),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: const Icon(LucideIcons.workflow, color: AppColors.white),
+            child: const Icon(LucideIcons.workflow,
+                color: AppColors.white, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.headlineLarge.copyWith(
+                  style: AppTextStyles.titleLarge.copyWith(
+                    fontWeight: AppTextStyles.bold,
                     color: AppColors.forest,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
                 Text(
                   subtitle,
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -338,6 +299,78 @@ class DirectorateHeader extends StatelessWidget {
             ),
           ),
         ],
+      );
+}
+
+class TransactionTypesSectionHeader extends StatelessWidget {
+  final int totalCount;
+  final ValueChanged<String> onSearchChanged;
+
+  const TransactionTypesSectionHeader({
+    super.key,
+    this.totalCount = 0,
+    required this.onSearchChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 680;
+          final titleWidget = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'أنواع المعاملات',
+                style: AppTextStyles.titleLarge.copyWith(
+                  fontWeight: AppTextStyles.bold,
+                  color: AppColors.charcoalDark,
+                ),
+              ),
+              if (totalCount > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: .09),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$totalCount',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: AppTextStyles.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+
+          final searchWidget = SizedBox(
+            width: isCompact ? constraints.maxWidth : 340,
+            child: DirectorateSearchBar(onChanged: onSearchChanged),
+          );
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                titleWidget,
+                const SizedBox(height: 12),
+                searchWidget,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              titleWidget,
+              const Spacer(),
+              searchWidget,
+            ],
+          );
+        },
       );
 }
 
@@ -354,125 +387,24 @@ class DirectorateSearchBar extends StatefulWidget {
   State<DirectorateSearchBar> createState() => _DirectorateSearchBarState();
 }
 
-class TransactionTypesSectionHeader extends StatelessWidget {
-  final ValueChanged<String> onSearchChanged;
-
-  const TransactionTypesSectionHeader({
-    super.key,
-    required this.onSearchChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 20,
-          runSpacing: 10,
-          children: [
-            SizedBox(
-              width: constraints.maxWidth >= 700
-                  ? constraints.maxWidth - 440
-                  : constraints.maxWidth,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'أنواع المعاملات',
-                    style: AppTextStyles.headlineSmall.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'اختر نوع المعاملة لعرض القوالب التابعة له',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: constraints.maxWidth >= 700 ? 420 : constraints.maxWidth,
-              child: DirectorateSearchBar(onChanged: onSearchChanged),
-            ),
-          ],
-        ),
-      );
-}
-
 class _DirectorateSearchBarState extends State<DirectorateSearchBar> {
   final _controller = TextEditingController();
-  final _focusNode = FocusNode();
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode
-        .addListener(() => setState(() => _focused = _focusNode.hasFocus));
-  }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _focused
-                ? AppColors.forest.withValues(alpha: .55)
-                : AppColors.charcoal.withValues(alpha: .10),
-          ),
-          boxShadow: _focused
-              ? [
-                  BoxShadow(
-                      color: AppColors.forest.withValues(alpha: .08),
-                      blurRadius: 18)
-                ]
-              : const [],
-        ),
-        child: TextField(
-          controller: _controller,
-          focusNode: _focusNode,
-          onChanged: widget.onChanged,
-          style: AppTextStyles.bodyMedium,
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.charcoal.withValues(alpha: .45),
-            ),
-            prefixIcon: const Icon(
-              LucideIcons.search,
-              size: 19,
-              color: AppColors.forest,
-            ),
-            suffixIcon: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _controller,
-              builder: (_, value, __) => value.text.isEmpty
-                  ? const SizedBox.shrink()
-                  : IconButton(
-                      onPressed: () {
-                        _controller.clear();
-                        widget.onChanged('');
-                      },
-                      icon: const Icon(LucideIcons.x, size: 18),
-                    ),
-            ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-        ),
-      );
+  Widget build(BuildContext context) {
+    return AppSearchField(
+      controller: _controller,
+      onChanged: widget.onChanged,
+      hintText: widget.hintText,
+      onClear: () => widget.onChanged(''),
+    );
+  }
 }
 
 class TransactionTypeCard extends StatefulWidget {
@@ -493,94 +425,119 @@ class _TransactionTypeCardState extends State<TransactionTypeCard> {
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedScale(
-          scale: _hovered ? 1.018 : 1,
-          duration: const Duration(milliseconds: 170),
-          curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 170),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _hovered
-                    ? AppColors.forest.withValues(alpha: .42)
-                    : AppColors.gold.withValues(alpha: .32),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.charcoalDark.withValues(
-                    alpha: _hovered ? .11 : .055,
-                  ),
-                  blurRadius: _hovered ? 28 : 15,
-                  offset: Offset(0, _hovered ? 12 : 6),
-                ),
-              ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: _hovered
+                  ? AppColors.primary.withValues(alpha: .38)
+                  : const Color(0xFFE3E7E4),
             ),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                onTap: widget.onTap,
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(children: [
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: .05),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(18),
+              hoverColor: AppColors.primary.withValues(alpha: .02),
+              splashColor: AppColors.primary.withValues(alpha: .05),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
-                            color: AppColors.goldLight,
-                            borderRadius: BorderRadius.circular(10),
+                            color: AppColors.lightPrimary,
+                            borderRadius: BorderRadius.circular(11),
                           ),
-                          child: const Icon(LucideIcons.gitBranch,
-                              color: AppColors.primary, size: 18),
-                        ),
-                        const Spacer(),
-                        _StatusPill(active: widget.item.isActive),
-                      ]),
-                      const SizedBox(height: 12),
-                      Text(widget.item.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.titleMedium),
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 9, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppColors.charcoal.withValues(alpha: .055),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(widget.item.code,
-                              textDirection: TextDirection.ltr,
-                              style: AppTextStyles.labelLarge.copyWith(
-                                fontWeight: FontWeight.w600,
-                              )),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'عرض القوالب',
-                          style: AppTextStyles.bodySmall.copyWith(
+                          child: const Icon(
+                            LucideIcons.workflow,
                             color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                            size: 19,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.titleMedium.copyWith(
+                              fontWeight: AppTextStyles.bold,
+                              color: AppColors.charcoalDark,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        AnimatedSlide(
-                          offset:
-                              _hovered ? const Offset(-.15, 0) : Offset.zero,
-                          duration: const Duration(milliseconds: 170),
-                          child: const Icon(LucideIcons.arrowLeft,
-                              size: 18, color: AppColors.goldDark),
+                        _StatusPill(active: widget.item.isActive),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF4F6F4),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE5E9E6)),
+                          ),
+                          child: Text(
+                            widget.item.code,
+                            textDirection: TextDirection.ltr,
+                            style: AppTextStyles.labelMedium.copyWith(
+                              fontWeight: AppTextStyles.bold,
+                              color: AppColors.charcoal,
+                              letterSpacing: .5,
+                            ),
+                          ),
                         ),
-                      ]),
-                    ],
-                  ),
+                        const Spacer(),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'عرض القوالب',
+                              style: AppTextStyles.labelLarge.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: AppTextStyles.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            AnimatedSlide(
+                              offset:
+                                  _hovered ? const Offset(-.2, 0) : Offset.zero,
+                              duration: const Duration(milliseconds: 180),
+                              child: const Icon(
+                                LucideIcons.arrowLeft,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -906,8 +863,17 @@ class DirectorateMessageState extends StatelessWidget {
       {super.key, required this.message, this.isError = false, this.onRetry});
 
   @override
-  Widget build(BuildContext context) => Center(
-          child: TweenAnimationBuilder<double>(
+  Widget build(BuildContext context) {
+    if (!isError && (message.contains('بحث') || message.contains('نتائج'))) {
+      return AppEmptySearchState(
+        title: message,
+        description: 'تأكد من كتابة الكلمات بشكل صحيح أو جرّب البحث بكلمات أخرى.',
+        isCard: true,
+      );
+    }
+
+    return Center(
+      child: TweenAnimationBuilder<double>(
         tween: Tween(begin: .88, end: 1),
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeOutBack,
@@ -946,7 +912,9 @@ class DirectorateMessageState extends StatelessWidget {
             ],
           ]),
         ),
-      ));
+      ),
+    );
+  }
 }
 
 class _StatusPill extends StatelessWidget {

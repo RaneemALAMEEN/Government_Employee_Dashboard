@@ -107,6 +107,7 @@ flutter:
   assets:
     - env/dev.env
     - assets/vectors/
+    - assets/fonts/
     # أيقونة شريط النظام (tray) — على Windows يجب أن تكون ملف .ico حقيقي.
     - assets/icons/tray_icon.ico
   fonts:

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_search_field.dart';
 
 class MyTxFilterBar extends StatefulWidget {
   final String activeFilter;
@@ -92,37 +93,11 @@ class _MyTxFilterBarState extends State<MyTxFilterBar> {
           }).toList(),
         );
 
-        final searchBox = SizedBox(
+        final searchBox = AppSearchField(
+          controller: _searchController,
           width: isNarrow ? double.infinity : 320,
-          height: 42,
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: TextField(
-              controller: _searchController,
-              onChanged: widget.onSearchChanged,
-              textAlign: TextAlign.right,
-              decoration: InputDecoration(
-                hintText: 'بحث برقم المعاملة أو الاسم أو النوع...',
-                hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.charcoal.withOpacity(0.6)),
-                prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.charcoal),
-                filled: true,
-                fillColor: AppColors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.gold.withOpacity(0.25)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.forest),
-                ),
-              ),
-            ),
-          ),
+          hintText: 'بحث برقم المعاملة أو الاسم أو النوع...',
+          onChanged: widget.onSearchChanged,
         );
 
         return isNarrow

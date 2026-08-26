@@ -45,8 +45,9 @@ class SourceDocumentsModel extends SourceDocumentsEntity {
 class SourceDocumentItemModel extends SourceDocumentItemEntity {
   const SourceDocumentItemModel({
     required super.id,
+    super.name,
     super.typeDocId,
-    required super.typeDocName,
+    super.typeDocName,
     required super.filePath,
     required super.fileUrl,
     required super.createdAt,
@@ -57,7 +58,8 @@ class SourceDocumentItemModel extends SourceDocumentItemEntity {
     Map<String, dynamic> json, {
     required bool isInstance,
   }) {
-    final rawPath = json['file_path']?.toString() ??
+    final rawPath = json['generated_pdf_path']?.toString() ??
+        json['file_path']?.toString() ??
         json['path']?.toString() ??
         json['url']?.toString() ??
         '';
@@ -67,13 +69,16 @@ class SourceDocumentItemModel extends SourceDocumentItemEntity {
       rawUrl = buildAbsoluteFileUrl(rawPath);
     }
 
+    final name = json['name']?.toString() ?? '';
+    final typeDocName = json['type_doc_name']?.toString() ??
+        json['title']?.toString() ??
+        '';
+
     return SourceDocumentItemModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
+      name: name,
       typeDocId: (json['type_doc_id'] as num?)?.toInt(),
-      typeDocName: json['type_doc_name']?.toString() ??
-          json['name']?.toString() ??
-          json['title']?.toString() ??
-          '',
+      typeDocName: typeDocName,
       filePath: rawPath,
       fileUrl: rawUrl,
       createdAt: json['created_at']?.toString() ?? '',

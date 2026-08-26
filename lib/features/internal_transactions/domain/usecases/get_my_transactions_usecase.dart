@@ -13,11 +13,13 @@ class GetMyTransactionsUseCase {
     required int page,
     required int limit,
     String? status,
+    String? search,
   }) {
     return repository.getMyTransactions(
       page: page,
       limit: limit,
       status: status,
+      search: search,
     );
   }
 }

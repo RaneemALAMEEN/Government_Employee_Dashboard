@@ -13,7 +13,7 @@ class GetDepartmentEmployeesStats {
   Future<Either<Failure, StatisticsPaginatedResult<StatisticsEmployeeEntity>>>
       call({
     required List<int> departmentIds,
-    required int limit,
+    int limit = 6,
     String? cursor,
   }) {
     return repository.getEmployeesByDepartments(

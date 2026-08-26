@@ -32,6 +32,7 @@ class SourceDocumentsEntity extends Equatable {
 
 class SourceDocumentItemEntity extends Equatable {
   final int id;
+  final String name;
   final int? typeDocId;
   final String typeDocName;
   final String filePath;
@@ -41,8 +42,9 @@ class SourceDocumentItemEntity extends Equatable {
 
   const SourceDocumentItemEntity({
     required this.id,
+    this.name = '',
     this.typeDocId,
-    required this.typeDocName,
+    this.typeDocName = '',
     required this.filePath,
     required this.fileUrl,
     required this.createdAt,
@@ -61,6 +63,7 @@ class SourceDocumentItemEntity extends Equatable {
   }
 
   String get displayName {
+    if (name.trim().isNotEmpty) return name.trim();
     if (typeDocName.trim().isNotEmpty) return typeDocName.trim();
     if (isInstance) return 'نموذج نظام مستند #$id';
     return 'ملف مرفق #$id';
@@ -69,6 +72,7 @@ class SourceDocumentItemEntity extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        name,
         typeDocId,
         typeDocName,
         filePath,

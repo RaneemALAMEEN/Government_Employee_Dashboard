@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -8,7 +7,10 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_empty_search_state.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_search_field.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../../../../shared/widgets/permission_denied_card.dart';
@@ -61,55 +63,12 @@ class _OrganizationHierarchyViewState
   Widget _buildSearchField(OrgHierarchyLoaded state) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 680),
-      child: SizedBox(
-        height: 48,
-        child: TextField(
-          controller: _searchController,
-          onChanged: _onSearchChanged,
-          textDirection: TextDirection.rtl,
-          textAlign: TextAlign.right,
-          style: AppTextStyles.bodyMedium,
-          decoration: InputDecoration(
-            hintText: 'ابحث عن قسم، دور، أو موظف...',
-            hintTextDirection: TextDirection.rtl,
-            prefixIcon: const Icon(LucideIcons.search, size: 20),
-            suffixIcon: state.searchStatus == OrganizationSearchStatus.loading
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'مسح البحث',
-                        onPressed: _clearSearch,
-                        icon: const Icon(LucideIcons.x, size: 18),
-                      ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: AppColors.charcoal.withValues(alpha: 0.2),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
+      child: AppSearchField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        isLoading: state.searchStatus == OrganizationSearchStatus.loading,
+        hintText: 'ابحث عن قسم، دور، أو موظف...',
+        onClear: _clearSearch,
       ),
     );
   }
@@ -119,32 +78,10 @@ class _OrganizationHierarchyViewState
     OrgHierarchyLoaded state,
   ) {
     if (state.searchStatus == OrganizationSearchStatus.empty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/vectors/empty search.svg',
-                width: 150,
-                height: 150,
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                'لا توجد نتائج مطابقة لبحثك',
-                style: AppTextStyles.titleMedium,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'جرّب البحث باسم آخر',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.charcoal.withValues(alpha: 0.65),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return const AppEmptySearchState(
+        title: 'لا توجد نتائج مطابقة لبحثك',
+        description: 'جرّب البحث باسم أو مسمى وظيفي آخر داخل الهيكل.',
+        isCard: false,
       );
     }
 
@@ -353,20 +290,9 @@ class _OrganizationHierarchyViewState
                   children: [
                     FadeInDown(
                       duration: const Duration(milliseconds: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'الهيكل التنظيمي',
-                            style: AppTextStyles.displayMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'هيكلية الأقسام والشعب والموظفين في المديرية',
-                            style: AppTextStyles.bodyMedium
-                                .copyWith(color: AppColors.goldDark),
-                          ),
-                        ],
+                      child: const AppPageHeader(
+                        title: 'الهيكل التنظيمي',
+                        subtitle: 'هيكلية الأقسام والشعب والموظفين في المديرية',
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -425,20 +351,9 @@ class _OrganizationHierarchyViewState
                   children: [
                     FadeInDown(
                       duration: const Duration(milliseconds: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'الهيكل التنظيمي',
-                            style: AppTextStyles.displayMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'هيكلية الأقسام والشعب والموظفين في المديرية',
-                            style: AppTextStyles.bodyMedium
-                                .copyWith(color: AppColors.goldDark),
-                          ),
-                        ],
+                      child: const AppPageHeader(
+                        title: 'الهيكل التنظيمي',
+                        subtitle: 'هيكلية الأقسام والشعب والموظفين في المديرية',
                       ),
                     ),
                     const SizedBox(height: 24),

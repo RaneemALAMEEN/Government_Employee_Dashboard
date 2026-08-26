@@ -50,10 +50,15 @@ class EndPoints {
   String firstStageTransaction(int transactionId) =>
       'api/transaction/$transactionId/first-stage';
   String get employeesByDepartments => 'api/employees/by-departments';
+  String get searchEmployees => 'api/employees/search';
   String employeeDetails(int employeeId) => 'api/employees/$employeeId';
+  String employeeSelfCard(int employeeId) =>
+      'api/employees/$employeeId/self-card';
   String get processDefinitionStats => 'api/process_definitions/stats';
   String get selfCardsSearch => 'api/self-cards/search';
   String selfCardDetails(int id) => 'api/self-cards/$id';
+  String get recommendSelfCardsByTraining =>
+      'api/self-cards/recommend-by-training';
   String departmentLeaves(int organizationId) =>
       'api/department/by-organization/$organizationId/leaves/';
   String rolesByDepartment(int departmentId) =>
@@ -66,6 +71,7 @@ class EndPoints {
   String get verifyDocumentDetails => 'api/verify/document/details';
   String get verifyDocumentDetailsByTransaction =>
       'api/verify/document/details/by-transaction';
+  
 }
 
 /// Base API configuration. The base url is read from the loaded environment

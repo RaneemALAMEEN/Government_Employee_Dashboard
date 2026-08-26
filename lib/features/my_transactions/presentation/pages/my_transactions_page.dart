@@ -6,6 +6,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 import '../bloc/my_transactions_bloc.dart';
 import '../bloc/my_transactions_event.dart';
@@ -90,42 +91,23 @@ class _MyTransactionsPageState extends State<MyTransactionsPage> {
                     // Header Title Section (ثابت)
                     FadeInDown(
                       duration: const Duration(milliseconds: 400),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'معاملاتي',
-                                textAlign: TextAlign.right,
-                                style: AppTextStyles.displayMedium,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'المعاملات الموجهة إليك — $awaitingCount بانتظار الاستلام',
-                                textAlign: TextAlign.right,
-                                style: AppTextStyles.bodySmall
-                                    .copyWith(color: AppColors.goldDark),
-                              ),
-                            ],
+                      child: AppPageHeader(
+                        title: 'معاملاتي',
+                        subtitle: 'المعاملات الموجهة إليك — $awaitingCount بانتظار الاستلام',
+                        trailing: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.gold.withOpacity(0.3)),
                           ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-                            ),
-                            child: IconButton(
-                              onPressed: () {
-                                context.read<MyTransactionsBloc>().add(const LoadMyTransactions());
-                              },
-                              icon: const Icon(LucideIcons.refreshCw, color: AppColors.forest),
-                              tooltip: 'تحديث البيانات',
-                            ),
+                          child: IconButton(
+                            onPressed: () {
+                              context.read<MyTransactionsBloc>().add(const LoadMyTransactions());
+                            },
+                            icon: const Icon(LucideIcons.refreshCw, color: AppColors.forest),
+                            tooltip: 'تحديث البيانات',
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),

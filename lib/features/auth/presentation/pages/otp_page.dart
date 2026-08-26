@@ -125,7 +125,7 @@ class _OtpPageState extends State<OtpPage> with TickerProviderStateMixin {
                   ),
                 );
 
-                context.go('/dashboard');
+                context.go('/my-transactions');
               }
 
               if (state is OtpFailure) {

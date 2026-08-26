@@ -101,7 +101,7 @@ class _AppPinUnlockPageState extends State<AppPinUnlockPage>
         setState(() {
           _isLoading = false;
         });
-        context.go('/dashboard');
+        context.go('/my-transactions');
       },
     );
   }

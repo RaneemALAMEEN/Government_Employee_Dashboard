@@ -13,6 +13,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/utils/app_file_downloader.dart';
 import '../../../../shared/utils/app_file_url.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
@@ -82,32 +83,15 @@ class _LoadingSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () {
+            AppBackButton(
+              label: 'العودة للمعاملات',
+              onPressed: () {
                 if (context.canPop()) {
                   context.pop();
                 } else {
                   context.go('/internal-transactions');
                 }
               },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    LucideIcons.arrowRight,
-                    color: AppColors.charcoal,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'العودة للمعاملات',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: AppTextStyles.medium,
-                      color: AppColors.charcoal.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 16),
             const CustomSkeletonLoader(width: double.infinity, height: 110),
@@ -253,32 +237,15 @@ class _DetailsContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () {
+            AppBackButton(
+              label: 'العودة للمعاملات',
+              onPressed: () {
                 if (context.canPop()) {
                   context.pop();
                 } else {
                   context.go('/internal-transactions');
                 }
               },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    LucideIcons.arrowRight,
-                    color: AppColors.charcoal,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'العودة للمعاملات',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: AppTextStyles.medium,
-                      color: AppColors.charcoal.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 16),
 

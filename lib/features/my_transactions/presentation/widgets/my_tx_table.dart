@@ -1,11 +1,11 @@
-import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_empty_search_state.dart';
 import '../../domain/entities/my_transaction_entity.dart';
 
 class MyTxTable extends StatefulWidget {
@@ -233,47 +233,11 @@ class _MyTxTableState extends State<MyTxTable> {
       }
     }
 
-    return FadeIn(
-      duration: const Duration(milliseconds: 350),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-        alignment: Alignment.center,
-        child: ZoomIn(
-          duration: const Duration(milliseconds: 450),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                svgPath,
-                width: 140,
-                height: 140,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.headlineSmall.copyWith(
-                  fontWeight: AppTextStyles.semiBold,
-                  color: AppColors.charcoalDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: 380,
-                child: Text(
-                  description,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.charcoal.withValues(alpha: 0.65),
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return AppEmptySearchState(
+      title: title,
+      description: description,
+      svgPath: svgPath,
+      isCard: false,
     );
   }
 }

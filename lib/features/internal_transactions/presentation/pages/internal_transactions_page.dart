@@ -4,11 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../bloc/internal_transactions_bloc.dart';
 import '../bloc/internal_transactions_event.dart';
 import '../bloc/internal_transactions_state.dart';
 import '../widgets/internal_processes_table.dart';
 import '../widgets/internal_stats_section.dart';
+import '../widgets/internal_tx_filter_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
 
 class InternalTransactionsPage extends StatelessWidget {
@@ -74,6 +76,33 @@ class InternalTransactionsPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FadeInUp(
+              duration: const Duration(milliseconds: 450),
+              delay: const Duration(milliseconds: 150),
+              child: BlocBuilder<InternalTransactionsBloc,
+                  InternalTransactionsState>(
+                buildWhen: (prev, curr) =>
+                    prev.statusFilter != curr.statusFilter ||
+                    prev.searchQuery != curr.searchQuery,
+                builder: (context, state) {
+                  return InternalTxFilterBar(
+                    activeFilter: state.statusFilter,
+                    searchQuery: state.searchQuery,
+                    onFilterChanged: (filter) {
+                      context
+                          .read<InternalTransactionsBloc>()
+                          .add(FilterInternalTransactions(filter));
+                    },
+                    onSearchChanged: (query) {
+                      context
+                          .read<InternalTransactionsBloc>()
+                          .add(SearchInternalTransactions(query));
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+            FadeInUp(
               duration: const Duration(milliseconds: 500),
               delay: const Duration(milliseconds: 200),
               child: const InternalProcessesTable(),
@@ -90,50 +119,27 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.start,
-        spacing: 16,
-        runSpacing: 16,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'المعاملات الداخلية',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: AppColors.forest,
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'المعاملات التي تنشئها وتديرها بنفسك',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.gold,
-                    ),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                context.go('/create-internal-transaction');
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('إنشاء معاملة جديدة'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size.zero,
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                backgroundColor: AppColors.forest,
-                foregroundColor: AppColors.white,
-              ),
+    return AppPageHeader(
+      title: 'المعاملات الداخلية',
+      subtitle: 'المعاملات التي تنشئها وتديرها بنفسك',
+      trailing: SizedBox(
+        height: 42,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            context.go('/create-internal-transaction');
+          },
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('إنشاء معاملة جديدة'),
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            backgroundColor: AppColors.forest,
+            foregroundColor: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

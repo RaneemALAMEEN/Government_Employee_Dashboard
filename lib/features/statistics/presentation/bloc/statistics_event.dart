@@ -35,3 +35,31 @@ class ApplyProcessDateFilter extends StatisticsEvent {
     required this.toDate,
   });
 }
+
+class SearchEmployeesEvent extends StatisticsEvent {
+  final String query;
+
+  const SearchEmployeesEvent({required this.query});
+}
+
+class LoadMoreSearchEmployeesEvent extends StatisticsEvent {
+  const LoadMoreSearchEmployeesEvent();
+}
+
+class ClearEmployeeSearchEvent extends StatisticsEvent {
+  const ClearEmployeeSearchEvent();
+}
+
+class SearchProcessesEvent extends StatisticsEvent {
+  final String query;
+
+  const SearchProcessesEvent({required this.query});
+}
+
+class LoadMoreSearchProcessesEvent extends StatisticsEvent {
+  const LoadMoreSearchProcessesEvent();
+}
+
+class ClearProcessSearchEvent extends StatisticsEvent {
+  const ClearProcessSearchEvent();
+}

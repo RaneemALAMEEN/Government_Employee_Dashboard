@@ -7,6 +7,8 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_back_button.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../domain/entities/notification_entity.dart';
 import '../bloc/notifications_bloc.dart';
 import '../bloc/notifications_event.dart';
@@ -223,111 +225,35 @@ class _NotificationsHeader extends StatelessWidget {
   const _NotificationsHeader({required this.state});
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border.withValues(alpha: .32)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: .035),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+  Widget build(BuildContext context) {
+    final unread = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        state.unreadCount == 0
+            ? 'لا توجد إشعارات غير مقروءة'
+            : '${state.unreadCount} غير مقروء',
+        style: AppTextStyles.bodySmall.copyWith(
+          color: AppColors.forest,
+          fontWeight: FontWeight.w600,
         ),
-        child: LayoutBuilder(
-          builder: (_, constraints) {
-            final compact = constraints.maxWidth < 650;
-            final title = Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Tooltip(
-                  message: 'رجوع',
-                  child: IconButton(
-                    onPressed: context.canPop() ? () => context.pop() : null,
-                    visualDensity: VisualDensity.compact,
-                    style: IconButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      backgroundColor:
-                          AppColors.lightPrimary.withValues(alpha: .75),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: const Icon(LucideIcons.arrowRight, size: 19),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightPrimary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    LucideIcons.bellRing,
-                    color: AppColors.primary,
-                    size: 19,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'الإشعارات',
-                        style: AppTextStyles.headlineLarge.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'متابعة آخر التحديثات والتنبيهات الخاصة بحسابك',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-            final unread = Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.lightPrimary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                state.unreadCount == 0
-                    ? 'لا توجد إشعارات غير مقروءة'
-                    : '${state.unreadCount} غير مقروء',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            );
-            if (compact) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [title, const SizedBox(height: 10), unread],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: title),
-                const SizedBox(width: 14),
-                unread,
-              ],
-            );
-          },
-        ),
-      );
+      ),
+    );
+
+    return AppPageHeader(
+      title: 'الإشعارات',
+      subtitle: 'متابعة آخر التحديثات والتنبيهات الخاصة بحسابك',
+      backButton: AppBackButton(
+        label: 'العودة',
+        onPressed: context.canPop() ? () => context.pop() : null,
+      ),
+      trailing: unread,
+    );
+  }
 }
 
 class _NotificationFilter extends StatelessWidget {

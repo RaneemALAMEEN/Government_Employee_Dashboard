@@ -16,6 +16,7 @@ import '../../../../core/services/session_service.dart';
 import '../../../../core/services/usb_signing_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
@@ -225,20 +226,15 @@ class _InternalTransactionFormPageState
                     children: [
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: IconButton.outlined(
-                            onPressed: () {
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go('/create-internal-transaction');
-                              }
-                            },
-                            tooltip: 'العودة لاختيار المعاملة',
-                            icon: const Icon(Icons.arrow_forward),
-                            color: AppColors.forest,
-                          ),
+                        child: AppBackButton(
+                          label: 'العودة لاختيار المعاملة',
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/create-internal-transaction');
+                            }
+                          },
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -407,17 +403,13 @@ class _FormHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                color: AppColors.forest,
-                fontWeight: FontWeight.w900,
-              ),
+          style: AppTextStyles.displayMedium,
         ),
         const SizedBox(height: 6),
         Text(
           stageLabel,
-          style: AppTextStyles.titleSmall.copyWith(
+          style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.goldDark,
-            fontWeight: AppTextStyles.semiBold,
           ),
         ),
         const SizedBox(height: 10),
