@@ -52,6 +52,8 @@ class EndPoints {
   String get employeesByDepartments => 'api/employees/by-departments';
   String employeeDetails(int employeeId) => 'api/employees/$employeeId';
   String get processDefinitionStats => 'api/process_definitions/stats';
+  String get selfCardsSearch => 'api/self-cards/search';
+  String selfCardDetails(int id) => 'api/self-cards/$id';
   String departmentLeaves(int organizationId) =>
       'api/department/by-organization/$organizationId/leaves/';
   String rolesByDepartment(int departmentId) =>

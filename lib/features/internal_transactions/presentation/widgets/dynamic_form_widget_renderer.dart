@@ -7,6 +7,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../domain/entities/dynamic_widget_entity.dart';
+import 'employee_picker_widget.dart';
 
 class DynamicFormWidgetRenderer extends StatelessWidget {
   final DynamicWidgetEntity widgetEntity;
@@ -50,6 +51,14 @@ class DynamicFormWidgetRenderer extends StatelessWidget {
             value: value,
             onChanged: onChanged,
             hasError: hasError);
+      case 'employee_picker':
+        return EmployeePickerWidget(
+          key: key,
+          widgetEntity: widgetEntity,
+          value: value,
+          onChanged: onChanged,
+          hasError: hasError,
+        );
       case 'date_picker':
         return _DatePickerWidget(
             key: key,

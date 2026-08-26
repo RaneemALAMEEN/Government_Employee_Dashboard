@@ -10,6 +10,8 @@ import '../../domain/entities/internal_processes_page_entity.dart';
 import '../../domain/entities/internal_transaction_first_stage_entity.dart';
 import '../../domain/entities/internal_transaction_counts_entity.dart';
 import '../../domain/entities/internal_transactions_page_entity.dart';
+import '../../domain/entities/self_card_entity.dart';
+import '../../domain/entities/self_cards_search_result_entity.dart';
 import '../../domain/repositories/internal_transactions_repository.dart';
 import '../datasources/internal_transactions_remote_data_source.dart';
 
@@ -108,6 +110,40 @@ class InternalTransactionsRepositoryImpl
     try {
       final data = await remoteDataSource.getStageConfig(processId: processId);
       return Right(data);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(_cleanError(e)));
+    }
+  }
+
+  @override
+  Future<Either<Failure, SelfCardsSearchResultEntity>> searchSelfCards({
+    String? query,
+    String? cursor,
+    required int limit,
+    required bool activeOnly,
+  }) async {
+    try {
+      return Right(await remoteDataSource.searchSelfCards(
+        query: query,
+        cursor: cursor,
+        limit: limit,
+        activeOnly: activeOnly,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(_cleanError(e)));
+    }
+  }
+
+  @override
+  Future<Either<Failure, SelfCardDetailsEntity>> getSelfCardDetails({
+    required int id,
+  }) async {
+    try {
+      return Right(await remoteDataSource.getSelfCardDetails(id: id));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

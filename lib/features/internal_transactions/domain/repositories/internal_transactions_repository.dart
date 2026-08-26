@@ -9,6 +9,8 @@ import '../entities/internal_processes_page_entity.dart';
 import '../entities/internal_transaction_first_stage_entity.dart';
 import '../entities/internal_transaction_counts_entity.dart';
 import '../entities/internal_transactions_page_entity.dart';
+import '../entities/self_card_entity.dart';
+import '../entities/self_cards_search_result_entity.dart';
 
 abstract class InternalTransactionsRepository {
   Future<Either<Failure, List<InternalCategoryEntity>>> getCategories();
@@ -35,6 +37,17 @@ abstract class InternalTransactionsRepository {
 
   Future<Either<Failure, DynamicFormEntity>> getStageConfig({
     required int processId,
+  });
+
+  Future<Either<Failure, SelfCardsSearchResultEntity>> searchSelfCards({
+    String? query,
+    String? cursor,
+    required int limit,
+    required bool activeOnly,
+  });
+
+  Future<Either<Failure, SelfCardDetailsEntity>> getSelfCardDetails({
+    required int id,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> uploadTransactionFile({

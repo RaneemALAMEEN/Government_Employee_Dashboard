@@ -14,10 +14,13 @@ import '../domain/usecases/get_my_transactions_usecase.dart';
 import '../domain/usecases/get_processes_by_category_usecase.dart';
 import '../domain/usecases/get_stage_config_usecase.dart';
 import '../domain/usecases/upload_transaction_file_usecase.dart';
+import '../domain/usecases/get_self_card_details_usecase.dart';
+import '../domain/usecases/search_self_cards_usecase.dart';
 import '../presentation/bloc/internal_transactions_bloc.dart';
 import '../../../core/services/usb_signing_service.dart';
 import '../presentation/bloc/internal_transaction_first_stage/internal_transaction_first_stage_bloc.dart';
 import '../presentation/bloc/internal_transaction_form/internal_transaction_form_bloc.dart';
+import '../presentation/bloc/employee_picker/employee_picker_bloc.dart';
 
 void setupInternalTransactionsInjection(GetIt getIt) {
   if (!getIt.isRegistered<InternalTransactionsRemoteDataSource>()) {
@@ -86,6 +89,29 @@ void setupInternalTransactionsInjection(GetIt getIt) {
     getIt.registerLazySingleton(
       () => UploadTransactionFileUseCase(
         getIt<InternalTransactionsRepository>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<SearchSelfCardsUseCase>()) {
+    getIt.registerLazySingleton(
+      () => SearchSelfCardsUseCase(getIt<InternalTransactionsRepository>()),
+    );
+  }
+
+  if (!getIt.isRegistered<GetSelfCardDetailsUseCase>()) {
+    getIt.registerLazySingleton(
+      () => GetSelfCardDetailsUseCase(
+        getIt<InternalTransactionsRepository>(),
+      ),
+    );
+  }
+
+  if (!getIt.isRegistered<EmployeePickerBloc>()) {
+    getIt.registerFactory(
+      () => EmployeePickerBloc(
+        searchSelfCards: getIt<SearchSelfCardsUseCase>(),
+        getSelfCardDetails: getIt<GetSelfCardDetailsUseCase>(),
       ),
     );
   }

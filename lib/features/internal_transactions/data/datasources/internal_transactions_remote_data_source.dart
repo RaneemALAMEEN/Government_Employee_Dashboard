@@ -20,6 +20,10 @@ import '../models/internal_processes_page_model.dart';
 import '../models/internal_transaction_first_stage_model.dart';
 import '../models/internal_transaction_counts_model.dart';
 import '../models/internal_transactions_page_model.dart';
+import '../models/self_card_model.dart';
+import '../models/self_cards_search_result_model.dart';
+import '../../domain/entities/self_card_entity.dart';
+import '../../domain/entities/self_cards_search_result_entity.dart';
 
 class InternalTransactionsRemoteDataSource {
   final ApiService apiService;
@@ -59,6 +63,58 @@ class InternalTransactionsRemoteDataSource {
       (response) {
         final data = response['data'] as Map<String, dynamic>? ?? response;
         return DynamicFormModel.fromJson(data);
+      },
+    );
+  }
+
+  Future<SelfCardsSearchResultEntity> searchSelfCards({
+    String? query,
+    String? cursor,
+    required int limit,
+    required bool activeOnly,
+  }) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.selfCardsSearch,
+      queryParameters: {
+        if (query != null && query.isNotEmpty) 'q': query,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+        'limit': limit,
+        'active_only': activeOnly,
+      },
+    );
+
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) {
+        if (response is! Map) {
+          throw const ServerException('استجابة البحث عن البطاقات غير صالحة');
+        }
+        return SelfCardsSearchResultModel.fromJson(
+          Map<String, dynamic>.from(response),
+          requestedLimit: limit,
+        );
+      },
+    );
+  }
+
+  Future<SelfCardDetailsEntity> getSelfCardDetails({required int id}) async {
+    final result = await apiService.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.selfCardDetails(id),
+    );
+
+    return result.fold(
+      (failure) => throw ServerException(failure.message),
+      (response) {
+        if (response is! Map) {
+          throw const ServerException('استجابة تفاصيل البطاقة غير صالحة');
+        }
+        final responseMap = Map<String, dynamic>.from(response);
+        final rawData = responseMap['data'];
+        final data =
+            rawData is Map ? Map<String, dynamic>.from(rawData) : responseMap;
+        return SelfCardDetailsModel.fromJson(data);
       },
     );
   }
@@ -208,7 +264,8 @@ class InternalTransactionsRemoteDataSource {
     };
 
     debugPrint('==================================================');
-    debugPrint('[InternalTransactionsRemoteDataSource] 🔐 Create Signing Challenge Request:');
+    debugPrint(
+        '[InternalTransactionsRemoteDataSource] 🔐 Create Signing Challenge Request:');
     debugPrint('Endpoint: ${_endPoints.signingChallenge(processId)}');
     debugPrint('Body: $body');
     debugPrint('==================================================');
@@ -236,8 +293,10 @@ class InternalTransactionsRemoteDataSource {
     required Map<String, dynamic> payload,
   }) async {
     debugPrint('==================================================');
-    debugPrint('[InternalTransactionsRemoteDataSource] 🚀 Complete Signed Transaction Request:');
-    debugPrint('Endpoint: ${_endPoints.completeSignedTransaction(transactionId)}');
+    debugPrint(
+        '[InternalTransactionsRemoteDataSource] 🚀 Complete Signed Transaction Request:');
+    debugPrint(
+        'Endpoint: ${_endPoints.completeSignedTransaction(transactionId)}');
     debugPrint('Transaction ID: $transactionId');
     debugPrint('--- Payload Sent to Backend (JSON) ---');
     try {
