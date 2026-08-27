@@ -103,22 +103,30 @@ class _InternalTransactionFormPageState
 
   Future<void> _submit() async {
     final bloc = context.read<InternalTransactionFormBloc>();
-    final validationError = bloc.validateCurrentForm();
-    if (validationError != null) {
-      final isAssignmentMissing = (bloc.state.form?.isAssignment ?? false) &&
-          (bloc.state.assignmentDepartmentId == null ||
-              bloc.state.assignmentRoleId == null);
-      if (isAssignmentMissing) {
+    final validation = bloc.validateForm();
+    if (!validation.isValid) {
+      bloc.add(
+        SetInternalTransactionFormValidationErrors(
+          invalidFieldIds: validation.invalidFieldIds,
+          errorMessage: validation.errorMessage,
+          assignmentError: validation.isAssignmentMissing
+              ? validation.errorMessage
+              : null,
+        ),
+      );
+      if (validation.isAssignmentMissing) {
         bloc.add(
           UpdateInternalTransactionAssignment(
             organizationId: bloc.state.assignmentOrgId,
             departmentId: bloc.state.assignmentDepartmentId,
             roleId: bloc.state.assignmentRoleId,
-            errorText: validationError,
+            errorText: validation.errorMessage,
           ),
         );
       }
-      _showSnackBar(validationError, isError: true);
+      if (validation.errorMessage != null) {
+        _showSnackBar(validation.errorMessage!, isError: true);
+      }
       return;
     }
 
@@ -259,6 +267,7 @@ class _InternalTransactionFormPageState
                           child: _FormFields(
                             form: form,
                             values: state.formValues,
+                            formErrors: state.invalidFieldIds,
                             emptyMessage: 'لا توجد حقول مباشرة في هذه المرحلة.',
                             onChanged: (id, value) {
                               context.read<InternalTransactionFormBloc>().add(
@@ -279,6 +288,7 @@ class _InternalTransactionFormPageState
                           child: _TemplateSection(
                             template: state.template!,
                             values: state.templateValues,
+                            formErrors: state.invalidFieldIds,
                             onChanged: (id, value) {
                               context.read<InternalTransactionFormBloc>().add(
                                     UpdateInternalTransactionTemplateValue(
@@ -299,6 +309,7 @@ class _InternalTransactionFormPageState
                                 child: _InlineTemplateSection(
                                   template: entry.value,
                                   values: state.templateValues,
+                                  formErrors: state.invalidFieldIds,
                                   onChanged: (id, value) {
                                     context.read<InternalTransactionFormBloc>().add(
                                           UpdateInternalTransactionTemplateValue(
@@ -436,11 +447,13 @@ class _FormHeader extends StatelessWidget {
 class _InlineTemplateSection extends StatelessWidget {
   final DynamicFormTemplateEntity template;
   final Map<String, dynamic> values;
+  final Set<String> formErrors;
   final void Function(String id, dynamic value) onChanged;
 
   const _InlineTemplateSection({
     required this.template,
     required this.values,
+    this.formErrors = const {},
     required this.onChanged,
   });
 
@@ -453,6 +466,7 @@ class _InlineTemplateSection extends StatelessWidget {
       child: _FormFields(
         form: template.config,
         values: values,
+        formErrors: formErrors,
         emptyMessage: 'لا توجد حقول مطلوبة ضمن هذا القالب.',
         onChanged: onChanged,
       ),
@@ -499,11 +513,13 @@ class _HeaderBadge extends StatelessWidget {
 class _TemplateSection extends StatelessWidget {
   final DocumentTemplateEntity template;
   final Map<String, dynamic> values;
+  final Set<String> formErrors;
   final void Function(String id, dynamic value) onChanged;
 
   const _TemplateSection({
     required this.template,
     required this.values,
+    this.formErrors = const {},
     required this.onChanged,
   });
 
@@ -522,6 +538,7 @@ class _TemplateSection extends StatelessWidget {
           _FormFields(
             form: template.config,
             values: values,
+            formErrors: formErrors,
             emptyMessage: 'لا توجد حقول مطلوبة ضمن هذا القالب.',
             onChanged: onChanged,
           ),
@@ -867,12 +884,14 @@ class _SectionCard extends StatelessWidget {
 class _FormFields extends StatelessWidget {
   final DynamicFormEntity form;
   final Map<String, dynamic> values;
+  final Set<String> formErrors;
   final String emptyMessage;
   final void Function(String id, dynamic value) onChanged;
 
   const _FormFields({
     required this.form,
     required this.values,
+    this.formErrors = const {},
     required this.emptyMessage,
     required this.onChanged,
   });
@@ -908,6 +927,7 @@ class _FormFields extends StatelessWidget {
             widgetEntity: widgetConfig,
             value: values[id],
             onChanged: (value) => onChanged(id, value),
+            hasError: formErrors.contains(id),
           ),
         );
       }).toList(),

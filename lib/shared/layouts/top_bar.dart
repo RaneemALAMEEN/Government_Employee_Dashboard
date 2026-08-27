@@ -14,6 +14,7 @@ import '../../features/notifications/presentation/bloc/notifications_event.dart'
 import '../../features/notifications/presentation/bloc/notifications_state.dart';
 import '../../features/notifications/presentation/widgets/notification_widgets.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_confirmation_dialog.dart';
 import '../widgets/global_search_box.dart';
 
 class TopBar extends StatelessWidget {
@@ -54,9 +55,20 @@ class _UserInfo extends StatelessWidget {
     } else if (value == 'lock_app') {
       context.go('/pin-unlock');
     } else if (value == 'logout') {
-      await getIt<SecureStorageService>().clear();
-      if (!context.mounted) return;
-      context.go('/login');
+      final loggedOut = await showAppConfirmationDialog(
+        context,
+        title: 'تسجيل الخروج',
+        message: 'هل تريد تسجيل الخروج من النظام؟',
+        confirmText: 'تسجيل الخروج',
+        cancelText: 'إلغاء',
+        icon: LucideIcons.logOut,
+        isDestructive: true,
+        failureMessage: 'تعذر تسجيل الخروج، حاول مرة أخرى',
+        onConfirm: getIt<SecureStorageService>().clear,
+      );
+      if (loggedOut == true && context.mounted) {
+        context.go('/login');
+      }
     }
   }
 

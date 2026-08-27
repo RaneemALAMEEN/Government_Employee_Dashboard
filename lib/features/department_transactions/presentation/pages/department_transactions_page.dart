@@ -11,6 +11,8 @@ import '../../domain/entities/accessible_department_entity.dart';
 import '../bloc/dept_tx_bloc.dart';
 import '../bloc/dept_tx_event.dart';
 import '../bloc/dept_tx_state.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+import '../widgets/dept_tx_export_dialog.dart';
 import '../widgets/dept_tx_filter_bar.dart';
 import '../widgets/dept_tx_stats_card.dart';
 import '../widgets/dept_tx_table.dart';
@@ -111,6 +113,63 @@ class _DepartmentTransactionsViewState
                         subtitle: selectedDepartmentName != null
                             ? 'معاملات $selectedDepartmentName — للعرض والمتابعة فقط'
                             : 'جميع المعاملات المنجزة والمرفوضة ضمن الدائرة — للعرض والمتابعة فقط',
+                        trailing: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              DeptTxExportDialog.show(
+                                context: context,
+                                initialStatusFilter: statusFilter,
+                                initialFromDate: fromDate,
+                                initialToDate: toDate,
+                                departmentId: selectedDepartmentId,
+                                departmentName: selectedDepartmentName,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.forest.withValues(alpha: 0.3),
+                                  width: 1.2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.charcoal.withValues(
+                                      alpha: 0.04,
+                                    ),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    LucideIcons.fileSpreadsheet,
+                                    size: 17,
+                                    color: AppColors.forest,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'تصدير البيانات',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      fontWeight: AppTextStyles.semiBold,
+                                      color: AppColors.forest,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),

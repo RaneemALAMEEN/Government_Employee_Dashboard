@@ -77,6 +77,22 @@ class UpdateInternalTransactionAssignment
   List<Object?> get props => [organizationId, departmentId, roleId, errorText];
 }
 
+class SetInternalTransactionFormValidationErrors
+    extends InternalTransactionFormEvent {
+  final Set<String> invalidFieldIds;
+  final String? errorMessage;
+  final String? assignmentError;
+
+  const SetInternalTransactionFormValidationErrors({
+    required this.invalidFieldIds,
+    this.errorMessage,
+    this.assignmentError,
+  });
+
+  @override
+  List<Object?> get props => [invalidFieldIds, errorMessage, assignmentError];
+}
+
 class ResetInternalTransactionForm extends InternalTransactionFormEvent {
   const ResetInternalTransactionForm();
 }

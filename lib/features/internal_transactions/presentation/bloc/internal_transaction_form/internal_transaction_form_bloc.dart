@@ -34,8 +34,22 @@ class InternalTransactionFormBloc
     on<UpdateInternalTransactionFormValue>(_onUpdateValue);
     on<UpdateInternalTransactionTemplateValue>(_onUpdateTemplateValue);
     on<UpdateInternalTransactionAssignment>(_onUpdateAssignment);
+    on<SetInternalTransactionFormValidationErrors>(_onSetValidationErrors);
     on<SubmitInternalTransactionForm>(_onSubmit);
     on<ResetInternalTransactionForm>(_onReset);
+  }
+
+  void _onSetValidationErrors(
+    SetInternalTransactionFormValidationErrors event,
+    Emitter<InternalTransactionFormState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        invalidFieldIds: event.invalidFieldIds,
+        errorMessage: event.errorMessage,
+        assignmentError: event.assignmentError,
+      ),
+    );
   }
 
   Future<void> _onLoadForm(
@@ -115,7 +129,13 @@ class InternalTransactionFormBloc
     final updatedValues = Map<String, dynamic>.from(state.formValues);
     updatedValues[event.id] = event.value;
 
-    emit(state.copyWith(formValues: updatedValues));
+    final updatedErrors = Set<String>.from(state.invalidFieldIds)..remove(event.id);
+
+    emit(state.copyWith(
+      formValues: updatedValues,
+      invalidFieldIds: updatedErrors,
+      clearError: updatedErrors.isEmpty,
+    ));
   }
 
   void _onUpdateTemplateValue(
@@ -125,7 +145,13 @@ class InternalTransactionFormBloc
     final updatedValues = Map<String, dynamic>.from(state.templateValues);
     updatedValues[event.id] = event.value;
 
-    emit(state.copyWith(templateValues: updatedValues));
+    final updatedErrors = Set<String>.from(state.invalidFieldIds)..remove(event.id);
+
+    emit(state.copyWith(
+      templateValues: updatedValues,
+      invalidFieldIds: updatedErrors,
+      clearError: updatedErrors.isEmpty,
+    ));
   }
 
   void _onUpdateAssignment(
@@ -144,58 +170,86 @@ class InternalTransactionFormBloc
     );
   }
 
-  String? validateCurrentForm() {
+  InternalTransactionValidationResult validateForm() {
     final form = state.form;
 
     if (form == null) {
-      return 'تعذر قراءة بيانات النموذج';
+      return const InternalTransactionValidationResult(
+        isValid: false,
+        errorMessage: 'تعذر قراءة بيانات النموذج',
+      );
     }
 
-    final formValidationError = _validateForm(form, state.formValues);
-    if (formValidationError != null) return formValidationError;
+    final invalidIds = <String>{};
+    String? firstErrorMessage;
+
+    void recordError(String id, String message) {
+      invalidIds.add(id);
+      firstErrorMessage ??= message;
+    }
+
+    _validateFormWidgets(
+      form.widgets,
+      state.formValues,
+      recordError,
+    );
 
     final template = state.template;
     if (template != null) {
-      final templateValidationError = _validateForm(
-        template.config,
+      _validateFormWidgets(
+        template.config.widgets,
         state.templateValues,
+        recordError,
       );
-
-      if (templateValidationError != null) return templateValidationError;
     }
 
     for (final inlineTemplate in form.templates) {
-      final templateValidationError = _validateForm(
-        inlineTemplate.config,
+      _validateFormWidgets(
+        inlineTemplate.config.widgets,
         state.templateValues,
+        recordError,
       );
-
-      if (templateValidationError != null) return templateValidationError;
     }
 
+    var isAssignmentMissing = false;
     if (form.isAssignment) {
       if (state.assignmentDepartmentId == null ||
           state.assignmentRoleId == null) {
-        return 'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
+        isAssignmentMissing = true;
+        firstErrorMessage ??=
+            'يرجى اختيار القسم (الدائرة) والوظيفة (Role) لتوجيه المعاملة';
       }
     }
 
-    return null;
+    final isValid =
+        invalidIds.isEmpty && !isAssignmentMissing && firstErrorMessage == null;
+
+    return InternalTransactionValidationResult(
+      isValid: isValid,
+      errorMessage: firstErrorMessage,
+      invalidFieldIds: invalidIds,
+      isAssignmentMissing: isAssignmentMissing,
+    );
+  }
+
+  String? validateCurrentForm() {
+    final result = validateForm();
+    return result.errorMessage;
   }
 
   Future<void> _onSubmit(
     SubmitInternalTransactionForm event,
     Emitter<InternalTransactionFormState> emit,
   ) async {
-    final validationError = validateCurrentForm();
-    if (validationError != null) {
-      final isAssignmentMissing = (state.form?.isAssignment ?? false) &&
-          (state.assignmentDepartmentId == null ||
-              state.assignmentRoleId == null);
+    final validation = validateForm();
+    if (!validation.isValid) {
       emit(
         state.copyWith(
-          errorMessage: validationError,
-          assignmentError: isAssignmentMissing ? validationError : null,
+          errorMessage: validation.errorMessage,
+          assignmentError: validation.isAssignmentMissing
+              ? validation.errorMessage
+              : null,
+          invalidFieldIds: validation.invalidFieldIds,
         ),
       );
       return;
@@ -649,25 +703,29 @@ class InternalTransactionFormBloc
     return _FilePickerUploadResult.success(uploadedFiles);
   }
 
-  String? _validateForm(
-    DynamicFormEntity form,
+  void _validateFormWidgets(
+    List<dynamic> widgets,
     Map<String, dynamic> formValues,
+    void Function(String id, String message) recordError,
   ) {
-    for (final widget in form.widgets) {
+    for (final widget in widgets) {
       final id = widget.data['id']?.toString() ?? '';
       final label = widget.data['label']?.toString() ?? 'هذا الحقل';
       final isRequired = widget.data['is_required'] == true;
       final value = formValues[id];
 
       if (isRequired && _isEmptyValue(value)) {
-        return _validationFailure(
-          message: 'يرجى تعبئة حقل: $label',
+        final message = 'يرجى تعبئة حقل: $label';
+        _validationFailure(
+          message: message,
           id: id,
           label: label,
           widgetType: widget.widgetType,
           value: value,
           data: widget.data,
         );
+        recordError(id, message);
+        continue;
       }
 
       if (_isEmptyValue(value)) continue;
@@ -680,7 +738,7 @@ class InternalTransactionFormBloc
         );
 
         if (error != null) {
-          return _validationFailure(
+          _validationFailure(
             message: error,
             id: id,
             label: label,
@@ -688,6 +746,7 @@ class InternalTransactionFormBloc
             value: value,
             data: widget.data,
           );
+          recordError(id, error);
         }
       }
 
@@ -699,7 +758,7 @@ class InternalTransactionFormBloc
         );
 
         if (error != null) {
-          return _validationFailure(
+          _validationFailure(
             message: error,
             id: id,
             label: label,
@@ -707,11 +766,10 @@ class InternalTransactionFormBloc
             value: value,
             data: widget.data,
           );
+          recordError(id, error);
         }
       }
     }
-
-    return null;
   }
 
   String _validationFailure({
@@ -890,6 +948,20 @@ class InternalTransactionFormBloc
   String _cleanError(Object error) {
     return error.toString().replaceFirst('Exception: ', '');
   }
+}
+
+class InternalTransactionValidationResult {
+  final bool isValid;
+  final String? errorMessage;
+  final Set<String> invalidFieldIds;
+  final bool isAssignmentMissing;
+
+  const InternalTransactionValidationResult({
+    required this.isValid,
+    this.errorMessage,
+    this.invalidFieldIds = const {},
+    this.isAssignmentMissing = false,
+  });
 }
 
 class _SubmitPayloadResult {

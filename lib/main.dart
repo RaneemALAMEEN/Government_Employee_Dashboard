@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'core/cache/services/isar_service.dart';
 import 'core/di/injection.dart';
@@ -78,6 +79,19 @@ bool get _isDesktop =>
 Future<void> main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
+
+  // معالجة استثناءات لوحة المفاتيح في فلاتر وتفريغ المفاتيح العالقة لمنع تعليق زر Backspace
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final exceptionStr = details.exceptionAsString();
+    if (details.library == 'services library' &&
+        (exceptionStr.contains('KeyDownEvent is dispatched') ||
+            exceptionStr.contains('HardwareKeyboard') ||
+            exceptionStr.contains('The document is empty'))) {
+      HardwareKeyboard.instance.clearState();
+      return;
+    }
+    FlutterError.presentError(details);
+  };
 
   // تهيئة نافذة سطح المكتب يجب أن تسبق runApp وبعد ensureInitialized مباشرةً.
   // النافذة تُنشأ مخفية ثم تُظهَر داخل waitUntilReadyToShow.

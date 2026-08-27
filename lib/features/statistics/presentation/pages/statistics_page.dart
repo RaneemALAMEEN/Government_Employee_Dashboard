@@ -2156,13 +2156,6 @@ class _InsightsPanel extends StatelessWidget {
                 : '${available.fullName} لا يملك مهام نشطة حالياً',
             color: AppColors.forest,
           ),
-          const SizedBox(height: 12),
-          const _Insight(
-            icon: LucideIcons.route,
-            title: 'الفكرة',
-            text: 'يمكن لاحقاً اقتراح تحويل المعاملات للموظف الأقل ضغطاً.',
-            color: AppColors.goldDark,
-          ),
         ],
       ),
     );

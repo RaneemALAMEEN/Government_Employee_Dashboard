@@ -17,6 +17,7 @@ class InternalTransactionFormState extends Equatable {
   final int? assignmentDepartmentId;
   final int? assignmentRoleId;
   final String? assignmentError;
+  final Set<String> invalidFieldIds;
 
   const InternalTransactionFormState({
     required this.loading,
@@ -32,6 +33,7 @@ class InternalTransactionFormState extends Equatable {
     this.assignmentDepartmentId,
     this.assignmentRoleId,
     this.assignmentError,
+    this.invalidFieldIds = const {},
   });
 
   factory InternalTransactionFormState.initial() {
@@ -44,6 +46,7 @@ class InternalTransactionFormState extends Equatable {
       assignmentDepartmentId: null,
       assignmentRoleId: null,
       assignmentError: null,
+      invalidFieldIds: {},
     );
   }
 
@@ -64,6 +67,8 @@ class InternalTransactionFormState extends Equatable {
     int? assignmentRoleId,
     String? assignmentError,
     bool clearAssignmentError = false,
+    Set<String>? invalidFieldIds,
+    bool clearInvalidFields = false,
   }) {
     return InternalTransactionFormState(
       loading: loading ?? this.loading,
@@ -85,6 +90,9 @@ class InternalTransactionFormState extends Equatable {
       assignmentError: clearAssignmentError
           ? null
           : assignmentError ?? this.assignmentError,
+      invalidFieldIds: clearInvalidFields
+          ? const {}
+          : invalidFieldIds ?? this.invalidFieldIds,
     );
   }
 
@@ -103,5 +111,6 @@ class InternalTransactionFormState extends Equatable {
         assignmentDepartmentId,
         assignmentRoleId,
         assignmentError,
+        invalidFieldIds,
       ];
 }
