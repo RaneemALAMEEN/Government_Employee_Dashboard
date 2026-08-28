@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
+import '../../../../core/constants/app_permissions.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/custom_skeleton_loader.dart';
+import '../../../../shared/widgets/permission_gate.dart';
 import '../../domain/entities/appointment_entities.dart';
 
 class AppointmentFilterTabs extends StatelessWidget {
@@ -12,52 +14,62 @@ class AppointmentFilterTabs extends StatelessWidget {
   const AppointmentFilterTabs(
       {super.key, required this.value, required this.onChanged});
 
-  static const tabs = {
-    'available': 'المواعيد المتاحة',
-    'pending': 'بانتظار الموافقة',
-    'approved': 'الموافق عليها',
-    'past': 'السابقة',
-  };
-
   @override
-  Widget build(BuildContext context) => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: tabs.entries.map((entry) {
-          final selected = entry.key == value;
-          return ChoiceChip(
-            label: Text(entry.value),
-            selected: selected,
-            onSelected: (_) => onChanged(entry.key),
-            selectedColor: AppColors.primary,
-            backgroundColor: AppColors.surface,
-            labelStyle: AppTextStyles.bodyMedium.copyWith(
-              color: selected ? Colors.white : AppColors.textSecondary,
-              fontWeight: selected ? AppTextStyles.bold : AppTextStyles.medium,
-            ),
-            side: BorderSide(
-                color: selected ? AppColors.primary : const Color(0xFFE1E5E3)),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            showCheckmark: false,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          );
-        }).toList(),
-      );
+  Widget build(BuildContext context) {
+    final canManage = context.hasPermission(AppPermissions.appointmentManage);
+
+    final tabs = <String, String>{
+      'available': 'المواعيد المتاحة',
+      if (canManage) ...{
+        'pending': 'بانتظار الموافقة',
+        'approved': 'الموافق عليها',
+        'past': 'السابقة',
+      },
+    };
+
+    if (tabs.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: tabs.entries.map((entry) {
+        final selected = entry.key == value;
+        return ChoiceChip(
+          label: Text(entry.value),
+          selected: selected,
+          onSelected: (_) => onChanged(entry.key),
+          selectedColor: AppColors.primary,
+          backgroundColor: AppColors.surface,
+          labelStyle: AppTextStyles.bodyMedium.copyWith(
+            color: selected ? Colors.white : AppColors.textSecondary,
+            fontWeight: selected ? AppTextStyles.bold : AppTextStyles.medium,
+          ),
+          side: BorderSide(
+              color: selected ? AppColors.primary : const Color(0xFFE1E5E3)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          showCheckmark: false,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        );
+      }).toList(),
+    );
+  }
 }
 
 class AppointmentSlotCard extends StatefulWidget {
   final AppointmentSlot slot;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final ValueChanged<bool>? onActiveChanged;
 
   const AppointmentSlotCard({
     super.key,
     required this.slot,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onActiveChanged,
+    this.onEdit,
+    this.onDelete,
+    this.onActiveChanged,
   });
 
   @override
@@ -178,82 +190,90 @@ class _AppointmentSlotCardState extends State<AppointmentSlotCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: Color(0xFFEEF0EE)),
-            const SizedBox(height: 12),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isPast
-                          ? 'منتهي'
-                          : slot.isActive
-                              ? 'متاح للحجز'
-                              : 'متوقف مؤقتاً',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                    const SizedBox(width: 4),
-                    Transform.scale(
-                      scale: .82,
-                      child: Tooltip(
-                        message: isPast
-                            ? 'لا يمكن تفعيل موعد انتهى تاريخه'
-                            : slot.isActive
-                                ? 'إيقاف الحجز مؤقتاً'
-                                : 'إعادة إتاحة الموعد للحجز',
-                        child: Switch.adaptive(
-                          value: isPast ? false : slot.isActive,
-                          activeTrackColor: AppColors.primary,
-                          onChanged: isPast ? null : widget.onActiveChanged,
+            if (widget.onEdit != null ||
+                widget.onDelete != null ||
+                widget.onActiveChanged != null) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFEEF0EE)),
+              const SizedBox(height: 12),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (widget.onActiveChanged != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isPast
+                              ? 'منتهي'
+                              : slot.isActive
+                                  ? 'متاح للحجز'
+                                  : 'متوقف مؤقتاً',
+                          style: AppTextStyles.bodySmall,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: widget.onEdit,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: Color(0xFFD0D7D3)),
-                        minimumSize: const Size(76, 38),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                        const SizedBox(width: 4),
+                        Transform.scale(
+                          scale: .82,
+                          child: Tooltip(
+                            message: isPast
+                                ? 'لا يمكن تفعيل موعد انتهى تاريخه'
+                                : slot.isActive
+                                    ? 'إيقاف الحجز مؤقتاً'
+                                    : 'إعادة إتاحة الموعد للحجز',
+                            child: Switch.adaptive(
+                              value: isPast ? false : slot.isActive,
+                              activeTrackColor: AppColors.primary,
+                              onChanged: isPast ? null : widget.onActiveChanged,
+                            ),
+                          ),
                         ),
-                      ),
-                      icon: const Icon(LucideIcons.pencil, size: 16),
-                      label: const Text('تعديل'),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: widget.onDelete,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: const BorderSide(color: AppColors.error),
-                        minimumSize: const Size(76, 38),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.onEdit != null) ...[
+                        OutlinedButton.icon(
+                          onPressed: widget.onEdit,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: Color(0xFFD0D7D3)),
+                            minimumSize: const Size(76, 38),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: const Icon(LucideIcons.pencil, size: 16),
+                          label: const Text('تعديل'),
                         ),
-                      ),
-                      icon: const Icon(LucideIcons.trash2, size: 16),
-                      label: const Text('حذف'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (widget.onDelete != null)
+                        OutlinedButton.icon(
+                          onPressed: widget.onDelete,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: const BorderSide(color: AppColors.error),
+                            minimumSize: const Size(76, 38),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: const Icon(LucideIcons.trash2, size: 16),
+                          label: const Text('حذف'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -265,18 +285,15 @@ class _SlotMetric extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  const _SlotMetric({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
+  const _SlotMetric(
+      {required this.label, required this.value, required this.icon});
 
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F9F7),
-          borderRadius: BorderRadius.circular(11),
+          color: const Color(0xFFF6F8F6),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(children: [
           Icon(icon, size: 16, color: AppColors.primary),
@@ -290,10 +307,10 @@ class _SlotMetric extends StatelessWidget {
 }
 
 class AppointmentAvailableEmptyState extends StatelessWidget {
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
   const AppointmentAvailableEmptyState({
     super.key,
-    required this.onAdd,
+    this.onAdd,
   });
 
   @override
@@ -323,16 +340,20 @@ class AppointmentAvailableEmptyState extends StatelessWidget {
               style: AppTextStyles.titleMedium),
           const SizedBox(height: 5),
           Text(
-            'أضف فترة جديدة لتصبح متاحة للحجز',
+            onAdd != null
+                ? 'أضف فترة جديدة لتصبح متاحة للحجز'
+                : 'لم يتم إضافة فترات مواعيد متاحة بعد',
             style: AppTextStyles.bodySmall
                 .copyWith(color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(LucideIcons.plus, size: 17),
-            label: const Text('إضافة موعد'),
-          ),
+          if (onAdd != null) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(LucideIcons.plus, size: 17),
+              label: const Text('إضافة موعد'),
+            ),
+          ],
         ]),
       );
 }

@@ -52,6 +52,10 @@ import '../../features/self_cards/presentation/bloc/self_cards_bloc.dart';
 import '../../features/self_cards/presentation/bloc/self_cards_event.dart';
 import '../../features/self_cards/presentation/pages/self_cards_page.dart';
 
+import '../constants/app_permissions.dart';
+import '../services/session_service.dart';
+import '../../shared/widgets/permission_denied_card.dart';
+
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/splash',
@@ -100,7 +104,47 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/dashboard',
-            redirect: (_, __) => '/my-transactions',
+            redirect: (context, state) {
+              final session = getIt<SessionService>();
+              if (session.hasAnyPermission([
+                AppPermissions.getAllTaskForEmployee,
+                AppPermissions.viewHistoryTransaction,
+              ])) {
+                return '/my-transactions';
+              } else if (session.hasAnyPermission([
+                AppPermissions.getTaskCompletedByDepartment,
+                AppPermissions.getTaskRejectedByDepartment,
+              ])) {
+                return '/department-transactions';
+              } else if (session.hasAnyPermission([
+                AppPermissions.processPublishManage,
+                AppPermissions.processReview,
+              ])) {
+                return '/directorate-process-management';
+              } else if (session.hasAnyPermission([
+                AppPermissions.processViewStats,
+                AppPermissions.employeesStats,
+                AppPermissions.tasksStatsActive,
+                AppPermissions.tasksStatsRejectedLastMonth,
+                AppPermissions.tasksStatsCompletedLastMonth,
+              ])) {
+                return '/statistics';
+              } else if (session.hasAnyPermission([
+                AppPermissions.getOrganizationalStructure,
+                AppPermissions.organizationalStructureCreate,
+              ])) {
+                return '/organization-hierarchy';
+              } else if (session.hasPermission(AppPermissions.documentVerifyByCode)) {
+                return '/document-quality-checker';
+              } else if (session.hasAnyPermission([
+                AppPermissions.appointmentManage,
+                AppPermissions.appointmentViewAvailable,
+                AppPermissions.appointmentBookEmployee,
+              ])) {
+                return '/appointments';
+              }
+              return '/self-cards';
+            },
           ),
           GoRoute(
             path: '/notifications',
@@ -111,10 +155,17 @@ class AppRouter {
           GoRoute(
             path: '/appointments',
             pageBuilder: (context, state) => NoTransitionPage(
-              child: BlocProvider(
-                create: (_) => getIt<AppointmentsBloc>()
-                  ..add(const LoadAvailableAppointmentSlots()),
-                child: const AppointmentsPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: const [
+                  AppPermissions.appointmentManage,
+                  AppPermissions.appointmentViewAvailable,
+                  AppPermissions.appointmentBookEmployee,
+                ],
+                child: BlocProvider(
+                  create: (_) => getIt<AppointmentsBloc>()
+                    ..add(const LoadAvailableAppointmentSlots()),
+                  child: const AppointmentsPage(),
+                ),
               ),
             ),
           ),
@@ -131,7 +182,13 @@ class AppRouter {
           GoRoute(
             path: '/my-transactions',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: MyTransactionsPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: [
+                  AppPermissions.getAllTaskForEmployee,
+                  AppPermissions.viewHistoryTransaction,
+                ],
+                child: MyTransactionsPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -149,10 +206,16 @@ class AppRouter {
                     extraMap['numeric_transaction_id']?.toString();
               }
               return NoTransitionPage(
-                child: TransactionDetailsPage(
-                  transactionId: id,
-                  status: status,
-                  numericTransactionId: numericTxId,
+                child: RoutePermissionGuard(
+                  anyPermissions: const [
+                    AppPermissions.getAllTaskForEmployee,
+                    AppPermissions.viewHistoryTransaction,
+                  ],
+                  child: TransactionDetailsPage(
+                    transactionId: id,
+                    status: status,
+                    numericTransactionId: numericTxId,
+                  ),
                 ),
               );
             },
@@ -160,10 +223,16 @@ class AppRouter {
           GoRoute(
             path: '/internal-transactions',
             pageBuilder: (context, state) => NoTransitionPage(
-              child: BlocProvider(
-                create: (_) => getIt<InternalTransactionsBloc>()
-                  ..add(const LoadInternalTransactionsOverview()),
-                child: const InternalTransactionsPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: const [
+                  AppPermissions.getAllTaskForEmployee,
+                  AppPermissions.taskSigning,
+                ],
+                child: BlocProvider(
+                  create: (_) => getIt<InternalTransactionsBloc>()
+                    ..add(const LoadInternalTransactionsOverview()),
+                  child: const InternalTransactionsPage(),
+                ),
               ),
             ),
           ),
@@ -177,12 +246,15 @@ class AppRouter {
                   : null;
 
               return NoTransitionPage(
-                child: BlocProvider(
-                  create: (_) => getIt<InternalTransactionFirstStageBloc>()
-                    ..add(LoadInternalTransactionFirstStage(transactionId)),
-                  child: InternalTransactionFirstStagePage(
-                    transactionId: transactionId,
-                    transaction: transaction,
+                child: RoutePermissionGuard(
+                  permission: AppPermissions.taskSigning,
+                  child: BlocProvider(
+                    create: (_) => getIt<InternalTransactionFirstStageBloc>()
+                      ..add(LoadInternalTransactionFirstStage(transactionId)),
+                    child: InternalTransactionFirstStagePage(
+                      transactionId: transactionId,
+                      transaction: transaction,
+                    ),
                   ),
                 ),
               );
@@ -191,10 +263,16 @@ class AppRouter {
           GoRoute(
             path: '/create-internal-transaction',
             pageBuilder: (context, state) => NoTransitionPage(
-              child: BlocProvider(
-                create: (_) => getIt<CreateInternalTransactionBloc>()
-                  ..add(const LoadCreateInternalTransactionData()),
-                child: const CreateInternalTransactionPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: const [
+                  AppPermissions.getAllTaskForEmployee,
+                  AppPermissions.taskSigning,
+                ],
+                child: BlocProvider(
+                  create: (_) => getIt<CreateInternalTransactionBloc>()
+                    ..add(const LoadCreateInternalTransactionData()),
+                  child: const CreateInternalTransactionPage(),
+                ),
               ),
             ),
           ),
@@ -210,15 +288,21 @@ class AppRouter {
                   int.tryParse(extra['stageCount']?.toString() ?? '');
 
               return NoTransitionPage(
-                child: BlocProvider(
-                  create: (_) => getIt<InternalTransactionFormBloc>()
-                    ..add(LoadInternalTransactionForm(processId)),
-                  child: InternalTransactionFormPage(
-                    processId: processId,
-                    initialProcessName: extra['processName']?.toString(),
-                    stageCount: parsedStageCount != null && parsedStageCount > 0
-                        ? parsedStageCount
-                        : null,
+                child: RoutePermissionGuard(
+                  anyPermissions: const [
+                    AppPermissions.getAllTaskForEmployee,
+                    AppPermissions.taskSigning,
+                  ],
+                  child: BlocProvider(
+                    create: (_) => getIt<InternalTransactionFormBloc>()
+                      ..add(LoadInternalTransactionForm(processId)),
+                    child: InternalTransactionFormPage(
+                      processId: processId,
+                      initialProcessName: extra['processName']?.toString(),
+                      stageCount: parsedStageCount != null && parsedStageCount > 0
+                          ? parsedStageCount
+                          : null,
+                    ),
                   ),
                 ),
               );
@@ -227,7 +311,13 @@ class AppRouter {
           GoRoute(
             path: '/department-transactions',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: DepartmentTransactionsPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: [
+                  AppPermissions.getTaskCompletedByDepartment,
+                  AppPermissions.getTaskRejectedByDepartment,
+                ],
+                child: DepartmentTransactionsPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -235,8 +325,15 @@ class AppRouter {
             pageBuilder: (context, state) {
               final transactionId = state.pathParameters['id'] ?? '';
               return NoTransitionPage(
-                child: DepartmentTransactionDetailsPage(
-                  transactionId: transactionId,
+                child: RoutePermissionGuard(
+                  anyPermissions: const [
+                    AppPermissions.getTaskCompletedByDepartment,
+                    AppPermissions.getTaskRejectedByDepartment,
+                    AppPermissions.viewHistoryTransaction,
+                  ],
+                  child: DepartmentTransactionDetailsPage(
+                    transactionId: transactionId,
+                  ),
                 ),
               );
             },
@@ -247,8 +344,11 @@ class AppRouter {
               final transactionId =
                   int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
               return NoTransitionPage(
-                child: GenerateFinalDocumentPage(
-                  transactionId: transactionId,
+                child: RoutePermissionGuard(
+                  permission: AppPermissions.viewCreateFinalDocument,
+                  child: GenerateFinalDocumentPage(
+                    transactionId: transactionId,
+                  ),
                 ),
               );
             },
@@ -257,17 +357,24 @@ class AppRouter {
             path: '/directorate-process-management',
             pageBuilder: (context, state) => CustomTransitionPage(
               transitionDuration: const Duration(milliseconds: 260),
-              child: MultiBlocProvider(
-                providers: [
-                  BlocProvider(
-                    create: (_) => getIt<DirectorateProcessBloc>()
-                      ..add(const LoadTransactionTypes()),
-                  ),
-                  BlocProvider(
-                    create: (_) => getIt<DirectorateComplaintsBloc>(),
-                  ),
+              child: RoutePermissionGuard(
+                anyPermissions: const [
+                  AppPermissions.getOrganizationalStructure,
+                  AppPermissions.processPublishManage,
+                  AppPermissions.processReview,
                 ],
-                child: const DirectorateProcessManagementPage(),
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider(
+                      create: (_) => getIt<DirectorateProcessBloc>()
+                        ..add(const LoadTransactionTypes()),
+                    ),
+                    BlocProvider(
+                      create: (_) => getIt<DirectorateComplaintsBloc>(),
+                    ),
+                  ],
+                  child: const DirectorateProcessManagementPage(),
+                ),
               ),
               transitionsBuilder: (context, animation, secondary, child) =>
                   FadeTransition(
@@ -285,10 +392,17 @@ class AppRouter {
               final processId =
                   int.tryParse(state.pathParameters['processId'] ?? '') ?? 0;
               return NoTransitionPage(
-                child: BlocProvider(
-                  create: (_) => getIt<ProcessDetailsBloc>()
-                    ..add(LoadProcessDetails(processId: processId)),
-                  child: ProcessDetailsPage(processId: processId),
+                child: RoutePermissionGuard(
+                  anyPermissions: const [
+                    AppPermissions.getOrganizationalStructure,
+                    AppPermissions.processPublishManage,
+                    AppPermissions.processReview,
+                  ],
+                  child: BlocProvider(
+                    create: (_) => getIt<ProcessDetailsBloc>()
+                      ..add(LoadProcessDetails(processId: processId)),
+                    child: ProcessDetailsPage(processId: processId),
+                  ),
                 ),
               );
             },
@@ -302,7 +416,16 @@ class AppRouter {
           GoRoute(
             path: '/statistics',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: StatisticsPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: [
+                  AppPermissions.processViewStats,
+                  AppPermissions.employeesStats,
+                  AppPermissions.tasksStatsActive,
+                  AppPermissions.tasksStatsRejectedLastMonth,
+                  AppPermissions.tasksStatsCompletedLastMonth,
+                ],
+                child: StatisticsPage(),
+              ),
             ),
           ),
           GoRoute(
@@ -311,11 +434,14 @@ class AppRouter {
               final employeeId =
                   int.tryParse(state.pathParameters['employeeId'] ?? '') ?? 0;
               return NoTransitionPage(
-                child: BlocProvider(
-                  create: (_) => getIt<StatisticsEmployeeDetailsBloc>()
-                    ..add(LoadEmployeeDetails(employeeId: employeeId)),
-                  child: StatisticsEmployeeDetailsPage(
-                    employeeId: employeeId,
+                child: RoutePermissionGuard(
+                  permission: AppPermissions.employeesStats,
+                  child: BlocProvider(
+                    create: (_) => getIt<StatisticsEmployeeDetailsBloc>()
+                      ..add(LoadEmployeeDetails(employeeId: employeeId)),
+                    child: StatisticsEmployeeDetailsPage(
+                      employeeId: employeeId,
+                    ),
                   ),
                 ),
               );
@@ -330,16 +456,25 @@ class AppRouter {
           GoRoute(
             path: '/document-quality-checker',
             pageBuilder: (context, state) => NoTransitionPage(
-              child: BlocProvider(
-                create: (_) => getIt<DocumentVerificationBloc>(),
-                child: const DocumentVerificationPage(),
+              child: RoutePermissionGuard(
+                permission: AppPermissions.documentVerifyByCode,
+                child: BlocProvider(
+                  create: (_) => getIt<DocumentVerificationBloc>(),
+                  child: const DocumentVerificationPage(),
+                ),
               ),
             ),
           ),
           GoRoute(
             path: '/organization-hierarchy',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: OrganizationHierarchyPage(),
+              child: RoutePermissionGuard(
+                anyPermissions: [
+                  AppPermissions.getOrganizationalStructure,
+                  AppPermissions.organizationalStructureCreate,
+                ],
+                child: OrganizationHierarchyPage(),
+              ),
             ),
           ),
           GoRoute(

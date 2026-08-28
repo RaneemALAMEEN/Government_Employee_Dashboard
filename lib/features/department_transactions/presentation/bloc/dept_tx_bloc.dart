@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:government_employee_dashboard/core/constants/app_permissions.dart';
 import 'package:government_employee_dashboard/core/errors/failures.dart';
 import 'package:government_employee_dashboard/features/department_transactions/domain/entities/department_transaction_entity.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -65,14 +66,23 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
     return '$deptId:$status:${fromDate ?? ""}:${toDate ?? ""}:${searchQuery ?? ""}';
   }
 
-  /// Pre-fetches both 'منجزة' and 'مرفوضة' in the background for instant switching
+  /// Pre-fetches permitted categories in the background for instant switching
   void _warmUpCategories({
     required String deptId,
     String? fromDate,
     String? toDate,
   }) {
     Future.microtask(() async {
-      final statuses = ['منجزة', 'مرفوضة'];
+      final session = getIt<SessionService>();
+      final canViewCompleted =
+          session.hasPermission(AppPermissions.getTaskCompletedByDepartment);
+      final canViewRejected =
+          session.hasPermission(AppPermissions.getTaskRejectedByDepartment);
+
+      final statuses = [
+        if (canViewCompleted) 'منجزة',
+        if (canViewRejected) 'مرفوضة',
+      ];
       for (final s in statuses) {
         final key = _cacheKey(
           deptId: deptId,
@@ -122,8 +132,15 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
   Future<void> _onLoadDeptTx(
       LoadDeptTx event, Emitter<DeptTxState> emit) async {
     final currentState = state;
+    final session = getIt<SessionService>();
+    final canViewCompleted =
+        session.hasPermission(AppPermissions.getTaskCompletedByDepartment);
+    final canViewRejected =
+        session.hasPermission(AppPermissions.getTaskRejectedByDepartment);
 
-    String currentStatus = 'منجزة'; // default status
+    String currentStatus = canViewCompleted
+        ? 'منجزة'
+        : (canViewRejected ? 'مرفوضة' : 'منجزة'); // default status based on permission
     String? currentFromDate;
     String? currentToDate;
     String currentSearchQuery = '';
@@ -140,6 +157,11 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
     if (currentState is DeptTxLoaded && !event.isRefresh) {
       currentStatus = currentState.statusFilter;
+      if (currentStatus == 'منجزة' && !canViewCompleted && canViewRejected) {
+        currentStatus = 'مرفوضة';
+      } else if (currentStatus == 'مرفوضة' && !canViewRejected && canViewCompleted) {
+        currentStatus = 'منجزة';
+      }
       currentFromDate = currentState.fromDate;
       currentToDate = currentState.toDate;
       currentSearchQuery = currentState.searchQuery;
@@ -328,6 +350,16 @@ class DeptTxBloc extends Bloc<DeptTxEvent, DeptTxState> {
 
   Future<void> _onFilterDeptTxByStatus(
       FilterDeptTxByStatus event, Emitter<DeptTxState> emit) async {
+    final session = getIt<SessionService>();
+    if (event.statusFilter == 'منجزة' &&
+        !session.hasPermission(AppPermissions.getTaskCompletedByDepartment)) {
+      return;
+    }
+    if (event.statusFilter == 'مرفوضة' &&
+        !session.hasPermission(AppPermissions.getTaskRejectedByDepartment)) {
+      return;
+    }
+
     if (state is DeptTxLoaded) {
       final currentState = state as DeptTxLoaded;
       if (currentState.statusFilter == event.statusFilter) return;

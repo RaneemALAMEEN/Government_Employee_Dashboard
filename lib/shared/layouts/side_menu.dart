@@ -10,6 +10,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_confirmation_dialog.dart';
 
+import '../../core/constants/app_permissions.dart';
+
 const _sidebarDividerColor = Color(0xFFE9ECEF);
 const _sidebarSelectedColor = Color(0xFFF4F2E8);
 
@@ -36,41 +38,79 @@ class _AppSidebarState extends State<AppSidebar>
   late final Animation<Offset> _headerSlide;
 
   static const _items = <SidebarNavItem>[
-    SidebarNavItem(LucideIcons.fileText, 'معاملاتي', '/my-transactions'),
+    SidebarNavItem(
+      LucideIcons.fileText,
+      'معاملاتي',
+      '/my-transactions',
+      requiredAnyPermissions: [
+        AppPermissions.getAllTaskForEmployee,
+        AppPermissions.viewHistoryTransaction,
+      ],
+    ),
     SidebarNavItem(
       LucideIcons.inbox,
       'المعاملات الداخلية',
       '/internal-transactions',
+      requiredAnyPermissions: [
+        AppPermissions.getAllTaskForEmployee,
+        AppPermissions.taskSigning,
+      ],
     ),
     SidebarNavItem(
       LucideIcons.building,
       'معاملات الدائرة',
       '/department-transactions',
+      requiredAnyPermissions: [
+        AppPermissions.getTaskCompletedByDepartment,
+        AppPermissions.getTaskRejectedByDepartment,
+      ],
     ),
     SidebarNavItem(
       LucideIcons.workflow,
       'إدارة المعاملات والشكاوى',
       '/directorate-process-management',
+      requiredAnyPermissions: [
+        AppPermissions.getOrganizationalStructure,
+        AppPermissions.processPublishManage,
+        AppPermissions.processReview,
+      ],
     ),
     SidebarNavItem(
       LucideIcons.chartNoAxesCombined,
       'الإحصائيات',
       '/statistics',
+      requiredAnyPermissions: [
+        AppPermissions.processViewStats,
+        AppPermissions.employeesStats,
+        AppPermissions.tasksStatsActive,
+        AppPermissions.tasksStatsRejectedLastMonth,
+        AppPermissions.tasksStatsCompletedLastMonth,
+      ],
     ),
     SidebarNavItem(
       LucideIcons.network,
       'الهيكل التنظيمي',
       '/organization-hierarchy',
+      requiredAnyPermissions: [
+        AppPermissions.getOrganizationalStructure,
+        AppPermissions.organizationalStructureCreate,
+      ],
     ),
     SidebarNavItem(
       LucideIcons.shieldCheck,
       'فحص الوثائق',
       '/document-quality-checker',
+      requiredPermission: AppPermissions.documentVerifyByCode,
     ),
     SidebarNavItem(
       LucideIcons.calendarDays,
       'إدارة المواعيد',
       '/appointments',
+      requiredAnyPermissions: [
+        AppPermissions.appointmentManage,
+        AppPermissions.appointmentViewAvailable,
+        AppPermissions.appointmentBookEmployee,
+      ],
     ),
     SidebarNavItem(
       LucideIcons.contact,
@@ -106,59 +146,78 @@ class _AppSidebarState extends State<AppSidebar>
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    final activeRoute = findActiveSidebarRoute(
-      location,
-      _items.map((item) => item.route),
-    );
+    final sessionService = getIt<SessionService>();
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(color: AppColors.surface),
-      child: Column(
-        children: [
-          FadeTransition(
-            opacity: _headerFade,
-            child: SlideTransition(
-              position: _headerSlide,
-              child: _SidebarHeader(
-                showLabels: widget.showLabels,
-                onToggleCollapse: widget.onToggleCollapse,
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: sessionService.permissionsNotifier,
+      builder: (context, permissions, _) {
+        final visibleItems = _items
+            .where((item) => item.isVisible(permissions))
+            .toList();
+
+        final activeRoute = findActiveSidebarRoute(
+          location,
+          visibleItems.map((item) => item.route),
+        );
+
+        return DecoratedBox(
+          decoration: const BoxDecoration(color: AppColors.surface),
+          child: Column(
+            children: [
+              FadeTransition(
+                opacity: _headerFade,
+                child: SlideTransition(
+                  position: _headerSlide,
+                  child: _SidebarHeader(
+                    showLabels: widget.showLabels,
+                    onToggleCollapse: widget.onToggleCollapse,
+                  ),
+                ),
               ),
-            ),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: _sidebarDividerColor,
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(18, 22, 18, 14),
+                  itemCount: visibleItems.length,
+                  itemBuilder: (context, index) {
+                    final item = visibleItems[index];
+                    return SidebarItem(
+                      item: item,
+                      order: index,
+                      selected: item.route == activeRoute,
+                      showLabel: widget.showLabels,
+                    );
+                  },
+                ),
+              ),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: _sidebarDividerColor,
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  widget.isCollapsed ? 10 : 18,
+                  12,
+                  widget.isCollapsed ? 10 : 18,
+                  18,
+                ),
+                child: _SidebarAction(
+                  icon: LucideIcons.logOut,
+                  label: 'تسجيل الخروج',
+                  compact: !widget.showLabels,
+                  emphasized: true,
+                  onTap: () => _logout(context),
+                ),
+              ),
+            ],
           ),
-          const Divider(height: 1, thickness: 1, color: _sidebarDividerColor),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(18, 22, 18, 14),
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                return SidebarItem(
-                  item: item,
-                  order: index,
-                  selected: item.route == activeRoute,
-                  showLabel: widget.showLabels,
-                );
-              },
-            ),
-          ),
-          const Divider(height: 1, thickness: 1, color: _sidebarDividerColor),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              widget.isCollapsed ? 10 : 18,
-              12,
-              widget.isCollapsed ? 10 : 18,
-              18,
-            ),
-            child: _SidebarAction(
-              icon: LucideIcons.logOut,
-              label: 'تسجيل الخروج',
-              compact: !widget.showLabels,
-              emphasized: true,
-              onTap: () => _logout(context),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -172,7 +231,10 @@ class _AppSidebarState extends State<AppSidebar>
       icon: LucideIcons.logOut,
       isDestructive: true,
       failureMessage: 'تعذر تسجيل الخروج، حاول مرة أخرى',
-      onConfirm: getIt<SecureStorageService>().clear,
+      onConfirm: () async {
+        await getIt<SecureStorageService>().clear();
+        getIt<SessionService>().reset();
+      },
     );
     if (loggedOut == true && context.mounted) context.go('/login');
   }
@@ -552,8 +614,26 @@ class SidebarNavItem {
   final IconData icon;
   final String title;
   final String route;
+  final String? requiredPermission;
+  final List<String>? requiredAnyPermissions;
 
-  const SidebarNavItem(this.icon, this.title, this.route);
+  const SidebarNavItem(
+    this.icon,
+    this.title,
+    this.route, {
+    this.requiredPermission,
+    this.requiredAnyPermissions,
+  });
+
+  bool isVisible(Set<String> permissions) {
+    if (requiredPermission != null && !permissions.contains(requiredPermission)) {
+      return false;
+    }
+    if (requiredAnyPermissions != null && requiredAnyPermissions!.isNotEmpty) {
+      return requiredAnyPermissions!.any(permissions.contains);
+    }
+    return true;
+  }
 }
 
 class _SidebarTooltip extends StatelessWidget {

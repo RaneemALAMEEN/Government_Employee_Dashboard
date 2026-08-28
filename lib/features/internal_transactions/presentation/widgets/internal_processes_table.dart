@@ -102,9 +102,6 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
                 return true;
               }).toList();
 
-              final isFilteredOrSearched = state.searchQuery.trim().isNotEmpty ||
-                  state.statusFilter != 'الكل';
-
               final Widget tableContent = Column(
                 children: [
                   const _TableHeader(),
@@ -116,17 +113,10 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
                       ),
                     )
                   else if (filteredItems.isEmpty)
-                    isFilteredOrSearched
-                        ? _EmptySearchState(
-                            query: state.searchQuery,
-                            statusFilter: state.statusFilter,
-                            onReset: () {
-                              context.read<InternalTransactionsBloc>()
-                                ..add(const FilterInternalTransactions('الكل'))
-                                ..add(const SearchInternalTransactions(''));
-                            },
-                          )
-                        : const _EmptyTransactionsState()
+                    _buildEmptyState(
+                      filter: state.statusFilter,
+                      searchQuery: state.searchQuery,
+                    )
                   else
                     ListView.separated(
                       shrinkWrap: true,
@@ -192,6 +182,58 @@ class _InternalProcessesTableState extends State<InternalProcessesTable> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState({
+    required String filter,
+    required String searchQuery,
+  }) {
+    String svgPath;
+    String title;
+    String description;
+
+    if (searchQuery.trim().isNotEmpty) {
+      svgPath = 'assets/vectors/empty search.svg';
+      title = 'لا توجد نتائج تطابق بحثك';
+      description =
+          'تأكد من كتابة الاسم أو رقم المعاملة بشكل صحيح وحاول مرة أخرى.';
+    } else {
+      switch (filter) {
+        case 'قيد المعالجة':
+        case 'قيد التنفيذ':
+        case 'in_progress':
+          svgPath = 'assets/vectors/in progress.svg';
+          title = 'لا توجد معاملات قيد المعالجة';
+          description =
+              'لقد أنجزت جميع مهامك أو لم تقم باستلام معاملات جديدة للبدء بتنفيذها.';
+          break;
+        case 'منجزة':
+        case 'منجز':
+        case 'completed':
+          svgPath = 'assets/vectors/approved.svg';
+          title = 'لا توجد معاملات منجزة';
+          description = 'لم تقم بإنجاز أي معاملات خلال الفترة الحالية.';
+          break;
+        case 'مرفوضة':
+        case 'تم الرفض':
+        case 'rejected':
+          svgPath = 'assets/vectors/rejected.svg';
+          title = 'لا توجد معاملات مرفوضة';
+          description = 'سجلك خالي من أي معاملات مرفوضة.';
+          break;
+        default: // الكل
+          svgPath = 'assets/vectors/waiting.svg';
+          title = 'لا توجد معاملات متوفرة';
+          description = 'قائمتك فارغة تماماً ولا تحتوي على أي معاملات.';
+      }
+    }
+
+    return AppEmptySearchState(
+      title: title,
+      description: description,
+      svgPath: svgPath,
+      isCard: false,
     );
   }
 }
@@ -514,52 +556,6 @@ class _DetailsButton extends StatelessWidget {
   }
 }
 
-class _EmptyTransactionsState extends StatelessWidget {
-  const _EmptyTransactionsState();
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeIn(
-      duration: const Duration(milliseconds: 350),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-        alignment: Alignment.center,
-        child: ZoomIn(
-          duration: const Duration(milliseconds: 450),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                'assets/vectors/waiting.svg',
-                width: 140,
-                height: 140,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'لا توجد معاملات داخلية حالياً',
-                style: AppTextStyles.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  'عند إنشاء معاملة داخلية جديدة ستظهر هنا مع مرحلتها الحالية ونسبة الإنجاز.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.charcoal.withValues(alpha: 0.60),
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ErrorBox extends StatelessWidget {
   final String message;
 
@@ -580,49 +576,6 @@ class _ErrorBox extends StatelessWidget {
         style: AppTextStyles.bodyMedium.copyWith(
           fontWeight: AppTextStyles.semiBold,
           color: AppColors.umber,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptySearchState extends StatelessWidget {
-  final String query;
-  final String statusFilter;
-  final VoidCallback onReset;
-
-  const _EmptySearchState({
-    required this.query,
-    required this.statusFilter,
-    required this.onReset,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasQuery = query.trim().isNotEmpty;
-    final hasStatus = statusFilter != 'الكل';
-
-    String description = 'تأكد من صحة رقم المعاملة أو الكلمات المدخلة وحاول مجدداً.';
-    if (hasQuery && hasStatus) {
-      description =
-          'لم يتم العثور على نتائج تطابق "$query" في حالة "$statusFilter".';
-    } else if (hasQuery) {
-      description = 'لم يتم العثور على نتائج تطابق "$query".';
-    } else if (hasStatus) {
-      description = 'لا توجد معاملات داخلية بحالة "$statusFilter".';
-    }
-
-    return AppEmptySearchState(
-      title: 'لا توجد نتائج تطابق البحث',
-      description: description,
-      isCard: false,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-      action: TextButton.icon(
-        onPressed: onReset,
-        icon: const Icon(LucideIcons.rotateCcw, size: 16),
-        label: const Text('إعادة ضبط الفلاتر'),
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.forest,
         ),
       ),
     );

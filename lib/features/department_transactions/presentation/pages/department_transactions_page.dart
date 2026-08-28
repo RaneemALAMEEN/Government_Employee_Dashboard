@@ -1,3 +1,5 @@
+import '../../../../core/constants/app_permissions.dart';
+import '../../../../core/services/session_service.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -197,56 +199,71 @@ class _DepartmentTransactionsViewState
                                   ],
                                 ))
                           : (state is DeptTxLoaded
-                              ? (isSmall
-                                  ? Column(
-                                      children: [
-                                        DeptTxStatsCard(
-                                          value: '${state.activeCount}',
-                                          label: 'المعاملات النشطة',
-                                          valueColor: AppColors.goldDark,
-                                        ),
-                                        const SizedBox(height: gap),
-                                        DeptTxStatsCard(
-                                          value: '${state.completedCount}',
-                                          label: 'المنجزة (آخر 30 يوم)',
-                                          valueColor: AppColors.forest,
-                                        ),
-                                        const SizedBox(height: gap),
-                                        DeptTxStatsCard(
-                                          value: '${state.rejectedCount}',
-                                          label: 'المرفوضة (آخر 30 يوم)',
-                                          valueColor: AppColors.primary,
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      textDirection: TextDirection.rtl,
-                                      children: [
-                                        Expanded(
-                                          child: DeptTxStatsCard(
-                                            value: '${state.activeCount}',
-                                            label: 'المعاملات النشطة',
-                                            valueColor: AppColors.goldDark,
-                                          ),
-                                        ),
-                                        const SizedBox(width: gap),
-                                        Expanded(
-                                          child: DeptTxStatsCard(
-                                            value: '${state.completedCount}',
-                                            label: 'المنجزة (آخر 30 يوم)',
-                                            valueColor: AppColors.forest,
-                                          ),
-                                        ),
-                                        const SizedBox(width: gap),
-                                        Expanded(
-                                          child: DeptTxStatsCard(
-                                            value: '${state.rejectedCount}',
-                                            label: 'المرفوضة (آخر 30 يوم)',
-                                            valueColor: AppColors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ))
+                              ? Builder(builder: (context) {
+                                  final session = getIt<SessionService>();
+                                  final canViewActiveStats = session.hasPermission(
+                                      AppPermissions.tasksStatsActive);
+                                  final canViewCompletedStats =
+                                      session.hasAnyPermission(const [
+                                    AppPermissions.tasksStatsCompletedLastMonth,
+                                    AppPermissions.getTaskCompletedByDepartment,
+                                  ]);
+                                  final canViewRejectedStats =
+                                      session.hasAnyPermission(const [
+                                    AppPermissions.tasksStatsRejectedLastMonth,
+                                    AppPermissions.getTaskRejectedByDepartment,
+                                  ]);
+
+                                  final statsCards = <Widget>[
+                                    if (canViewActiveStats)
+                                      DeptTxStatsCard(
+                                        value: '${state.activeCount}',
+                                        label: 'المعاملات النشطة',
+                                        valueColor: AppColors.goldDark,
+                                      ),
+                                    if (canViewCompletedStats)
+                                      DeptTxStatsCard(
+                                        value: '${state.completedCount}',
+                                        label: 'المنجزة (آخر 30 يوم)',
+                                        valueColor: AppColors.forest,
+                                      ),
+                                    if (canViewRejectedStats)
+                                      DeptTxStatsCard(
+                                        value: '${state.rejectedCount}',
+                                        label: 'المرفوضة (آخر 30 يوم)',
+                                        valueColor: AppColors.primary,
+                                      ),
+                                  ];
+
+                                  if (statsCards.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  return isSmall
+                                      ? Column(
+                                          children: [
+                                            for (int i = 0;
+                                                i < statsCards.length;
+                                                i++) ...[
+                                              statsCards[i],
+                                              if (i < statsCards.length - 1)
+                                                const SizedBox(height: gap),
+                                            ],
+                                          ],
+                                        )
+                                      : Row(
+                                          textDirection: TextDirection.rtl,
+                                          children: [
+                                            for (int i = 0;
+                                                i < statsCards.length;
+                                                i++) ...[
+                                              Expanded(child: statsCards[i]),
+                                              if (i < statsCards.length - 1)
+                                                const SizedBox(width: gap),
+                                            ],
+                                          ],
+                                        );
+                                })
                               : const SizedBox.shrink()),
                     ),
                     const SizedBox(height: 32),

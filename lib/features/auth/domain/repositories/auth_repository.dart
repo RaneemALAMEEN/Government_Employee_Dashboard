@@ -22,4 +22,6 @@ abstract class AuthRepository {
     required String newPin,
     required String confirmNewPin,
   });
+
+  Future<Either<Failure, Set<String>>> fetchUserPermissions(int userId);
 }

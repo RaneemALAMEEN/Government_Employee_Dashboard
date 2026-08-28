@@ -19,6 +19,7 @@ class EndPoints {
       'api/auth/verify-otp/login'; // step 2 → token + refreshToken + user + roles
   String get verifyAppPin => 'api/auth/verify-app-pin';
   String get changePin => 'api/auth/change-pin';
+  String userPermissions(int userId) => 'api/auth/permissions/user/$userId';
   String get myTransactionCounts => 'api/transaction/my/counts';
   // ===== auth — token lifecycle =====
   String get refresh =>

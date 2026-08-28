@@ -17,6 +17,9 @@ import '../theme/app_colors.dart';
 import '../widgets/app_confirmation_dialog.dart';
 import '../widgets/global_search_box.dart';
 
+import '../../core/constants/app_permissions.dart';
+import '../widgets/permission_gate.dart';
+
 class TopBar extends StatelessWidget {
   const TopBar({super.key});
 
@@ -64,7 +67,10 @@ class _UserInfo extends StatelessWidget {
         icon: LucideIcons.logOut,
         isDestructive: true,
         failureMessage: 'تعذر تسجيل الخروج، حاول مرة أخرى',
-        onConfirm: getIt<SecureStorageService>().clear,
+        onConfirm: () async {
+          await getIt<SecureStorageService>().clear();
+          getIt<SessionService>().reset();
+        },
       );
       if (loggedOut == true && context.mounted) {
         context.go('/login');
@@ -82,69 +88,73 @@ class _UserInfo extends StatelessWidget {
       ),
       elevation: 4,
       tooltip: 'خيارات الحساب والإعدادات',
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          value: 'change_pin',
-          child: Row(
-            children: [
-              const Icon(
-                LucideIcons.keyRound,
-                size: 18,
-                color: AppColors.forest,
+      itemBuilder: (context) {
+        final hasPinSitting = context.hasPermission(AppPermissions.pinSitting);
+        return [
+          if (hasPinSitting)
+            PopupMenuItem<String>(
+              value: 'change_pin',
+              child: Row(
+                children: [
+                  const Icon(
+                    LucideIcons.keyRound,
+                    size: 18,
+                    color: AppColors.forest,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'تغيير رمز PIN',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: AppTextStyles.medium,
+                      color: AppColors.charcoal,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Text(
-                'تغيير رمز PIN',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: AppTextStyles.medium,
-                  color: AppColors.charcoal,
+            ),
+          PopupMenuItem<String>(
+            value: 'lock_app',
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.lock,
+                  size: 18,
+                  color: AppColors.charcoalDark,
                 ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'lock_app',
-          child: Row(
-            children: [
-              const Icon(
-                LucideIcons.lock,
-                size: 18,
-                color: AppColors.charcoalDark,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'قفل التطبيق',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: AppTextStyles.medium,
-                  color: AppColors.charcoal,
+                const SizedBox(width: 10),
+                Text(
+                  'قفل التطبيق',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: AppTextStyles.medium,
+                    color: AppColors.charcoal,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
-          value: 'logout',
-          child: Row(
-            children: [
-              const Icon(
-                LucideIcons.logOut,
-                size: 18,
-                color: AppColors.error,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'تسجيل الخروج',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: AppTextStyles.medium,
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: 'logout',
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.logOut,
+                  size: 18,
                   color: AppColors.error,
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Text(
+                  'تسجيل الخروج',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: AppTextStyles.medium,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ];
+      },
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Row(

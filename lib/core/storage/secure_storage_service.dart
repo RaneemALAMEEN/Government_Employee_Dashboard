@@ -14,6 +14,34 @@ class SecureStorageService {
   static const _rolesListKey = "user_roles_list";
   static const _userKey = "user_details";
   static const _departmentIdsKey = "department_ids";
+  static const _permissionsKey = "user_permissions";
+
+  // ===== Permissions =====
+  Future<void> writePermissions(List<String> permissions) async {
+    await _storage.write(
+      key: _permissionsKey,
+      value: jsonEncode(permissions),
+    );
+  }
+
+  Future<Set<String>> readPermissions() async {
+    final raw = await _storage.read(key: _permissionsKey);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString()).toSet();
+        }
+      } catch (_) {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  Future<void> deletePermissions() async {
+    await _storage.delete(key: _permissionsKey);
+  }
 
   // ===== Access token =====
   Future<void> saveToken(String token) async {
@@ -141,5 +169,6 @@ class SecureStorageService {
     await deleteRoles();
     await deleteUser();
     await deleteDepartmentIds();
+    await deletePermissions();
   }
 }

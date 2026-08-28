@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
+import '../../../../core/constants/app_permissions.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_snack_bar.dart';
+import '../../../../shared/widgets/permission_gate.dart';
 import '../../domain/entities/appointment_entities.dart';
 import '../bloc/appointments_bloc.dart';
 import '../widgets/appointment_dialogs.dart';
@@ -143,19 +145,26 @@ class _Header extends StatelessWidget {
   const _Header({required this.onBook});
   @override
   Widget build(BuildContext context) {
-    final actions = OutlinedButton.icon(
-      onPressed: onBook,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.forest,
-        side: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      icon: const Icon(LucideIcons.calendarCheck, size: 18),
-      label: const Text('حجز موعد'),
-    );
+    final canBook = context.hasAnyPermission(const [
+      AppPermissions.appointmentBookEmployee,
+      AppPermissions.appointmentManage,
+    ]);
+
+    final actions = canBook
+        ? OutlinedButton.icon(
+            onPressed: onBook,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.forest,
+              side: BorderSide(color: AppColors.gold.withValues(alpha: 0.5)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            icon: const Icon(LucideIcons.calendarCheck, size: 18),
+            label: const Text('حجز موعد'),
+          )
+        : null;
 
     return AppPageHeader(
       title: 'إدارة المواعيد',
@@ -249,6 +258,8 @@ class _AvailableSlotsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canManage = context.hasPermission(AppPermissions.appointmentManage);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -266,17 +277,25 @@ class _AvailableSlotsTab extends StatelessWidget {
               ),
             ],
           );
-          final button = FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(LucideIcons.plus, size: 17),
-            label: const Text('إضافة موعد'),
-          );
+          final button = canManage
+              ? FilledButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(LucideIcons.plus, size: 17),
+                  label: const Text('إضافة موعد'),
+                )
+              : null;
           return constraints.maxWidth < 600
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [title, const SizedBox(height: 14), button],
+                  children: [
+                    title,
+                    if (button != null) ...[const SizedBox(height: 14), button],
+                  ],
                 )
-              : Row(children: [Expanded(child: title), button]);
+              : Row(children: [
+                  Expanded(child: title),
+                  if (button != null) button,
+                ]);
         }),
         const SizedBox(height: 18),
         if (state.availableLoading && state.availableSlots.isEmpty)
@@ -292,7 +311,9 @@ class _AvailableSlotsTab extends StatelessWidget {
             ),
           )
         else if (state.availableSlots.isEmpty)
-          AppointmentAvailableEmptyState(onAdd: onAdd)
+          AppointmentAvailableEmptyState(
+            onAdd: canManage ? onAdd : null,
+          )
         else
           LayoutBuilder(builder: (_, constraints) {
             final actualColumns = constraints.maxWidth >= 1050
@@ -309,13 +330,16 @@ class _AvailableSlotsTab extends StatelessWidget {
                         width: width,
                         child: AppointmentSlotCard(
                           slot: slot,
-                          onEdit: () => _edit(context, slot),
-                          onDelete: () => _delete(context, slot),
-                          onActiveChanged: (active) => _toggle(
-                            context,
-                            slot,
-                            active,
-                          ),
+                          onEdit: canManage ? () => _edit(context, slot) : null,
+                          onDelete:
+                              canManage ? () => _delete(context, slot) : null,
+                          onActiveChanged: canManage
+                              ? (active) => _toggle(
+                                    context,
+                                    slot,
+                                    active,
+                                  )
+                              : null,
                         ),
                       ))
                   .toList(),

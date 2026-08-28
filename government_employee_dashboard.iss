@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Government Employee Dashboard"
-#define MyAppVersion "1.1.4"
+#define MyAppVersion "1.1.5"
 #define MyAppPublisher "Directorate of Education"
 #define MyAppExeName "government_employee_dashboard.exe"
 
@@ -27,7 +27,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
-OutputBaseFilename=GovernmentEmployeeDashboard_v1.1.4_Setup
+OutputBaseFilename=GovernmentEmployeeDashboard_v1.1.5_Setup
 SetupIconFile=C:\Users\ITE\Desktop\projects\government_employee_dashboard\windows\runner\resources\app_icon.ico
 SolidCompression=yes
 WizardStyle=modern

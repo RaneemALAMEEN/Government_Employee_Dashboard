@@ -68,4 +68,11 @@ class AuthRemoteDataSource {
       },
     );
   }
+
+  Future<Either<Failure, dynamic>> getUserPermissions(int userId) {
+    return api.makeRequest(
+      method: ApiMethod.get,
+      endPoint: _endPoints.userPermissions(userId),
+    );
+  }
 }

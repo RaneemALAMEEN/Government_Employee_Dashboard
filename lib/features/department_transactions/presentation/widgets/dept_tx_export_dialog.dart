@@ -1,3 +1,6 @@
+import '../../../../core/constants/app_permissions.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
@@ -60,10 +63,21 @@ class _DeptTxExportDialogState extends State<DeptTxExportDialog> {
   void initState() {
     super.initState();
     _selectedStatus = widget.initialStatusFilter;
-    if (_selectedStatus != 'الكل' &&
-        _selectedStatus != 'منجزة' &&
-        _selectedStatus != 'مرفوضة') {
+    final session = getIt<SessionService>();
+    final canViewCompleted =
+        session.hasPermission(AppPermissions.getTaskCompletedByDepartment);
+    final canViewRejected =
+        session.hasPermission(AppPermissions.getTaskRejectedByDepartment);
+
+    if (!canViewCompleted && !canViewRejected) {
       _selectedStatus = 'الكل';
+    } else if (!canViewCompleted && _selectedStatus == 'منجزة') {
+      _selectedStatus = 'مرفوضة';
+    } else if (!canViewRejected && _selectedStatus == 'مرفوضة') {
+      _selectedStatus = 'منجزة';
+    } else if ((!canViewCompleted || !canViewRejected) &&
+        _selectedStatus == 'الكل') {
+      _selectedStatus = canViewCompleted ? 'منجزة' : 'مرفوضة';
     }
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
@@ -267,15 +281,29 @@ class _DeptTxExportDialogState extends State<DeptTxExportDialog> {
                   style: AppTextStyles.titleSmall,
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _buildStatusChip('الكل'),
-                    const SizedBox(width: 10),
-                    _buildStatusChip('منجزة'),
-                    const SizedBox(width: 10),
-                    _buildStatusChip('مرفوضة'),
-                  ],
-                ),
+                Builder(builder: (context) {
+                  final session = getIt<SessionService>();
+                  final canViewCompleted = session.hasPermission(
+                      AppPermissions.getTaskCompletedByDepartment);
+                  final canViewRejected = session.hasPermission(
+                      AppPermissions.getTaskRejectedByDepartment);
+
+                  final statusOptions = [
+                    if (canViewCompleted && canViewRejected) 'الكل',
+                    if (canViewCompleted) 'منجزة',
+                    if (canViewRejected) 'مرفوضة',
+                  ];
+
+                  return Row(
+                    children: [
+                      for (int i = 0; i < statusOptions.length; i++) ...[
+                        _buildStatusChip(statusOptions[i]),
+                        if (i < statusOptions.length - 1)
+                          const SizedBox(width: 10),
+                      ],
+                    ],
+                  );
+                }),
                 const SizedBox(height: 20),
 
                 // Date Range Filter

@@ -5,12 +5,26 @@ import '../storage/secure_storage_service.dart';
 import '../../features/auth/domain/entities/user.dart';
 import '../../features/auth/domain/entities/user_role.dart';
 
+enum PermissionsStatus {
+  initial,
+  loading,
+  loaded,
+  error,
+}
+
 class SessionService {
   final SecureStorageService _storage;
 
   final ValueNotifier<UserRole?> activeRoleNotifier =
       ValueNotifier<UserRole?>(null);
   final ValueNotifier<User?> currentUserNotifier = ValueNotifier<User?>(null);
+
+  final ValueNotifier<Set<String>> permissionsNotifier =
+      ValueNotifier<Set<String>>({});
+  final ValueNotifier<PermissionsStatus> permissionsStatusNotifier =
+      ValueNotifier<PermissionsStatus>(PermissionsStatus.initial);
+  final ValueNotifier<String?> permissionsErrorNotifier =
+      ValueNotifier<String?>(null);
 
   List<UserRole> _availableRoles = [];
   String? _sessionPin;
@@ -49,9 +63,63 @@ class SessionService {
       if (roles != null) {
         _availableRoles = roles;
       }
+
+      final permissions = await _storage.readPermissions();
+      if (permissions.isNotEmpty) {
+        permissionsNotifier.value = permissions;
+        permissionsStatusNotifier.value = PermissionsStatus.loaded;
+        permissionsErrorNotifier.value = null;
+      }
     } catch (_) {
       // Ignored
     }
+  }
+
+  /// Sets loading state for permissions fetch.
+  void setPermissionsLoading() {
+    permissionsStatusNotifier.value = PermissionsStatus.loading;
+    permissionsErrorNotifier.value = null;
+  }
+
+  /// Updates permissions in-memory and marks state as loaded.
+  void setPermissions(Set<String> permissions) {
+    permissionsNotifier.value = permissions;
+    permissionsStatusNotifier.value = PermissionsStatus.loaded;
+    permissionsErrorNotifier.value = null;
+  }
+
+  /// Sets error state when fetching permissions fails.
+  void setPermissionsError(String errorMessage) {
+    permissionsStatusNotifier.value = PermissionsStatus.error;
+    permissionsErrorNotifier.value = errorMessage;
+  }
+
+  /// Check if the user has a specific permission code.
+  bool hasPermission(String code) {
+    return permissionsNotifier.value.contains(code);
+  }
+
+  /// Check if the user has at least one of the provided permission codes.
+  bool hasAnyPermission(Iterable<String> codes) {
+    if (codes.isEmpty) return true;
+    return codes.any((c) => permissionsNotifier.value.contains(c));
+  }
+
+  /// Check if the user has all of the provided permission codes.
+  bool hasAllPermissions(Iterable<String> codes) {
+    if (codes.isEmpty) return true;
+    return codes.every((c) => permissionsNotifier.value.contains(c));
+  }
+
+  /// Resets all in-memory session and permission data (on logout).
+  void reset() {
+    activeRoleNotifier.value = null;
+    currentUserNotifier.value = null;
+    permissionsNotifier.value = {};
+    permissionsStatusNotifier.value = PermissionsStatus.initial;
+    permissionsErrorNotifier.value = null;
+    _availableRoles = [];
+    _sessionPin = null;
   }
 
   Future<void> setActiveRole(UserRole role) async {

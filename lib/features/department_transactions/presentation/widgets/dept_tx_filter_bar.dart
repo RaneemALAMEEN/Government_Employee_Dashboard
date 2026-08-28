@@ -1,9 +1,11 @@
+import '../../../../core/constants/app_permissions.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/app_search_field.dart';
+import '../../../../shared/widgets/permission_gate.dart';
 import '../../domain/entities/accessible_department_entity.dart';
 
 import 'dept_tx_date_range_picker_dialog.dart';
@@ -78,7 +80,15 @@ class _DeptTxFilterBarState extends State<DeptTxFilterBar> {
 
   @override
   Widget build(BuildContext context) {
-    final statuses = ['منجزة', 'مرفوضة'];
+    final canViewCompleted =
+        context.hasPermission(AppPermissions.getTaskCompletedByDepartment);
+    final canViewRejected =
+        context.hasPermission(AppPermissions.getTaskRejectedByDepartment);
+
+    final statuses = [
+      if (canViewCompleted) 'منجزة',
+      if (canViewRejected) 'مرفوضة',
+    ];
     final hasDateFilter = widget.fromDate != null || widget.toDate != null;
 
     return LayoutBuilder(
